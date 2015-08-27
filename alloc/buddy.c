@@ -154,7 +154,7 @@ int total_free(buddy_t * buddy) {
   }
   return bytecount;
 }
-
+/*
 static void print_list(int i,buddy_t * buddy) {
 
   printf("freelist[%d]: \n", i);
@@ -165,10 +165,10 @@ static void print_list(int i,buddy_t * buddy) {
     p = (void **) *p;
   }
 }
-
+*/
 void print_buddy(buddy_t * buddy) {
 
-  int i;
+  //int i;
 
   printf("========================================\n");
   printf("MEMPOOL size: %d\n", buddy->poolsize);

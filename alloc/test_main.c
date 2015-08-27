@@ -19,8 +19,9 @@
  * Author: Tianfu Ma (matianfu@gmail.com)
  */
 
+#include <stdio.h>
 #include <stdlib.h>
-#include "buddy.h"
+#include "../include/alloc.h"
 
 void test001() {
   void * p1, * p2, * p3;
