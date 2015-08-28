@@ -154,6 +154,14 @@ int total_free(buddy_t * buddy) {
   }
   return bytecount;
 }
+
+int ispointerinbuddy(void * pointer,buddy_t * buddy)
+{
+	int offset=pointer-(void *)buddy->pool;
+	if((offset>0) && (offset<buddy->poolsize))
+		return 1;
+	return 0;
+}
 /*
 static void print_list(int i,buddy_t * buddy) {
 

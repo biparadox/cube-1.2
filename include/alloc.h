@@ -9,6 +9,7 @@ void * Talloc(int size);
 void Tfree(void * pointer);
 void Treset();
 void Tclear();
+int  Tisinmem();
 void Gmemdestroy();
 void Tmemdestroy();
 int Ggetfreecount();

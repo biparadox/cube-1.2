@@ -73,5 +73,6 @@ void buddy_destroy(buddy_t * buddy);
 
 void print_buddy(buddy_t * buddy);
 int total_free(buddy_t * buddy);
+int ispointerinbuddy(void * pointer,buddy_t * buddy);
 
 #endif /* BUDDY_H_ */

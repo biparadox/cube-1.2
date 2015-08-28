@@ -55,3 +55,7 @@ int Tgetfreecount()
 {
 	return total_free(&t_buddy);
 }
+int Tisinmem(void * pointer)
+{
+	return ispointerinbuddy(pointer,&t_buddy);
+}
