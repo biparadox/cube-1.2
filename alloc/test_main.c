@@ -27,17 +27,17 @@ void test001() {
   void * p1, * p2, * p3;
   int freecount;
   int ret;
-  ret = Galloc(&p1,250);
-  ret = Galloc(&p2,98);
-  ret = Galloc(&p3,77);
+  ret = Galloc0(&p1,250);
+  ret = Galloc0(&p2,98);
+  ret = Galloc0(&p3,77);
 
   freecount=Ggetfreecount();
   
   printf("free count %d!\n",freecount);
 
-  Gfree(p2);
-  Gfree(p3);
-  Gfree(p1);
+  Gfree0(p2);
+  Gfree0(p3);
+  Gfree0(p1);
 }
 void test003() {
   void * p1, * p2, * p3;

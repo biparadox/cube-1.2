@@ -63,7 +63,9 @@ static inline void * buddyof(void * b, int i,buddy_t * buddy)
 
 
 void * bmalloc(int size, buddy_t * buddy);
+void * bmalloc0(int size, buddy_t * buddy);
 void bfree(void * block,buddy_t * buddy);
+void bfree0(void * block,buddy_t * buddy);
 
 
 int buddy_init(buddy_t * buddy, int order);

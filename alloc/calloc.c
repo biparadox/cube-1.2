@@ -24,42 +24,35 @@
 #include "../include/alloc.h"
 #include "buddy.h"
 
-static buddy_t g_buddy;
-const int g_order=24;
+static buddy_t c_buddy;
+const int c_order=20;
 
-int Gmeminit()
+int Cmeminit()
 {
-	return buddy_init(&g_buddy,g_order);
+	return buddy_init(&c_buddy,c_order);
 }
-int Galloc(void ** pointer,int size)
+void *  Calloc(int size)
 {
-	*pointer = bmalloc(size,&g_buddy);
-	if(pointer==NULL)
-		return -ENOMEM;
-	return size;
+	return bmalloc(size,&c_buddy);
 }
-int Galloc0(void ** pointer,int size)
+void *  Calloc0(int size)
 {
-	*pointer = bmalloc0(size,&g_buddy);
-	if(pointer==NULL)
-		return -ENOMEM;
-	return size;
+	return bmalloc0(size,&c_buddy);
 }
-void Gfree(void * pointer)
+void Cfree(void * pointer)
 {
-	 bfree(pointer,&g_buddy);
+	 bfree(pointer,&c_buddy);
 }
-void Gfree0(void * pointer)
+void Cfree0(void * pointer)
 {
-	 bfree0(pointer,&g_buddy);
+	 bfree0(pointer,&c_buddy);
 }
 
-
-void Gmemdestroy()
+void Cmemdestroy()
 {
-	buddy_destroy(&g_buddy);
+	buddy_destroy(&c_buddy);
 }
-int Ggetfreecount()
+int Cgetfreecount()
 {
-	return total_free(&g_buddy);
+	return total_free(&c_buddy);
 }

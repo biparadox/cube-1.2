@@ -95,6 +95,16 @@ void * bmalloc(int size,buddy_t * buddy) {
  	*((uint8_t*) (block - 1)) = order;
 	return block;
 }
+void * bmalloc0(int size,buddy_t * buddy) 
+{
+	void * pointer=bmalloc(size,buddy);
+	if(pointer!=NULL)
+	{
+		memset(pointer,0,size);
+	}
+	return pointer;
+	
+}
 
 void bfree(void * block,buddy_t * buddy) {
 
@@ -128,6 +138,16 @@ void bfree(void * block,buddy_t * buddy) {
 	return;
 }
 
+void bfree0(void * pointer,buddy_t * buddy) 
+{
+	int i;
+	i = *((uint8_t*) (pointer - 1));
+	if(pointer!=NULL)
+	{
+		memset(pointer,0,BLOCKSIZE(i));
+	}
+	bfree(pointer,buddy);
+}
 
 /*
  * The following functions are for simple tests.

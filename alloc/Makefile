@@ -3,7 +3,7 @@ CFLAGS= -g -c -Wall -DUSER_MODE
 CC=gcc
 LD=ld
 CCP=g++
-STRUCTOBJ= buddy.o talloc.o galloc.o
+STRUCTOBJ= buddy.o talloc.o galloc.o calloc.o
 
 main: ../lib/liballoc.a  test_main
 test_main: test_main.c ../lib/liballoc.a 
@@ -17,5 +17,7 @@ galloc.o:  galloc.c ../include/alloc.h
 	$(CC) $(CFLAGS) galloc.c
 talloc.o:  talloc.c ../include/alloc.h
 	$(CC) $(CFLAGS) talloc.c
+calloc.o:  calloc.c ../include/alloc.h
+	$(CC) $(CFLAGS) calloc.c
 clean:
 	rm -f test_main *~ *.a *.o ../lib/liballoc.a
