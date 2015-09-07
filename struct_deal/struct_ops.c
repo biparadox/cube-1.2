@@ -23,6 +23,7 @@
 #include "struct_ops.h"
 
 
+//const int deftag=0x00FFF000;
 static inline int elem_alloc(void ** pointer,int size)
 {
 	if(Tisinmem(pointer))
@@ -45,35 +46,7 @@ int estring_blob_2_elem(void * addr, void * elem_data,  void * elem_attr);
 int estring_alloc_size(void * value,void * elem_attr);
 
 //}
-ELEM_OPS string_convert_ops =
-{
-//	.calculate_offset=Calculate_offset,
-};
-ELEM_OPS bindata_convert_ops =
-{
-//	.calculate_offset=Calculate_offset,
-};
 
-ELEM_OPS estring_convert_ops =
-{
-	.elem_2_blob = estring_elem_2_blob,
-	.blob_2_elem = estring_blob_2_elem,
-	.elem_alloc_size = estring_alloc_size,
-//	.calculate_offset=Calculate_offset,
-};
-
-/*
-int string_elem_2_blob(void * addr, void * elem_data,  void * elem_template){
-
-	struct struct_elem_attr * elem_attr=elem_template;
-	int retval;
-	retval = elem_attr->size;
-	memset(elem_data, 0, sizeof(elem_attr->size));
-	strncpy(elem_data, addr, retval);
-	return retval;
-
-}
-*/
 int estring_elem_2_blob(void * addr,void * elem_data,void * elem_template){
 	struct elem_template * elem_attr=elem_template;
 	struct struct_elem_attr * elem_desc = elem_attr->elem_desc;
@@ -93,8 +66,6 @@ int estring_elem_2_blob(void * addr,void * elem_data,void * elem_template){
 			retval = strlen(estring);
 			if (retval<0)
 				return -EINVAL;
-//			if ((elem_desc->size != 0) && (retval>elem_desc->size))
-//				return -EINVAL;
 			retval++;
 			memcpy(elem_data, estring, retval);
 		}
@@ -111,8 +82,6 @@ int estring_alloc_size (void * value,void * attr)
 	retval = strlen(value);
 	if (retval<0)
 		retval = -EINVAL;
-//	if ((elem_desc->size != 0) && (retval>elem_desc->size))
-//		retval = -EINVAL;
 	retval++;
 	return retval;
 	
@@ -136,3 +105,143 @@ int estring_blob_2_elem(void * addr, void * elem_data, void * elem_template){
 	return retval;
 
 }
+
+int define_elem_2_blob(void * addr,void * elem_data,void * elem_template){
+	struct elem_template * elem_attr=elem_template;
+	struct struct_elem_attr * elem_desc = elem_attr->elem_desc;
+
+	struct elem_template * temp_elem;
+	int retval;
+	int def_offset;
+	int def_value;
+	ELEM_OPS * elem_ops;
+	temp_elem=elem_attr->ref;
+	if(temp_elem==NULL)
+		return -EINVAL;
+	def_offset=temp_elem->offset;
+
+	if(elem_attr->offset <def_offset)
+		return -EINVAL;
+
+	elem_ops=struct_deal_ops[temp_elem->elem_desc->type];
+	if(elem_ops==NULL)
+		return -EINVAL;
+	def_value=elem_ops->get_value(addr-(temp_elem->offset-def_offset),temp_elem);
+	
+	if(def_value==0)
+		return 0;
+	if(def_value<0)
+		return -EINVAL;
+	unsigned char * defdata;
+	defdata = *(unsigned char **)addr;
+	// if the string is an empty string
+	if (defdata == NULL)
+	{
+		return -EINVAL;
+	}
+	retval =def_value;
+	memcpy(elem_data, defdata, retval);
+
+	return retval;
+}
+static inline int _isdigit(char c)
+{
+	if((c>='0') && (c<='9'))
+		return 1;
+	return 0;
+}
+
+static inline int _get_char_value(char c)
+{
+	if(_isdigit(c))
+		return c-'0';
+	if((c>='a') && (c<='f'))
+		return c-'a'+9;
+	if((c>='A') && (c<='F'))
+		return c-'a'+9;
+	return -EINVAL;
+}
+
+int get_string_value(void * addr,void * elem_attr)
+{
+	struct elem_template * curr_elem=elem_attr;
+	char * string=addr;
+	int ret=0;
+	int i;
+	int base=10;
+	int temp_value;
+	// process the head
+	for(i=0;i<curr_elem->size;i++)
+	{
+		if(string[i]==0)
+			break;
+		if(string[i]==' ')
+		{
+			i++;
+			continue;
+		}
+		// change the base
+		if(string[i]=='0')
+		{
+			if(string[i+1]==0)
+				return 0;
+			if((string[i+1]=='b')||(string[i+1]=='B'))
+			{
+				i+=2;
+				base=2;
+			}
+			else if((string[i+1]=='x')||(string[i+1]=='X'))
+			{
+				i+=2;
+				base=16;
+			}
+			else
+			{
+				i++;
+				base=8;
+			}
+		}
+		
+	}
+	for(;i<curr_elem->size;i++)
+	{
+		if(string[i]==0)
+			break;
+		temp_value=_get_char_value(string[i++]);
+		if((temp_value <0)||(temp_value>=base))
+			return -EINVAL;
+		ret=ret*base+temp_value;		
+	}
+	return ret;
+}
+	
+int get_int_value(void * addr,void * elem_attr)
+{
+	return *(int *)addr; 
+}
+
+ELEM_OPS string_convert_ops =
+{
+	.get_value=get_string_value,
+};
+ELEM_OPS int_convert_ops =
+{
+	.get_value=get_int_value,
+};
+ELEM_OPS bindata_convert_ops =
+{
+//	.calculate_offset=Calculate_offset,
+};
+
+ELEM_OPS estring_convert_ops =
+{
+	.elem_2_blob = estring_elem_2_blob,
+	.blob_2_elem = estring_blob_2_elem,
+	.elem_alloc_size = estring_alloc_size,
+};
+ELEM_OPS define_convert_ops =
+{
+//	.elem_2_blob = estring_elem_2_blob,
+//	.blob_2_elem = estring_blob_2_elem,
+//	.elem_alloc_size = estring_alloc_size,
+};

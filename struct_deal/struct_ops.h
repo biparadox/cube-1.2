@@ -11,6 +11,7 @@
 ELEM_OPS string_convert_ops;
 ELEM_OPS estring_convert_ops;
 ELEM_OPS bindata_convert_ops;
+ELEM_OPS define_convert_ops;
 
 typedef struct tagvalue2pointer
 {
@@ -18,6 +19,7 @@ typedef struct tagvalue2pointer
 	void * pointer;
 }VALUE2POINTER;
 
+extern void ** struct_deal_ops;
 struct elem_template
 {
 	struct struct_elem_attr * elem_desc;

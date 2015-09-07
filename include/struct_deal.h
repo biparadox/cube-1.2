@@ -10,8 +10,8 @@
 #define  STRUCT_DEAL_H
 enum os210_struct_elem_type   // describe types could be used in the struct
 {
-	OS210_TYPE_STRING,   // a string with fixed size
-	OS210_TYPE_UUID,   // a string with size DIGEST*2
+	OS210_TYPE_STRING,   // an string with fixed size
+	OS210_TYPE_UUID,     // an string with fixed size
 	OS210_TYPE_INT,      // an 32-bit int
 	OS210_TYPE_ENUM,      // an 32-bit enum
 	OS210_TYPE_FLAG,      // an 32-bit flag
@@ -26,17 +26,23 @@ enum os210_struct_elem_type   // describe types could be used in the struct
 	OS210_TYPE_VSTRING,  // a string with its first 2 octets describe string's length(exclude the first two octets)
 	OS210_TYPE_ESTRING,  // a variable length string ended with '\0'
 	OS210_TYPE_JSONSTRING,  // a variable length string encluded in "{}", "[]" or "\"\"" or "\'\'", it is only special in struct_json, other times,
-	// it is same as ESTRING	
+       			        // it is same as ESTRING	
 	OS210_TYPE_NODATA,   // this element has no data
 	OS210_TYPE_DEFINE,	//an octets sequence whose length defined by a forhead element (an uchar, an ushort or a int element), the attr parameter 
-	//show the element's name, 
+				//show the element's name, 
+	OS210_TYPE_DEFSTR,	//a string whose length defined by a forhead element (an uchar, an ushort or a int element), the attr parameter 
+				//show the element's name, 
 	OS210_TYPE_DEFSTRARRAY,	//a fixed string' s array whose elem number defined by a forhead element (an uchar, an ushort,a int element or 
-	//a string like "72", the attr parameter show the forhead element's name, the elem_attr->size show how
-	// the string's fixed length.
-	// NOTE: there should not be any ' ' in the string.
-	//
+				//a string like "72", the attr parameter show the forhead element's name, the elem_attr->size show how
+			 	// the string's fixed length.
+				// NOTE: there should not be any ' ' in the string.
+				//
 	OS210_TYPE_ORGCHAIN,    // this element describes a new struct in this site, attr points to the description of the new struct
-	OS210_TYPE_CHOICE,
+        OS210_TYPE_CHOICE,
+		
+	TPM_TYPE_UINT64,
+	TPM_TYPE_UINT32,
+	TPM_TYPE_UINT16,
 	OS210_TYPE_ENDDATA,
 };
 
