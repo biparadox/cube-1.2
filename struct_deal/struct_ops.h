@@ -19,6 +19,7 @@ typedef struct tagvalue2pointer
 	void * pointer;
 }VALUE2POINTER;
 
+#define DEFINE_TAG  0x00FFF000
 extern void ** struct_deal_ops;
 struct elem_template
 {

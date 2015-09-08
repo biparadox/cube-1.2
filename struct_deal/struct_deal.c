@@ -22,7 +22,6 @@
 #include "../include/struct_deal.h"
 #include "struct_ops.h"
 
-const int deftag=0x00FFF000;
 static VALUE2POINTER InitFuncList [] =
 {
 	{OS210_TYPE_STRING,&string_convert_ops},
@@ -50,6 +49,7 @@ int struct_deal_init()
 	int count;
 	int ret;
 	int i;
+	struct_deal_ops=&ops_list;
 	for(i=0;i<OS210_TYPE_ENDDATA;i++)
 	{
 		struct_deal_ops[i]=NULL;
@@ -281,7 +281,7 @@ void * create_struct_template(struct struct_elem_attr * struct_desc)
 				return NULL;
 			if(!_isvalidvalue(temp_elem->elem_desc->type))
 				return NULL;
-			temp_elem->ref = (void *)deftag;
+			temp_elem->ref = (void *)DEFINE_TAG;
 
 			curr_elem->ref=temp_elem;
 			elem_ops=struct_deal_ops[elem_desc->type];
@@ -364,6 +364,7 @@ int struct_2_blob(void * addr, void * blob, void * struct_template)
 	int blob_offset=0;
 	struct struct_elem_attr * curr_desc;
 	ELEM_OPS * elem_ops;
+	int def_value;
 	int ret;
 
 	curr_desc=root_node->struct_desc;
@@ -410,6 +411,7 @@ int struct_2_blob(void * addr, void * blob, void * struct_template)
 	}while(1);
 	return blob_offset;
 }
+
 int blob_2_struct(void * blob, void * addr, void * struct_template)
 {
 	STRUCT_NODE * root_node=struct_template;
@@ -447,9 +449,21 @@ int blob_2_struct(void * blob, void * addr, void * struct_template)
 			continue;
 		}
 		// get this elem's ops
-		elem_ops=struct_deal_ops[curr_desc[curr_node->temp_var].type];
+		elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
 		if(elem_ops==NULL)
 			return -EINVAL;
+		// pre_fretch the define value
+		if(_isvalidvalue(curr_elem->elem_desc->type) &&
+			((int)curr_elem->ref & DEFINE_TAG))
+		{
+			if(elem_ops->get_value == NULL)
+				return -EINVAL;
+			int define_value;
+			define_value = elem_ops->get_value(addr+curr_elem->offset,curr_elem);
+			if((define_value<0)||define_value>=1024)
+				return define_value;
+			curr_elem->ref=(int)curr_elem->ref&DEFINE_TAG+define_value;			
+		}
 		addr_offset=curr_elem->offset;
 		if(elem_ops->elem_2_blob==NULL)
 		{
@@ -459,6 +473,152 @@ int blob_2_struct(void * blob, void * addr, void * struct_template)
 		else
 		{
 			ret=elem_ops->blob_2_elem(addr+addr_offset,blob+blob_offset,curr_elem);
+			if(ret<0)
+				return ret;
+			blob_offset+=ret;
+		}
+		curr_node->temp_var++;
+	}while(1);
+	return blob_offset;
+}
+
+int blob_2_text(void * blob, char * text, void * struct_template,int * stroffset)
+{
+	STRUCT_NODE * root_node=struct_template;
+	STRUCT_NODE * curr_node=root_node;
+	STRUCT_NODE * temp_node;
+	curr_node->temp_var=0;
+	struct elem_template * curr_elem;
+	int blob_offset=0;
+	int text_len=0;
+	struct struct_elem_attr * curr_desc;
+	ELEM_OPS * elem_ops;
+	int ret;
+
+	curr_desc=root_node->struct_desc;
+
+	do{
+		// throughout the node tree: back
+		if(curr_node->temp_var == curr_node->elem_no)
+		{
+			temp_node=curr_node;
+			curr_node=curr_node->parent;
+			if(curr_node==NULL)
+				break;
+			curr_desc=curr_node->struct_desc;
+			continue;
+		}
+		curr_elem=&curr_node->elem_list[curr_node->temp_var];
+		// throughout the node tree: into the sub_struct
+		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+		{
+			curr_node->temp_var++;
+			curr_node=curr_elem->ref;
+			curr_node->temp_var=0;
+			curr_desc=curr_node->struct_desc;
+			continue;
+		}
+		// get this elem's ops
+		elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
+		if(elem_ops==NULL)
+			return -EINVAL;
+		// pre_fretch the define value
+		if(_isvalidvalue(curr_elem->elem_desc->type) &&
+			((int)curr_elem->ref & DEFINE_TAG))
+		{
+			if(elem_ops->get_value == NULL)
+				return -EINVAL;
+			int define_value;
+			define_value = elem_ops->get_value(blob+blob_offset,curr_elem);
+			if((define_value<0)||define_value>=1024)
+				return define_value;
+			curr_elem->ref=(int)curr_elem->ref&DEFINE_TAG+define_value;			
+		}
+		if(elem_ops->blob_2_text==NULL)
+		{
+			text_len=strlen(blob+blob_offset)+1;
+			if(text_len>curr_elem->size)
+				text_len=curr_elem->size;
+			strncpy(text+*stroffset,blob+blob_offset,curr_elem->size);
+			blob_offset+=curr_elem->size;
+			*stroffset+=text_len;
+		}
+		else
+		{
+			ret=elem_ops->blob_2_text(blob+blob_offset,text,curr_elem,stroffset);
+			if(ret<0)
+				return ret;
+			blob_offset+=ret;
+		}
+		curr_node->temp_var++;
+	}while(1);
+	return blob_offset;
+}
+
+int text_2_blob(char * text, void * blob, void * struct_template,int * stroffset)
+{
+	STRUCT_NODE * root_node=struct_template;
+	STRUCT_NODE * curr_node=root_node;
+	STRUCT_NODE * temp_node;
+	curr_node->temp_var=0;
+	struct elem_template * curr_elem;
+	int blob_offset=0;
+	int text_len=0;
+	struct struct_elem_attr * curr_desc;
+	ELEM_OPS * elem_ops;
+	int ret;
+
+	curr_desc=root_node->struct_desc;
+
+	do{
+		// throughout the node tree: back
+		if(curr_node->temp_var == curr_node->elem_no)
+		{
+			temp_node=curr_node;
+			curr_node=curr_node->parent;
+			if(curr_node==NULL)
+				break;
+			curr_desc=curr_node->struct_desc;
+			continue;
+		}
+		curr_elem=&curr_node->elem_list[curr_node->temp_var];
+		// throughout the node tree: into the sub_struct
+		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+		{
+			curr_node->temp_var++;
+			curr_node=curr_elem->ref;
+			curr_node->temp_var=0;
+			curr_desc=curr_node->struct_desc;
+			continue;
+		}
+		// get this elem's ops
+		elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
+		if(elem_ops==NULL)
+			return -EINVAL;
+		// pre_fretch the define value
+		if(_isvalidvalue(curr_elem->elem_desc->type) &&
+			((int)curr_elem->ref & DEFINE_TAG))
+		{
+			if(elem_ops->get_value == NULL)
+				return -EINVAL;
+			int define_value;
+			define_value = get_string_value(text+*stroffset,curr_elem);
+			if((define_value<0)||define_value>=1024)
+				return define_value;
+			curr_elem->ref=(int)curr_elem->ref&DEFINE_TAG+define_value;			
+		}
+		if(elem_ops->text_2_blob==NULL)
+		{
+			text_len=strlen(text+*stroffset)+1;
+			if(text_len>curr_elem->size)
+				text_len=curr_elem->size;
+			strncpy(blob+blob_offset,text+*stroffset,curr_elem->size);
+			blob_offset+=curr_elem->size;
+			*stroffset+=text_len;
+		}
+		else
+		{
+			ret=elem_ops->text_2_blob(text,blob+blob_offset,curr_elem,stroffset);
 			if(ret<0)
 				return ret;
 			blob_offset+=ret;

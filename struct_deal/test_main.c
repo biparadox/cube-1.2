@@ -50,7 +50,7 @@ static struct struct_elem_attr connect_login_desc[]=
 static struct struct_elem_attr verify_login_desc[]=
 {
     {"login_info",OS210_TYPE_ORGCHAIN,0,&connect_login_desc,0},
-    {"nonce_len",OS210_TYPE_STRING,DIGEST_SIZE,NULL,0},
+    {"nonce_len",OS210_TYPE_STRING,4,NULL,0},
     {"nonce",OS210_TYPE_DEFINE,sizeof(char *),"nonce_len",0},
     {NULL,OS210_TYPE_ENDDATA,0,NULL,0}
 };
@@ -63,6 +63,7 @@ int main() {
 	char text[512];
 	int ret;
 	struct verify_login * recover_struct;
+	int stroffset=0;
 
 
   	Gmeminit();
@@ -74,6 +75,8 @@ int main() {
     	void * struct_template=create_struct_template(verify_login_desc);
 	ret=struct_2_blob(&test_login,buffer,struct_template);	
 	ret=struct_read_elem("login_info.passwd",&test_login,text,struct_template);
+	ret=blob_2_text(buffer,text,struct_template,&stroffset);
+	printf("%s\n",text);
 //	ret=blob_2_text(buffer,text,struct_template);	
 //	ret=text_2_blob(buffer,text,struct_template);	
 	ret=blob_2_struct(buffer,recover_struct,struct_template);

@@ -107,26 +107,26 @@ int estring_blob_2_elem(void * addr, void * elem_data, void * elem_template){
 }
 
 int define_elem_2_blob(void * addr,void * elem_data,void * elem_template){
-	struct elem_template * elem_attr=elem_template;
-	struct struct_elem_attr * elem_desc = elem_attr->elem_desc;
+	struct elem_template * curr_elem=elem_template;
+	struct struct_elem_attr * elem_desc = curr_elem->elem_desc;
 
 	struct elem_template * temp_elem;
 	int retval;
 	int def_offset;
 	int def_value;
 	ELEM_OPS * elem_ops;
-	temp_elem=elem_attr->ref;
+	temp_elem=curr_elem->ref;
 	if(temp_elem==NULL)
 		return -EINVAL;
 	def_offset=temp_elem->offset;
 
-	if(elem_attr->offset <def_offset)
+	if(curr_elem->offset <def_offset)
 		return -EINVAL;
 
 	elem_ops=struct_deal_ops[temp_elem->elem_desc->type];
 	if(elem_ops==NULL)
 		return -EINVAL;
-	def_value=elem_ops->get_value(addr-(temp_elem->offset-def_offset),temp_elem);
+	def_value=elem_ops->get_value(addr-(curr_elem->offset-def_offset),temp_elem);
 	
 	if(def_value==0)
 		return 0;
@@ -144,6 +144,48 @@ int define_elem_2_blob(void * addr,void * elem_data,void * elem_template){
 
 	return retval;
 }
+
+int define_blob_2_elem(void * elem,void * addr,void * elem_template){
+	struct elem_template * curr_elem=elem_template;
+	struct struct_elem_attr * elem_desc = curr_elem->elem_desc;
+
+	struct elem_template * temp_elem;
+	int retval;
+	int def_offset;
+	int def_value;
+	ELEM_OPS * elem_ops;
+	temp_elem=curr_elem->ref;
+	if(temp_elem==NULL)
+		return -EINVAL;
+	def_offset=temp_elem->offset;
+
+	if(curr_elem->offset <def_offset)
+		return -EINVAL;
+
+	elem_ops=struct_deal_ops[temp_elem->elem_desc->type];
+	if(elem_ops==NULL)
+		return -EINVAL;
+	def_value=elem_ops->get_value(addr-(temp_elem->offset-def_offset),temp_elem);
+	
+	if(def_value==0)
+		return 0;
+	if(def_value<0)
+		return -EINVAL;
+	retval = elem_alloc(addr,def_value);
+	if(retval<0)
+		return retval;
+	unsigned char * defdata;
+	defdata = *(unsigned char **)addr;
+	// if the string is an empty string
+	if (defdata == NULL)
+	{
+		return -EINVAL;
+	}
+	memcpy(defdata,addr,def_value);
+
+	return def_value;
+}
+
 static inline int _isdigit(char c)
 {
 	if((c>='0') && (c<='9'))
@@ -170,8 +212,16 @@ int get_string_value(void * addr,void * elem_attr)
 	int i;
 	int base=10;
 	int temp_value;
+	int str_len;
+	if(curr_elem->elem_desc->type == OS210_TYPE_STRING)
+	{
+		str_len=strnlen(string,curr_elem->size);
+	}
+	else
+		str_len=strnlen(string,16);
+
 	// process the head
-	for(i=0;i<curr_elem->size;i++)
+	for(i=0;i<str_len;i++)
 	{
 		if(string[i]==0)
 			break;
@@ -183,31 +233,35 @@ int get_string_value(void * addr,void * elem_attr)
 		// change the base
 		if(string[i]=='0')
 		{
-			if(string[i+1]==0)
-				return 0;
-			if((string[i+1]=='b')||(string[i+1]=='B'))
+			switch(string[i+1])
 			{
-				i+=2;
-				base=2;
+				case 0:
+					return 0;
+				case 'b':
+				case 'B':
+					i+=2;
+					base=2;
+					break;
+				case 'x':
+				case 'X':
+					i+=2;
+					base=16;
+					break;
+				default:
+					i++;
+					base=8;
+					break;
+
 			}
-			else if((string[i+1]=='x')||(string[i+1]=='X'))
-			{
-				i+=2;
-				base=16;
-			}
-			else
-			{
-				i++;
-				base=8;
-			}
+			break;
 		}
 		
 	}
-	for(;i<curr_elem->size;i++)
+	for(;i<str_len;i++)
 	{
 		if(string[i]==0)
 			break;
-		temp_value=_get_char_value(string[i++]);
+		temp_value=_get_char_value(string[i]);
 		if((temp_value <0)||(temp_value>=base))
 			return -EINVAL;
 		ret=ret*base+temp_value;		
@@ -241,7 +295,7 @@ ELEM_OPS estring_convert_ops =
 };
 ELEM_OPS define_convert_ops =
 {
-//	.elem_2_blob = estring_elem_2_blob,
-//	.blob_2_elem = estring_blob_2_elem,
+	.elem_2_blob = define_elem_2_blob,
+	.blob_2_elem = define_blob_2_elem,
 //	.elem_alloc_size = estring_alloc_size,
 };
