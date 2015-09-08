@@ -105,6 +105,16 @@ int estring_blob_2_elem(void * addr, void * elem_data, void * elem_template){
 	return retval;
 
 }
+int estring_blob_2_text(void * blob, char * text, void * elem_template,int *stroffset){
+
+	struct elem_template * elem_attr=elem_template;
+	struct struct_elem_attr * elem_desc = elem_attr->elem_desc;
+	int retval;
+	retval=strlen(blob)+1;
+	memcpy(text+*stroffset,blob,retval);
+	*stroffset+=retval;
+	return retval;
+}
 
 int define_elem_2_blob(void * addr,void * elem_data,void * elem_template){
 	struct elem_template * curr_elem=elem_template;
@@ -157,15 +167,8 @@ int define_blob_2_elem(void * elem,void * addr,void * elem_template){
 	temp_elem=curr_elem->ref;
 	if(temp_elem==NULL)
 		return -EINVAL;
-	def_offset=temp_elem->offset;
 
-	if(curr_elem->offset <def_offset)
-		return -EINVAL;
-
-	elem_ops=struct_deal_ops[temp_elem->elem_desc->type];
-	if(elem_ops==NULL)
-		return -EINVAL;
-	def_value=elem_ops->get_value(addr-(temp_elem->offset-def_offset),temp_elem);
+	def_value=(int)temp_elem->ref & 0x00000FFF;
 	
 	if(def_value==0)
 		return 0;
@@ -186,6 +189,26 @@ int define_blob_2_elem(void * elem,void * addr,void * elem_template){
 	return def_value;
 }
 
+int define_blob_2_text(void * blob,char * text,void * elem_template,int * stroffset){
+	struct elem_template * curr_elem=elem_template;
+	struct struct_elem_attr * elem_desc = curr_elem->elem_desc;
+
+	struct elem_template * temp_elem;
+	int retval;
+	int def_offset;
+	int def_value;
+	ELEM_OPS * elem_ops;
+	temp_elem=curr_elem->ref;
+	if(temp_elem==NULL)
+		return -EINVAL;
+	def_value=(int)temp_elem->ref & 0x00000FFF;
+	
+	if(def_value==0)
+		return 0;
+	memcpy(text+*stroffset,blob,def_value);
+	*stroffset+=def_value;
+	return def_value;
+}
 static inline int _isdigit(char c)
 {
 	if((c>='0') && (c<='9'))
@@ -291,11 +314,13 @@ ELEM_OPS estring_convert_ops =
 {
 	.elem_2_blob = estring_elem_2_blob,
 	.blob_2_elem = estring_blob_2_elem,
+	.blob_2_text = estring_blob_2_text,
 	.elem_alloc_size = estring_alloc_size,
 };
 ELEM_OPS define_convert_ops =
 {
 	.elem_2_blob = define_elem_2_blob,
 	.blob_2_elem = define_blob_2_elem,
+	.blob_2_text = define_blob_2_text,
 //	.elem_alloc_size = estring_alloc_size,
 };

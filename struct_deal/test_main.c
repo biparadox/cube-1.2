@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "../include/data_type.h"
 #include "../include/alloc.h"
 #include "../include/struct_deal.h"
@@ -58,17 +59,19 @@ static struct struct_elem_attr verify_login_desc[]=
 int main() {
 
 //	struct connect_login test_login={"HuJun","openstack"};
-	struct verify_login test_login={{"HuJun","openstack"},"0x20","AAAAAAA"};
+	struct verify_login test_login={{"HuJun","openstack"},"0x20",""};
 	char buffer[512];
 	char text[512];
 	int ret;
 	struct verify_login * recover_struct;
 	int stroffset=0;
 
-
   	Gmeminit();
   	Cmeminit();
 	Tmeminit();
+	test_login.nonce=Talloc(0x20);
+	memset(test_login.nonce,'A',0x20);
+
 	struct_deal_init();
 
 	recover_struct=Calloc(sizeof(struct verify_login));

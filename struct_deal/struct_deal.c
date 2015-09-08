@@ -532,7 +532,7 @@ int blob_2_text(void * blob, char * text, void * struct_template,int * stroffset
 			define_value = elem_ops->get_value(blob+blob_offset,curr_elem);
 			if((define_value<0)||define_value>=1024)
 				return define_value;
-			curr_elem->ref=(int)curr_elem->ref&DEFINE_TAG+define_value;			
+			curr_elem->ref=((int)curr_elem->ref&DEFINE_TAG)+define_value;			
 		}
 		if(elem_ops->blob_2_text==NULL)
 		{
