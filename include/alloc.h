@@ -16,6 +16,9 @@ void Tclear();
 int  Tisinmem();
 int Tgetfreecount();
 
+int Palloc(void ** pointer,int size);
+int Palloc0(void ** pointer,int size);
+
 int Free(void * pointer);
 int Free0(void * pointer);
 #endif

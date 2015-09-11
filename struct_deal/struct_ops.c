@@ -6,17 +6,6 @@
 
 
 //const int deftag=0x00FFF000;
-static inline int elem_alloc(void ** pointer,int size)
-{
-	if(Tisinmem(pointer))
-	{
-		*pointer=Talloc(size);
-		if(pointer==NULL)
-			return -ENOMEM;
-		return 0;
-	}
-	return Galloc(pointer,size);
-}
 
 int dup_str(char ** dest,char * src, int size)
 {
@@ -35,7 +24,7 @@ int dup_str(char ** dest,char * src, int size)
 		if(len!=size)
 			len++;
 	}
-	ret=elem_alloc(dest,len);
+	ret=Palloc(dest,len);
 	if(ret<0)
 		return ret;
 	memcpy(*dest,src,len);
@@ -103,7 +92,7 @@ int estring_blob_2_elem(void * addr, void * elem_data, void * elem_template){
 	retval = estring_alloc_size(elem_data,elem_template);
 	if (retval<0)
 		return retval;
-	int ret = elem_alloc(addr,retval);
+	int ret = Palloc(addr,retval);
 	if (ret <0)
 		return -ENOMEM;
 	memcpy(*(char **)addr, elem_data, retval);
@@ -180,7 +169,7 @@ int define_blob_2_elem(void * elem,void * addr,void * elem_template){
 		return 0;
 	if(def_value<0)
 		return -EINVAL;
-	retval = elem_alloc(addr,def_value);
+	retval = Palloc(addr,def_value);
 	if(retval<0)
 		return retval;
 	unsigned char * defdata;

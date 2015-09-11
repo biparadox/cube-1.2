@@ -80,6 +80,30 @@ void buddy_destroy(buddy_t * buddy) {
 	return;
 }
 
+int Palloc(void ** pointer,int size)
+{
+	if(Tisinmem(pointer))
+	{
+		*pointer=Talloc(size);
+		if(pointer==NULL)
+			return -ENOMEM;
+		return 0;
+	}
+	return Galloc(pointer,size);
+}
+
+int Palloc0(void ** pointer,int size)
+{
+	if(Tisinmem(pointer))
+	{
+		*pointer=Talloc(size);
+		if(pointer==NULL)
+			return -ENOMEM;
+		return 0;
+	}
+	return Galloc0(pointer,size);
+}
+
 int Free(void * pointer)
 {
 	if(ispointerinbuddy(pointer,T_mem_struct))
