@@ -19,47 +19,32 @@
  * Author: Hu jun (algorist@bjut.edu.cn)
  */
 
-#include <stdlib.h>
-#include <errno.h>
+#include "../include/errno.h"
+#include "../include/data_type.h"
 #include "../include/alloc.h"
 #include "buddy.h"
 
-static buddy_t g_buddy;
-const int g_order=24;
 
-int Gmeminit()
-{
-	return buddy_init(&g_buddy,g_order);
-}
 int Galloc(void ** pointer,int size)
 {
-	*pointer = bmalloc(size,&g_buddy);
+	*pointer = bmalloc(size,G_mem_struct);
 	if(pointer==NULL)
 		return -ENOMEM;
 	return size;
 }
 int Galloc0(void ** pointer,int size)
 {
-	*pointer = bmalloc0(size,&g_buddy);
+	*pointer = bmalloc0(size,G_mem_struct);
 	if(pointer==NULL)
 		return -ENOMEM;
 	return size;
 }
-void Gfree(void * pointer)
-{
-	 bfree(pointer,&g_buddy);
-}
-void Gfree0(void * pointer)
-{
-	 bfree0(pointer,&g_buddy);
-}
-
 
 void Gmemdestroy()
 {
-	buddy_destroy(&g_buddy);
+	buddy_destroy(G_mem_struct);
 }
 int Ggetfreecount()
 {
-	return total_free(&g_buddy);
+	return total_free(G_mem_struct);
 }

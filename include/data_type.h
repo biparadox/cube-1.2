@@ -9,19 +9,16 @@
 *************************************************/
 #ifndef _OS210_DATA_TYPE_H
 #define _OS210_DATA_TYPE_H
-
-#include <stdint.h>
-
+#define NULL 0
 //#ifndef TSS_PLATFORM_H
-typedef uint8_t            BYTE;
-typedef uint16_t           UINT16;
-typedef uint32_t           UINT32;
-typedef uint64_t           UINT64;
+typedef unsigned char         BYTE;
+typedef unsigned short int  UINT16;
+typedef unsigned int        UINT32;
+typedef unsigned long int   UINT64;
 //#endif
 
-typedef uint16_t           WORD;
-typedef uint32_t           DWORD;
-
+typedef unsigned short int    WORD;
+typedef unsigned int         DWORD;
 
 
 #define BITSTRING (unsigned char *)

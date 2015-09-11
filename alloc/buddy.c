@@ -19,44 +19,21 @@
  * Author: Tianfu Ma (matianfu@gmail.com)
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <errno.h>
+#include "../include/errno.h"
+#include "../include/data_type.h"
+#include "../include/alloc.h"
+#include "../include/memory.h"
 #include "buddy.h"
 
-int buddy_init(buddy_t * buddy,int order) {
-	if(order>MAX_ORDER)
-		return -EINVAL;
-  	if(order<MIN_ORDER)
-		return -EINVAL;
-	buddy->order=order;
-	buddy->poolsize=BLOCKSIZE(order);
-	buddy->freelist= malloc(sizeof(void *)*(order+2)+buddy->poolsize); 
-	if(buddy->freelist==NULL)
-		return -ENOMEM;
-	buddy->pool=(void *)buddy->freelist+sizeof(void *)*(order+2);
-  	memset(buddy->freelist,0,sizeof(void *)*(order+2)+buddy->poolsize);
-  	buddy->freelist[order] = buddy->pool;
-	return 0;
-}
-
 void buddy_clear(buddy_t * buddy) {
-  	memset(buddy->freelist,0,sizeof(void *)*(buddy->order+2)+buddy->poolsize);
+  	Memset(buddy->freelist,0,sizeof(void *)*(buddy->order+2)+buddy->poolsize);
   	buddy->freelist[buddy->order] = buddy->pool;
 	return;
 }
 
 void buddy_reset(buddy_t * buddy) {
-  	memset(buddy->freelist,0,sizeof(void *)*(buddy->order+2));
+  	Memset(buddy->freelist,0,sizeof(void *)*(buddy->order+2));
   	buddy->freelist[buddy->order] = buddy->pool;
-	return;
-}
-
-void buddy_destroy(buddy_t * buddy) {
-	buddy_clear(buddy);
-	free(buddy->freelist);
 	return;
 }
 
@@ -100,7 +77,7 @@ void * bmalloc0(int size,buddy_t * buddy)
 	void * pointer=bmalloc(size,buddy);
 	if(pointer!=NULL)
 	{
-		memset(pointer,0,size);
+		Memset(pointer,0,size);
 	}
 	return pointer;
 	
@@ -144,7 +121,7 @@ void bfree0(void * pointer,buddy_t * buddy)
 	i = *((uint8_t*) (pointer - 1));
 	if(pointer!=NULL)
 	{
-		memset(pointer,0,BLOCKSIZE(i));
+		Memset(pointer,0,BLOCKSIZE(i));
 	}
 	bfree(pointer,buddy);
 }
@@ -194,16 +171,3 @@ static void print_list(int i,buddy_t * buddy) {
   }
 }
 */
-void print_buddy(buddy_t * buddy) {
-
-  //int i;
-
-  printf("========================================\n");
-  printf("MEMPOOL size: %d\n", buddy->poolsize);
-  printf("MEMPOOL start @ 0x%08x\n", (unsigned int) (uintptr_t) buddy->pool);
-  printf("total free: %d\n", total_free(buddy));
-
-//  for (i = 0; i <= buddy->order; i++) {
-//    print_list(i,buddy);
-//  }
-}

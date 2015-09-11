@@ -62,6 +62,9 @@ int main() {
 	struct verify_login test_login={{"HuJun","openstack"},"0x20",""};
 	char buffer[512];
 	char text[512];
+	char * json_string = "{\"login_info\":{\"user\":\"HuJun\","
+		"\"passwd\":\"openstack\"},\"nonce_len\":\"0x20\","
+		"\"nonce\":\"AAAAAAAABBBBBBBBCCCCCCCCDDDDEEFG\"}";
 	int ret;
 	struct verify_login * recover_struct;
 	int stroffset=0;
@@ -83,6 +86,9 @@ int main() {
 //	ret=blob_2_text(buffer,text,struct_template);	
 //	ret=text_2_blob(buffer,text,struct_template);	
 	ret=blob_2_struct(buffer,recover_struct,struct_template);
+	
+	void * root;
+	ret=json_solve_str(&root,json_string);
     	free_struct_template(struct_template);
 	Cfree(recover_struct);
   	Tmemdestroy();

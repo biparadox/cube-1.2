@@ -35,9 +35,9 @@ void test001() {
   
   printf("free count %d!\n",freecount);
 
-  Gfree0(p2);
-  Gfree0(p3);
-  Gfree0(p1);
+  Free0(p2);
+  Free0(p3);
+  Free0(p1);
 }
 void test003() {
   void * p1, * p2, * p3;
@@ -50,19 +50,16 @@ void test003() {
   
   printf("free count %d!\n",freecount);
 
-  Tfree(p2);
-  Tfree(p3);
-  Tfree(p1);
+  Free(p2);
+  Free(p3);
+  Free(p1);
 }
 
 int main() {
 
-  Gmeminit();
-  Tmeminit();
+  mem_init();
   test001();
   test003();
   Tclear();
-  Tmemdestroy();
-  Gmemdestroy();
   return 0;
 }

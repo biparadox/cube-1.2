@@ -1,22 +1,4 @@
-#ifdef KERNEL_MODE
-
-#include <linux/string.h>
-#include <linux/list.h>
-#include <linux/slab.h>
-#include <linux/errno.h>
-
-#else
-
-#include<stdlib.h>
-#include<stdio.h>
-#include<string.h>
-#include<errno.h>
-#include<time.h>
-//#include "../include/kernel_comp.h"
-//#include "../include/list.h"
-
-#endif
-
+#include "../include/errno.h"
 #include "../include/data_type.h"
 #include "../include/alloc.h"
 #include "../include/struct_deal.h"
@@ -28,12 +10,36 @@ static inline int elem_alloc(void ** pointer,int size)
 {
 	if(Tisinmem(pointer))
 	{
-		pointer=Talloc(size);
+		*pointer=Talloc(size);
 		if(pointer==NULL)
 			return -ENOMEM;
 		return 0;
 	}
 	return Galloc(pointer,size);
+}
+
+int dup_str(char ** dest,char * src, int size)
+{
+	int len;
+	int ret;
+	*dest=NULL;
+	if(src==NULL)
+		return 0;
+	if(size == 0)
+	{
+		len=strlen(src)+1;
+	}
+	else
+	{
+		len=strnlen(src,size);
+		if(len!=size)
+			len++;
+	}
+	ret=elem_alloc(dest,len);
+	if(ret<0)
+		return ret;
+	memcpy(*dest,src,len);
+	return len;			
 }
 
 int string_elem_2_blob(void * addr, void * elem_data,  void * elem_attr);

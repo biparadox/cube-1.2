@@ -19,43 +19,41 @@
  * Author: Tianfu Ma (matianfu@gmail.com)
  */
 
-#include <stdlib.h>
+#include "../include/errno.h"
+#include "../include/data_type.h"
 #include "../include/alloc.h"
 #include "buddy.h"
 
-static buddy_t t_buddy;
-const int t_order=12;
-
+//static buddy_t t_buddy;
+//const int t_order=12;
+/*
 int Tmeminit()
 {
 	return buddy_init(&t_buddy,t_order);
 }
+*/
 void * Talloc(int size)
 {
-	return (void *)bmalloc(size,&t_buddy);
-}
-void Tfree(void * pointer)
-{
-	bfree(pointer,&t_buddy);
+	return (void *)bmalloc(size,T_mem_struct);
 }
 void Treset()
 {
-	buddy_reset(&t_buddy);
+	buddy_reset(T_mem_struct);
 }
 void Tclear()
 {
-	buddy_clear(&t_buddy);
+	buddy_clear(T_mem_struct);
 }
 
 void Tmemdestroy()
 {
-	buddy_destroy(&t_buddy);
+	buddy_destroy(T_mem_struct);
 }
 int Tgetfreecount()
 {
-	return total_free(&t_buddy);
+	return total_free(T_mem_struct);
 }
 int Tisinmem(void * pointer)
 {
-	return ispointerinbuddy(pointer,&t_buddy);
+	return ispointerinbuddy(pointer,T_mem_struct);
 }

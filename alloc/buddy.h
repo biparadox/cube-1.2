@@ -29,8 +29,9 @@
  * Definitions
  *
  ******************************************************************************/
-#define MAX_ORDER       26   // 2 ** 26 == 64M bytes
+#define MAX_ORDER       20   // 2 ** 26 == 64M bytes
 #define MIN_ORDER       4   // 2 ** 4 == 16 bytes
+#define PAGE_SIZE       4096
 
 typedef struct buddy {
   int order;
@@ -38,6 +39,10 @@ typedef struct buddy {
   void ** freelist;  // one more slot for first block in pool
   uint8_t * pool;
 } buddy_t;
+
+void * T_mem_struct;
+void * G_mem_struct;
+void * C_mem_struct;
 
 #define BLOCKSIZE(i)    (1 << (i))
 
@@ -61,14 +66,13 @@ static inline void * buddyof(void * b, int i,buddy_t * buddy)
  *
  ******************************************************************************/
 
-
 void * bmalloc(int size, buddy_t * buddy);
 void * bmalloc0(int size, buddy_t * buddy);
 void bfree(void * block,buddy_t * buddy);
 void bfree0(void * block,buddy_t * buddy);
 
 
-int buddy_init(buddy_t * buddy, int order);
+void * buddy_init(int order);
 void buddy_clear(buddy_t * buddy);
 void buddy_reset(buddy_t * buddy);
 void buddy_destroy(buddy_t * buddy);

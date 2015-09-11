@@ -13,30 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * File: main.c
+ * File: buddy.c
  *
  * Created on: Jun 5, 2015
- * Author: Hu jun (algorist@bjut.edu.cn)
+ * Author: Tianfu Ma (matianfu@gmail.com)
  */
 
 #include "../include/errno.h"
 #include "../include/data_type.h"
-#include "../include/alloc.h"
-#include "buddy.h"
+#include "../include/memory.h"
 
-void *  Calloc(int size)
+void * Memcpy(void * dest,void * src, unsigned int count)
 {
-	return bmalloc(size,C_mem_struct);
+	if(dest == src)
+		return src;
+	char * d=(char *)dest;
+	char * s=(char *)src;
+	while(count-->0)
+		*d++=*s++;
+	return dest;
 }
-void *  Calloc0(int size)
+
+void * Memset(void * s,int c, int n)
 {
-	return bmalloc0(size,C_mem_struct);
-}
-void Cmemdestroy()
-{
-	buddy_destroy(C_mem_struct);
-}
-int Cgetfreecount()
-{
-	return total_free(C_mem_struct);
+	const unsigned char uc=c;
+	unsigned char * su;
+	for(su=s;n>0;++su,--n)
+		*su=uc;
+	return s;
 }

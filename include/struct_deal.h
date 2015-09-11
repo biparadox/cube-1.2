@@ -53,6 +53,18 @@ enum os210_struct_elem_attr
 	OS210_ELEM_FLAG_DESC=0x10,
 };
 
+enum json_elem_type
+{
+    JSON_ELEM_INIT,
+    JSON_ELEM_NUM,
+    JSON_ELEM_STRING,
+    JSON_ELEM_BOOL,
+    JSON_ELEM_MAP,
+    JSON_ELEM_ARRAY,
+    JSON_ELEM_VALUE,
+    JSON_ELEM_NULL
+};
+// pointer stack function
 struct struct_elem_attr
 {
 	char * name;
@@ -111,7 +123,7 @@ int struct_read_elem_text(char * name, void * addr, char * text, void * struct_t
 int struct_write_elem_text(char * name, void * addr, char * string, void * struct_template);
 void * get_desc_from_template(void * struct_template);
 
-void * dup_str(char * src, int size);
+int dup_str(char ** dest,char * src, int size);
 void * clone_struct(void * addr, void * struct_template);
 void * struct_get_elem_attr(char * name, void * struct_template);
 int struct_set_elem_var(char * name, void * attr, void * struct_template);
