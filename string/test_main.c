@@ -13,32 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * File: buddy.c
+ * File: main.c
  *
  * Created on: Jun 5, 2015
  * Author: Tianfu Ma (matianfu@gmail.com)
  */
 
-#include "../include/errno.h"
+#include <stdio.h>
 #include "../include/data_type.h"
 #include "../include/string.h"
 
-void * Memcpy(void * dest,void * src, unsigned int count)
-{
-	if(dest == src)
-		return src;
-	char * d=(char *)dest;
-	char * s=(char *)src;
-	while(count-->0)
-		*d++=*s++;
-	return dest;
-}
+int main() {
 
-void * Memset(void * s,int c, int n)
-{
-	const unsigned char uc=c;
-	unsigned char * su;
-	for(su=s;n>0;++su,--n)
-		*su=uc;
-	return s;
+//	struct connect_login test_login={"HuJun","openstack"};
+	char * src="hello,world!";
+	char buffer[20];
+	Memset(buffer,0,20);
+	Memcpy(buffer,src,9);
+	printf("\n%s\n",buffer);
+
+	return 0;
 }

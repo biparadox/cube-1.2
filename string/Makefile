@@ -5,13 +5,13 @@ LD=ld
 CCP=g++
 STRUCTOBJ= memfunc.o 
 
-main: ../lib/libmem.a  test_main
-test_main: test_main.c ../lib/libmem.a 
-	$(CC) $(FLAGS) test_main test_main.c -L../lib -lmem  
-../lib/libmem.a: $(STRUCTOBJ)
-	ar rs libmem.a $(STRUCTOBJ)
-	mv    libmem.a ../lib
-memfunc.o:  memfunc.c ../include/memory.h
+main: ../lib/libstring.a  test_main
+test_main: test_main.c ../lib/libstring.a 
+	$(CC) $(FLAGS) test_main test_main.c -L../lib -lstring  
+../lib/libstring.a: $(STRUCTOBJ)
+	ar rs libstring.a $(STRUCTOBJ)
+	mv    libstring.a ../lib
+memfunc.o:  memfunc.c ../include/string.h
 	$(CC) $(CFLAGS) memfunc.c
 clean:
-	rm -f test_main *~ *.a *.o ../lib/libmem.a
+	rm -f test_main *~ *.a *.o ../lib/libstring.a

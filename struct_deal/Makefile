@@ -7,7 +7,7 @@ STRUCTOBJ= struct_ops.o struct_deal.o struct_json.o
 
 main: ../lib/libstruct.a  test_main
 test_main: test_main.c ../lib/libstruct.a 
-	$(CC) $(FLAGS) test_main test_main.c -L../lib -lstruct -lalloc  
+	$(CC) $(FLAGS) test_main test_main.c -L../lib -lstruct -lalloc -lstring 
 ../lib/libstruct.a: $(STRUCTOBJ)
 	ar rs libstruct.a $(STRUCTOBJ)
 	mv    libstruct.a ../lib

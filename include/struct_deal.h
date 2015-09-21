@@ -83,21 +83,16 @@ typedef struct tagnameofvalue
 typedef struct elem_convert_ops
 {
 	int (*elem_size)(void * elem_attr);
-	int (*elem_alloc_size)(void * value,void * elem_attr);
+	int (*elem_get_length)(void * value,void * elem_attr);
 	int (*clone_elem)(void * elem,void * clone,void * elem_attr);
-	int (*get_value)(void * elem,void * elem_attr);
-	int(*elem_2_blob)(void * elem,void * addr,void * elem_attr);
-	int(*blob_2_elem)(void * elem,void * addr,void * elem_attr);
-	int(*blob_2_text)(void * blob,char * text,void * struct_template, int * stroffset);
-	int(*text_2_blob)(char * text,void * blob,void * struct_template, int * stroffset);
+	int (*get_bin_value)(void * elem,void * addr,void * elem_attr);
+	int(*set_bin_value)(void * elem,void * addr,void * elem_attr);
+	int(*get_text_value)(void * elem,char * text,void * elem_attr);
+	int(*set_text_value)(void * elem,char * text,void * elem_attr);
+	int(*get_int_value)(void * elem,void * elem_attr);
 	int(*comp_elem)(void * elem,void * tag,void * struct_template);
 	int(*comp_elem_text)(void * elem,char * str,void * struct_template);
-	int(*read_elem)(void * elem,void * elem_data,void * struct_template);
-	int(*write_elem)(void * elem,void * elem_data,void * struct_template);
-	int(*read_elem_text)(void * elem,char * text,void * struct_template);
-	int(*write_elem_text)(void * elem,char * text,void * struct_template);
 }ELEM_OPS;
-
 
 int struct_deal_init();
 
@@ -105,15 +100,16 @@ int struct_deal_init();
 
 void * create_struct_template(struct struct_elem_attr * struct_desc);
 void free_struct_template(void * struct_template);
-int free_struct(void * addr, void * struct_template);
-int alloc_struct(void ** addr, void * struct_template);
+int struct_free(void * addr, void * struct_template);
+int struct_free_alloc(void * addr, void * struct_template);
+int struct_size(void * struct_template);
 
 
 int struct_2_blob(void * addr, void * blob, void * struct_template);
 int struct_2_part_blob(void * addr, void * blob, void * struct_template, char * name_list);
 int blob_2_struct(void * blob, void * addr, void * struct_template);
-int blob_2_text(void * blob, char * string, void * struct_template, int * stroffset);
-int text_2_blob(char * string, void * blob, void * struct_template, int * stroffset);
+int struct_2_text(void * blob, char * string, void * struct_template);
+int text_2_struct(char * string, void * blob, void * struct_template);
 
 int struct_comp_elem(char * name, void * src, void * dest, void * struct_template);
 int struct_comp_elem_text(char * name, void * addr, char * text, void * struct_template);
@@ -128,16 +124,17 @@ void * clone_struct(void * addr, void * struct_template);
 void * struct_get_elem_attr(char * name, void * struct_template);
 int struct_set_elem_var(char * name, void * attr, void * struct_template);
 
-int struct_2_json(void * addr, char * json_str, void * template, int * stroffset);
+int struct_2_json(void * addr, char * json_str, void * template);
 int json_2_struct(void * root, void * addr, void * struct_template);
 void * find_json_elem(char * name, void * root);
 void * get_first_json_child(void * father);
 void * get_next_json_child(void * father);
+void * get_json_father(void * child);
 int get_json_value_from_node(void * node, char * value, int max_len);
 int get_json_name_from_node(void * node, char * name);
 
 int json_solve_str(void ** root, char *str);
 int json_get_type(void * node);
+char * json_get_valuestr(void * node);
 void * read_elem_addr(char * name, void * template);
-void * Memcpy(void * dest, void * src, unsigned int count);
 #endif

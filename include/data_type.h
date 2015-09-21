@@ -9,7 +9,7 @@
 *************************************************/
 #ifndef _OS210_DATA_TYPE_H
 #define _OS210_DATA_TYPE_H
-#define NULL 0
+//#define NULL 0
 //#ifndef TSS_PLATFORM_H
 typedef unsigned char         BYTE;
 typedef unsigned short int  UINT16;

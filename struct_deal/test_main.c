@@ -62,37 +62,38 @@ int main() {
 	struct verify_login test_login={{"HuJun","openstack"},"0x20",""};
 	char buffer[512];
 	char text[512];
-	char * json_string = "{\"login_info\":{\"user\":\"HuJun\","
-		"\"passwd\":\"openstack\"},\"nonce_len\":\"0x20\","
-		"\"nonce\":\"AAAAAAAABBBBBBBBCCCCCCCCDDDDEEFG\"}";
+	char text1[512];
+	void * root;
+//	char * json_string = "{\"login_info\":{\"user\":\"HuJun\","
+//		"\"passwd\":\"openstack\"},\"nonce_len\":\"0x20\","
+//		"\"nonce\":\"AAAAAAAABBBBBBBBCCCCCCCCDDDDEEFG\"}";
 	int ret;
 	struct verify_login * recover_struct;
-	int stroffset=0;
 
-  	Gmeminit();
-  	Cmeminit();
-	Tmeminit();
+  	mem_init();
 	test_login.nonce=Talloc(0x20);
 	memset(test_login.nonce,'A',0x20);
 
 	struct_deal_init();
 
-	recover_struct=Calloc(sizeof(struct verify_login));
+//	recover_struct=Calloc(sizeof(struct verify_login));
     	void * struct_template=create_struct_template(verify_login_desc);
+	recover_struct=Calloc(struct_size(struct_template));
 	ret=struct_2_blob(&test_login,buffer,struct_template);	
 	ret=struct_read_elem("login_info.passwd",&test_login,text,struct_template);
-	ret=blob_2_text(buffer,text,struct_template,&stroffset);
+	ret=blob_2_struct(buffer,&test_login,struct_template);	
+	ret=struct_2_json(&test_login,text,struct_template);
 	printf("%s\n",text);
+	ret=json_solve_str(&root,text);
+	ret=json_2_struct(root,recover_struct,struct_template);
+	ret=struct_2_json(recover_struct,text1,struct_template);
+	printf("%s\n",text1);
+//	ret=text_2_struct(text,&test_login,struct_template);
 //	ret=blob_2_text(buffer,text,struct_template);	
 //	ret=text_2_blob(buffer,text,struct_template);	
 	ret=blob_2_struct(buffer,recover_struct,struct_template);
 	
-	void * root;
-	ret=json_solve_str(&root,json_string);
     	free_struct_template(struct_template);
-	Cfree(recover_struct);
-  	Tmemdestroy();
- 	Gmemdestroy();
- 	Cmemdestroy();
+	struct_free_alloc(recover_struct,struct_template);
 	return 0;
 }

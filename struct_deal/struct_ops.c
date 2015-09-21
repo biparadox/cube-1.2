@@ -1,6 +1,8 @@
+#include <string.h>
 #include "../include/errno.h"
 #include "../include/data_type.h"
 #include "../include/alloc.h"
+//#include "../include/string.h"
 #include "../include/struct_deal.h"
 #include "struct_ops.h"
 
@@ -24,25 +26,25 @@ int dup_str(char ** dest,char * src, int size)
 		if(len!=size)
 			len++;
 	}
-	ret=Palloc(dest,len);
+	ret=Palloc((void **)dest,len);
 	if(ret<0)
 		return ret;
 	memcpy(*dest,src,len);
 	return len;			
 }
 
-int string_elem_2_blob(void * addr, void * elem_data,  void * elem_attr);
-int string_blob_2_elem(void * addr, void * elem_data,  void * elem_attr);
+int string_get_bin_value(void * addr, void * elem_data,  void * elem_attr);
+int string_set_bin_value(void * addr, void * elem_data,  void * elem_attr);
 
-int estring_elem_2_blob(void * addr, void * elem_data,  void * elem_attr);
-int estring_blob_2_elem(void * addr, void * elem_data,  void * elem_attr);
+int estring_get_bin_value(void * addr, void * elem_data,  void * elem_attr);
+int estring_set_bin_value(void * addr, void * elem_data,  void * elem_attr);
 
 
-int estring_alloc_size(void * value,void * elem_attr);
+int estring_get_length(void * value,void * elem_attr);
 
 //}
 
-int estring_elem_2_blob(void * addr,void * elem_data,void * elem_template){
+int estring_get_bin_value(void * addr,void * elem_data,void * elem_template){
 	struct elem_template * elem_attr=elem_template;
 	struct struct_elem_attr * elem_desc = elem_attr->elem_desc;
 
@@ -68,7 +70,7 @@ int estring_elem_2_blob(void * addr,void * elem_data,void * elem_template){
 		return retval;
 }
 
-int estring_alloc_size (void * value,void * attr)
+int estring_get_length (void * value,void * attr)
 {
 
 	struct elem_template * elem_attr=attr;
@@ -79,17 +81,16 @@ int estring_alloc_size (void * value,void * attr)
 		retval = -EINVAL;
 	retval++;
 	return retval;
-	
 }
 
 
-int estring_blob_2_elem(void * addr, void * elem_data, void * elem_template){
+int estring_set_bin_value(void * addr, void * elem_data, void * elem_template){
 
 	struct elem_template * elem_attr=elem_template;
 	struct struct_elem_attr * elem_desc = elem_attr->elem_desc;
 	int retval;
 	char * estring;
-	retval = estring_alloc_size(elem_data,elem_template);
+	retval = estring_get_length(elem_data,elem_template);
 	if (retval<0)
 		return retval;
 	int ret = Palloc(addr,retval);
@@ -100,18 +101,18 @@ int estring_blob_2_elem(void * addr, void * elem_data, void * elem_template){
 	return retval;
 
 }
-int estring_blob_2_text(void * blob, char * text, void * elem_template,int *stroffset){
+int estring_get_text_value(void * addr, char * text, void * elem_template){
 
+	char * blob = *(char **)addr;
 	struct elem_template * elem_attr=elem_template;
 	struct struct_elem_attr * elem_desc = elem_attr->elem_desc;
 	int retval;
 	retval=strlen(blob)+1;
-	memcpy(text+*stroffset,blob,retval);
-	*stroffset+=retval;
+	memcpy(text,blob,retval);
 	return retval;
 }
 
-int define_elem_2_blob(void * addr,void * elem_data,void * elem_template){
+int define_get_bin_value(void * addr,void * elem_data,void * elem_template){
 	struct elem_template * curr_elem=elem_template;
 	struct struct_elem_attr * elem_desc = curr_elem->elem_desc;
 
@@ -131,7 +132,7 @@ int define_elem_2_blob(void * addr,void * elem_data,void * elem_template){
 	elem_ops=struct_deal_ops[temp_elem->elem_desc->type];
 	if(elem_ops==NULL)
 		return -EINVAL;
-	def_value=elem_ops->get_value(addr-(curr_elem->offset-def_offset),temp_elem);
+	def_value=elem_ops->get_int_value(addr-(curr_elem->offset-def_offset),temp_elem);
 	
 	if(def_value==0)
 		return 0;
@@ -150,7 +151,7 @@ int define_elem_2_blob(void * addr,void * elem_data,void * elem_template){
 	return retval;
 }
 
-int define_blob_2_elem(void * elem,void * addr,void * elem_template){
+int define_set_bin_value(void * elem,void * addr,void * elem_template){
 	struct elem_template * curr_elem=elem_template;
 	struct struct_elem_attr * elem_desc = curr_elem->elem_desc;
 
@@ -184,7 +185,8 @@ int define_blob_2_elem(void * elem,void * addr,void * elem_template){
 	return def_value;
 }
 
-int define_blob_2_text(void * blob,char * text,void * elem_template,int * stroffset){
+int define_get_text_value(void * addr,char * text,void * elem_template){
+	char * blob = *(char **)addr;
 	struct elem_template * curr_elem=elem_template;
 	struct struct_elem_attr * elem_desc = curr_elem->elem_desc;
 
@@ -200,8 +202,7 @@ int define_blob_2_text(void * blob,char * text,void * elem_template,int * stroff
 	
 	if(def_value==0)
 		return 0;
-	memcpy(text+*stroffset,blob,def_value);
-	*stroffset+=def_value;
+	memcpy(text,blob,def_value);
 	return def_value;
 }
 static inline int _isdigit(char c)
@@ -294,11 +295,11 @@ int get_int_value(void * addr,void * elem_attr)
 
 ELEM_OPS string_convert_ops =
 {
-	.get_value=get_string_value,
+	.get_int_value=get_string_value,
 };
 ELEM_OPS int_convert_ops =
 {
-	.get_value=get_int_value,
+	.get_int_value=get_int_value,
 };
 ELEM_OPS bindata_convert_ops =
 {
@@ -307,15 +308,17 @@ ELEM_OPS bindata_convert_ops =
 
 ELEM_OPS estring_convert_ops =
 {
-	.elem_2_blob = estring_elem_2_blob,
-	.blob_2_elem = estring_blob_2_elem,
-	.blob_2_text = estring_blob_2_text,
-	.elem_alloc_size = estring_alloc_size,
+	.get_bin_value = estring_get_bin_value,
+	.set_bin_value = estring_set_bin_value,
+	.get_text_value = estring_get_text_value,
+//	.set_text_value = estring_set_text_value,
+	.elem_get_length = estring_get_length,
 };
 ELEM_OPS define_convert_ops =
 {
-	.elem_2_blob = define_elem_2_blob,
-	.blob_2_elem = define_blob_2_elem,
-	.blob_2_text = define_blob_2_text,
+	.get_bin_value = define_get_bin_value,
+	.set_bin_value = define_set_bin_value,
+	.get_text_value = define_get_text_value,
+//	.set_text_value = define_set_text_value,
 //	.elem_alloc_size = estring_alloc_size,
 };

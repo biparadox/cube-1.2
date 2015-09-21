@@ -7,7 +7,7 @@ STRUCTOBJ= alloc_init.o buddy.o talloc.o galloc.o calloc.o
 
 main: ../lib/liballoc.a  test_main
 test_main: test_main.c ../lib/liballoc.a 
-	$(CC) $(FLAGS) test_main test_main.c -L../lib -lalloc  -lmem 
+	$(CC) $(FLAGS) test_main test_main.c -L../lib -lalloc  -lstring 
 ../lib/liballoc.a: $(STRUCTOBJ)
 	ar rs liballoc.a $(STRUCTOBJ)
 	mv    liballoc.a ../lib
