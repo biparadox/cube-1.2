@@ -6,8 +6,8 @@
 *	date:    	2008-05-09
 *	Author:    	Hu jun
 *************************************************/
-#ifndef  STRUCT_DEAL_H
-#define  STRUCT_DEAL_H
+#ifndef  _CUBE_STRUCT_DEAL_H
+#define  _CUBE_STRUCT_DEAL_H
 enum os210_struct_elem_type   // describe types could be used in the struct
 {
 	OS210_TYPE_STRING,   // an string with fixed size
@@ -23,6 +23,7 @@ enum os210_struct_elem_type   // describe types could be used in the struct
 	OS210_TYPE_BITMAP,   // a sequence of octets with fixed size(just like BINDATA),but we use eight bin string (like 01001010) to show them	 
 	OS210_TYPE_HEXDATA,   // a sequence of octets with fixed size(just like BINDATA),but we use 2 hex string (like ce) to show them	 
 	OS210_TYPE_BINARRAY,   // an array of sequence of octets with fixed size, attr is the sequence's size, size is array's length	 
+	OS210_TYPE_UUIDARRAY,   // an array of sequence of octets with fixed size, attr is the sequence's size, size is array's length	 
 	OS210_TYPE_VSTRING,  // a string with its first 2 octets describe string's length(exclude the first two octets)
 	OS210_TYPE_ESTRING,  // a variable length string ended with '\0'
 	OS210_TYPE_JSONSTRING,  // a variable length string encluded in "{}", "[]" or "\"\"" or "\'\'", it is only special in struct_json, other times,
@@ -74,11 +75,20 @@ struct struct_elem_attr
 	int  attr;
 };
 
+
+
+
 typedef struct tagnameofvalue
 {
 	char * name;
 	int value;
 }NAME2VALUE;
+
+typedef struct tagnameofpointer
+{
+	char * name;
+	void * pointer;
+}NAME2POINTER;
 
 typedef struct elem_convert_ops
 {
@@ -135,6 +145,7 @@ int get_json_name_from_node(void * node, char * name);
 
 int json_solve_str(void ** root, char *str);
 int json_get_type(void * node);
+int json_get_elemno(void * node);
 char * json_get_valuestr(void * node);
 void * read_elem_addr(char * name, void * template);
 #endif

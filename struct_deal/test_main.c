@@ -93,7 +93,7 @@ int main() {
 //	ret=text_2_blob(buffer,text,struct_template);	
 	ret=blob_2_struct(buffer,recover_struct,struct_template);
 	
-    	free_struct_template(struct_template);
 	struct_free_alloc(recover_struct,struct_template);
+    	free_struct_template(struct_template);
 	return 0;
 }

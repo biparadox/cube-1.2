@@ -81,6 +81,13 @@ char * json_get_valuestr(void * node)
     return json_node->value_str;
 }
 
+int json_get_elemno(void * node)
+{
+    if(node==NULL)
+		return -EINVAL;
+    JSON_NODE * json_node = (JSON_NODE *)node;
+    return json_node->elem_no;
+}
 
 Record_List * get_new_Record_List(void * record)
 {

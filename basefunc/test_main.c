@@ -1,0 +1,54 @@
+/**
+ * Copyright [2015] Tianfu Ma (matianfu@gmail.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * File: main.c
+ *
+ * Created on: Jun 5, 2015
+ * Author: Tianfu Ma (matianfu@gmail.com)
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "../include/data_type.h"
+#include "../include/list.h"
+#include "../include/alloc.h"
+#include "../include/string.h"
+#include "../include/basefunc.h"
+#include "../include/struct_deal.h"
+#include "../include/crypto_func.h"
+
+
+int main() {
+
+  UUID_HEAD * test_uuid;
+  UUID_HEAD * test_uuid1;
+
+  BYTE digest[DIGEST_SIZE];
+  int ret;
+
+  void * hash_head;
+  mem_init();
+
+  test_uuid=Calloc(sizeof(UUID_HEAD));
+  memset(test_uuid->uuid,'A',DIGEST_SIZE);  
+
+  hash_head=init_hash_list(8,0,0);
+	
+  ret=hashlist_add_elem(hash_head,test_uuid);	
+  
+
+  Tclear();
+  return 0;
+}

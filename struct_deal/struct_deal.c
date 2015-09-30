@@ -388,10 +388,10 @@ void free_struct_template(void * struct_template)
 	do{
 		if(curr_node->temp_var == curr_node->elem_no)
 		{
+			if(curr_node==root_node)
+				break;
 			temp_node=curr_node;
 			curr_node=curr_node->parent;
-			if(curr_node==NULL)
-				break;
 			if(temp_node->elem_list!=NULL)
 				Free(temp_node->elem_list);
 			if(temp_node!=root_node)
@@ -449,10 +449,10 @@ int struct_free_alloc(void * addr,void * struct_template)
 		// throughout the node tree: back
 		if(curr_node->temp_var == curr_node->elem_no)
 		{
+			if(curr_node==root_node)
+				break;
 			temp_node=curr_node;
 			curr_node=curr_node->parent;
-			if(curr_node==NULL)
-				break;
 			continue;
 		}
 		curr_elem=&curr_node->elem_list[curr_node->temp_var];
@@ -494,10 +494,10 @@ int struct_2_blob(void * addr, void * blob, void * struct_template)
 		// throughout the node tree: back
 		if(curr_node->temp_var == curr_node->elem_no)
 		{
+			if(curr_node==root_node)
+				break;
 			temp_node=curr_node;
 			curr_node=curr_node->parent;
-			if(curr_node==NULL)
-				break;
 			curr_desc=curr_node->struct_desc;
 			continue;
 		}
@@ -552,10 +552,10 @@ int blob_2_struct(void * blob, void * addr, void * struct_template)
 		// throughout the node tree: back
 		if(curr_node->temp_var == curr_node->elem_no)
 		{
+			if(curr_node==root_node)
+				break;
 			temp_node=curr_node;
 			curr_node=curr_node->parent;
-			if(curr_node==NULL)
-				break;
 			curr_desc=curr_node->struct_desc;
 			continue;
 		}
@@ -622,10 +622,10 @@ int struct_2_text(void * addr, char * text, void * struct_template)
 		// throughout the node tree: back
 		if(curr_node->temp_var == curr_node->elem_no)
 		{
+			if(curr_node==root_node)
+				break;
 			temp_node=curr_node;
 			curr_node=curr_node->parent;
-			if(curr_node==NULL)
-				break;
 			curr_desc=curr_node->struct_desc;
 			continue;
 		}
@@ -704,10 +704,10 @@ int text_2_struct(char * text, void * addr, void * struct_template)
 		// throughout the node tree: back
 		if(curr_node->temp_var == curr_node->elem_no)
 		{
+			if(curr_node==root_node)
+				break;
 			temp_node=curr_node;
 			curr_node=curr_node->parent;
-			if(curr_node==NULL)
-				break;
 			curr_desc=curr_node->struct_desc;
 			continue;
 		}
@@ -900,14 +900,14 @@ int struct_2_json(void * addr, char * json_str, void * struct_template)
 		// throughout the node tree: back
 		if(curr_node->temp_var == curr_node->elem_no)
 		{
-			temp_node=curr_node;
-			curr_node=curr_node->parent;
 			*(json_str+str_offset)='}';
 			str_offset++;	
-			if(curr_node==NULL)
-				break;
 			*(json_str+str_offset)=',';
 			str_offset++;	
+			if(curr_node==root_node)
+				break;
+			temp_node=curr_node;
+			curr_node=curr_node->parent;
 			curr_desc=curr_node->struct_desc;
 
 			continue;
@@ -978,7 +978,7 @@ int struct_2_json(void * addr, char * json_str, void * struct_template)
 		str_offset+=str_len+1;
 		curr_node->temp_var++;
 	}while(1);
-	*(json_str+str_offset)=0;
+	*(json_str+str_offset-1)=0;
 	return str_offset;
 }
 
@@ -1010,10 +1010,10 @@ int json_2_struct(void * root,void * addr,void * struct_template)
 		// throughout the node tree: back
 		if(curr_node->temp_var == curr_node->elem_no)
 		{
+			if(curr_node==root_node)
+				break;
 			temp_node=curr_node;
 			curr_node=curr_node->parent;
-			if(curr_node==NULL)
-				break;
 			curr_json_node=get_json_father(curr_json_node);
 			curr_desc=curr_node->struct_desc;
 			continue;

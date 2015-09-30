@@ -26,12 +26,6 @@ typedef unsigned int         DWORD;
 
 #define DIGEST_SIZE	32
 
-typedef struct tagVar_String
-{
-    UINT32 length;   //´®³¤¶È
-    BYTE *  String;	  //´®ÄÚÈÝ
-} __attribute__((packed)) V_String;  
-
 #define IS_ERR(ptr) (ptr-4096 <0)
 
 #ifdef OS210_DEBUG
