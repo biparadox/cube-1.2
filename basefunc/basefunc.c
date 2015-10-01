@@ -56,14 +56,6 @@ inline int get_hash_subindex(char * uuid)
 	return uuid[0]>>(8-subdb_order);
 }
 #endif
-/*
-typedef struct uuid_head
-{
-	BYTE  uuid[DIGEST_SIZE];	
-	int    type;
-	int subtype;
-} __attribute__((packed)) UUID_HEAD;
-*/
 
 struct uuid_elem_desc
 {
@@ -76,6 +68,7 @@ typedef struct taguuid_hashlist
 	int hash_num;
 	void * desc;
 	Record_List * hash_table;
+	int curr_index;
 	struct list_head * curr_head;
 }UUID_LIST;
 
@@ -95,6 +88,7 @@ void * init_hash_list(int order,int type,int subtype)
 		return -ENOMEM;
 	hash_head->hash_num=1<<order;
 	hash_head->desc=NULL;
+	hash_head->curr_index=0;
 	ret=Galloc(&hash_head->hash_table,sizeof(Record_List)*hash_head->hash_num);
 	if(ret<0)
 		return -ENOMEM;
@@ -183,6 +177,28 @@ void * hashlist_find_elem(void * hashlist,void * elem)
 		return NULL;
 	return curr_elem->record;
 } 
+
+Record_List  * _hashlist_remove_elem(void * hashlist,void * elem)
+{
+	Record_List * curr_elem;
+	curr_elem=_hashlist_find_elem(hashlist,elem);
+	if(curr_elem==NULL)
+		return NULL;
+	list_del(curr_elem);
+	return curr_elem;		
+}
+
+void * hashlist_remove_elem(void * hashlist,void * elem)
+{
+	Record_List * curr_elem;
+	void * temp;
+	curr_elem=_hashlist_remove_elem(hashlist,elem);
+	if(curr_elem==NULL)
+		return curr_elem;
+	temp=curr_elem->record;
+	Free(curr_elem);
+	return temp;	
+}
 
 typedef struct tagpointer_stack
 {

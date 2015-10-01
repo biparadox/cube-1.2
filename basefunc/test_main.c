@@ -48,6 +48,11 @@ int main() {
 	
   ret=hashlist_add_elem(hash_head,test_uuid);	
   
+  memset(digest,'A',DIGEST_SIZE);
+  test_uuid1=hashlist_find_elem(hash_head,digest);
+
+  test_uuid=hashlist_remove_elem(hash_head,digest);	
+  test_uuid1=hashlist_find_elem(hash_head,digest);
 
   Tclear();
   return 0;
