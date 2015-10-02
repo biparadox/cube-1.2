@@ -200,6 +200,50 @@ void * hashlist_remove_elem(void * hashlist,void * elem)
 	return temp;	
 }
 
+void * hashlist_get_first(void * hashlist)
+{
+	UUID_LIST * uuid_list = hashlist;
+	Record_List * temp=NULL;
+	int i;
+	for(i=0;i<uuid_list->hash_num;i++)
+	{
+		temp=(Record_List *)(uuid_list->hash_table[i].list.next);
+		if(temp==&uuid_list->hash_table[i])
+			continue;
+		uuid_list->curr_index=i;
+		uuid_list->curr_head=temp;
+		return temp->record;
+	}
+	uuid_list->curr_index=0;
+	uuid_list->curr_head=NULL;
+	return NULL;
+}
+
+void * hashlist_get_next(void * hashlist)
+{
+	UUID_LIST * uuid_list = hashlist;
+	Record_List * temp=NULL;
+	int i;
+	if(uuid_list->curr_head==NULL)
+		return NULL;
+	temp=uuid_list->curr_head;
+	for(i=uuid_list->curr_index;i<uuid_list->hash_num;i++)
+	{
+		temp=(Record_List *)(temp->list.next);
+		if(temp==&uuid_list->hash_table[i])
+		{
+			temp=&uuid_list->hash_table[i+1];
+			continue;
+		}
+		uuid_list->curr_index=i;
+		uuid_list->curr_head=temp;
+		return temp->record;
+	}
+	uuid_list->curr_index=0;
+	uuid_list->curr_head=NULL;
+	return NULL;
+}
+
 typedef struct tagpointer_stack
 {
 	void ** top;

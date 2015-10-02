@@ -21,6 +21,10 @@ typedef struct uuid_head
 
 void * init_hash_list(int order,int type,int subtype);
 int  hashlist_add_elem(void * hashlist,void * elem);
+void * hashlist_find_elem(void * hashlist,void * elem);
+void * hashlist_remove_elem(void * hashlist,void * elem);
+void * hashlist_get_first(void * hashlist);
+void * hashlist_get_next(void * hashlist);
 
 
 #endif

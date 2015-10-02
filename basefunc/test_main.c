@@ -51,6 +51,9 @@ int main() {
   memset(digest,'A',DIGEST_SIZE);
   test_uuid1=hashlist_find_elem(hash_head,digest);
 
+  test_uuid=hashlist_get_first(hash_head);
+  test_uuid1=hashlist_get_next(hash_head);
+
   test_uuid=hashlist_remove_elem(hash_head,digest);	
   test_uuid1=hashlist_find_elem(hash_head,digest);
 
