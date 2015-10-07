@@ -133,19 +133,25 @@ int dup_str(char ** dest,char * src, int size);
 void * clone_struct(void * addr, void * struct_template);
 void * struct_get_elem_attr(char * name, void * struct_template);
 int struct_set_elem_var(char * name, void * attr, void * struct_template);
+void * read_elem_addr(char * name, void * template);
 
 int struct_2_json(void * addr, char * json_str, void * template);
 int json_2_struct(void * root, void * addr, void * struct_template);
+
 void * find_json_elem(char * name, void * root);
 void * get_first_json_child(void * father);
 void * get_next_json_child(void * father);
 void * get_json_father(void * child);
-int get_json_value_from_node(void * node, char * value, int max_len);
-int get_json_name_from_node(void * node, char * name);
+int json_node_getvalue(void * node, char * value, int max_len);
+int json_node_getname(void * node, char * name);
 
 int json_solve_str(void ** root, char *str);
 int json_get_type(void * node);
 int json_get_elemno(void * node);
 char * json_get_valuestr(void * node);
-void * read_elem_addr(char * name, void * template);
+
+int  json_node_set_no(void * node,int no);
+int  json_node_get_no(void * node);
+int  json_node_set_pointer(void * node,void * pointer);
+void * json_node_get_pointer(void * node);
 #endif

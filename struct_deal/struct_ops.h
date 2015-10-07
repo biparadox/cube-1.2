@@ -12,6 +12,10 @@ ELEM_OPS string_convert_ops;
 ELEM_OPS estring_convert_ops;
 ELEM_OPS bindata_convert_ops;
 ELEM_OPS define_convert_ops;
+ELEM_OPS uuid_convert_ops;
+ELEM_OPS enum_convert_ops;
+ELEM_OPS flag_convert_ops;
+
 
 typedef struct tagvalue2pointer
 {

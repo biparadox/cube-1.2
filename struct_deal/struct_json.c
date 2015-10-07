@@ -14,6 +14,7 @@
 #endif
 
 #include "../include/data_type.h"
+#include "../include/errno.h"
 #include "../include/struct_deal.h"
 #include "../include/alloc.h"
 #include "../include/attrlist.h"
@@ -482,3 +483,64 @@ int json_solve_str(void ** root, char *str)
     return offset;
 }
 
+int  json_node_set_no(void * node,int no)
+{
+	JSON_NODE * json_node=node;
+	if(node==NULL)
+		return -EINVAL;
+	json_node->comp_no=no;
+	return 0;
+}
+int  json_node_get_no(void * node)
+{
+	JSON_NODE * json_node=node;
+	if(node==NULL)
+		return -EINVAL;
+	return json_node->comp_no;
+}
+
+int  json_node_set_pointer(void * node,void * pointer)
+{
+	JSON_NODE * json_node=node;
+	if(node==NULL)
+		return -EINVAL;
+	json_node->comp_pointer=pointer;
+	return 0;
+}
+void * json_node_get_pointer(void * node)
+{
+	JSON_NODE * json_node=node;
+	if(node==NULL)
+		return -EINVAL;
+	return json_node->comp_pointer;
+}
+
+int json_node_getvalue(void * node,char * value, int max_len)
+{
+	JSON_NODE * json_node=node;
+	int len;
+	if(node==NULL)
+		return -EINVAL;
+	if(json_node->value_str==NULL)
+		return 0;
+	len=strnlen(json_node->value_str,max_len);
+	memcpy(value,json_node->value_str,len);
+	if(len<max_len)
+		value[len]=0;
+	return len;
+}
+
+int json_node_getname(void * node,char * name)
+{
+	JSON_NODE * json_node=node;
+	int len;
+	if(node==NULL)
+		return -EINVAL;
+	if(json_node->name==NULL)
+		return 0;
+	len=strnlen(json_node->name,DIGEST_SIZE);
+	memcpy(name,json_node->name,len);
+	if(len<DIGEST_SIZE)
+		name[len]=0;
+	return len;
+}

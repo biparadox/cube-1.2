@@ -41,8 +41,12 @@ int main() {
 	int fd;
 	int ret;
 	void * root_node;
+	BYTE uuid[DIGEST_SIZE];
 
 	mem_init();
+	struct_deal_init();
+	memdb_init();
+
 	
 	fd=open("login.json",O_RDONLY);
 	if(fd<0)
@@ -54,9 +58,14 @@ int main() {
 	printf("%s\n",json_buffer);
 	close(fd);
 
-	memdb_init();
+	ret=json_solve_str(&root_node,json_buffer);
+	if(ret<0)
+	{
+		printf("solve json str error!\n");
+		return ret;
+	}
 
-	json_solve_str(&root_node,json_buffer);
+	ret=read_struct_json_desc(root_node,uuid);
 	
 	return 0;
 }

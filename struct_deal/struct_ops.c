@@ -185,6 +185,57 @@ int define_set_bin_value(void * elem,void * addr,void * elem_template){
 	return def_value;
 }
 
+int uuid_get_text_value(void * addr, char * text,void * elem_template)
+{
+	int i,j,k,retval;
+	unsigned char char_value;
+	BYTE * digest=addr;
+	retval=DIGEST_SIZE;
+	k=0;
+	for(i=0;i<retval;i++)
+	{
+		int tempdata;
+		char_value=digest[i];
+
+		for(j=0;j<2;j++)
+		{
+			tempdata=char_value>>4;
+			if(tempdata>9)
+				*(text+k)=tempdata-9+'a';
+			else
+				*(text+k)=tempdata+'0';
+			k++;
+			if(j!=1)
+				char_value<<=4;
+				
+		}
+	}
+	return 0;
+}
+
+int uuid_set_text_value(void * addr, char * text,void * elem_template)
+{
+	int i,j,k,retval;
+	unsigned char char_value;
+	BYTE * digest=addr;
+	retval=DIGEST_SIZE;
+	for(i=0;i<retval*2;i++)
+	{
+		if((text[i]>='0')&&(text[i]<='9'))
+			char_value=text[i]-'0';
+		else if((text[i]>='a')&&(text[i]<='f'))
+			char_value=text[i]-'a'+10;
+		else if((text[i]>='A')&&(text[i]<='F'))
+			char_value=text[i]-'A'+10;
+		else
+			return -EINVAL;
+		if(i%2==0)
+			digest[i/2]=char_value<<4;
+		else
+			digest[i/2]+=char_value;
+	}
+	return 0;
+}
 int define_get_text_value(void * addr,char * text,void * elem_template){
 	char * blob = *(char **)addr;
 	struct elem_template * curr_elem=elem_template;
@@ -293,6 +344,8 @@ int get_int_value(void * addr,void * elem_attr)
 	return *(int *)addr; 
 }
 
+
+
 ELEM_OPS string_convert_ops =
 {
 	.get_int_value=get_string_value,
@@ -306,6 +359,12 @@ ELEM_OPS bindata_convert_ops =
 //	.calculate_offset=Calculate_offset,
 };
 
+ELEM_OPS uuid_convert_ops =
+{
+//	.calculate_offset=Calculate_offset,
+	.get_text_value = estring_get_bin_value,
+	.set_text_value = estring_set_bin_value,
+};
 ELEM_OPS estring_convert_ops =
 {
 	.get_bin_value = estring_get_bin_value,
@@ -322,3 +381,5 @@ ELEM_OPS define_convert_ops =
 //	.set_text_value = define_set_text_value,
 //	.elem_alloc_size = estring_alloc_size,
 };
+
+

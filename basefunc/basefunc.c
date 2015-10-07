@@ -101,6 +101,20 @@ void * init_hash_list(int order,int type,int subtype)
 }
 
 
+void * hashlist_get_desc(void * hashlist)
+{
+	UUID_LIST * uuid_list= (UUID_LIST *)hashlist;
+	
+	return uuid_list->desc;
+}
+
+int hashlist_set_desc(void * hashlist,void * desc)
+{
+	UUID_LIST * uuid_list= (UUID_LIST *)hashlist;
+	uuid_list->desc=desc;
+	return 0;
+}
+
 int hashlist_add_elem(void * hashlist,void * elem)
 {
 	Record_List * new_record;

@@ -72,6 +72,8 @@ typedef struct json_elem_node
                               // pointer point to the child it was
                               // processing.
     struct json_elem_node * father;
+    int    comp_no;
+    void *  comp_pointer;	
 }JSON_NODE;
 
 const char * nulstring;

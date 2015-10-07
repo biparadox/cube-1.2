@@ -17,9 +17,12 @@ typedef struct uuid_head
 	BYTE uuid[DIGEST_SIZE];
 	int type;
 	int subtype;
+	char name[DIGEST_SIZE];
 }__attribute__((packed)) UUID_HEAD;
 
 void * init_hash_list(int order,int type,int subtype);
+void * hashlist_get_desc(void * hashlist);
+int hashlist_set_desc(void * hashlist,void * desc);
 int  hashlist_add_elem(void * hashlist,void * elem);
 void * hashlist_find_elem(void * hashlist,void * elem);
 void * hashlist_remove_elem(void * hashlist,void * elem);

@@ -1,10 +1,10 @@
 {
 	"desc":
 	[
-		"login_info":[
+		{"login_info":[
 			{"name":"name","type":"ESTRING","attr":"INDEX|KEY"},
 			{"name":"passwd","type":"STRING","size":"32"},
-		],
+		]},
 		{"name":"nonce_len","type":"INT"},
 		{"name":"nonce","type":"DEFINE","ref":"nonce_len"},
 	]
