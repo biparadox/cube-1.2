@@ -23,6 +23,7 @@
 #include "../include/data_type.h"
 #include "../include/string.h"
 
+const int maxnamelen=DIGEST_SIZE*8+1;
 void * Memcpy(void * dest,void * src, unsigned int count)
 {
 	if(dest == src)
@@ -41,4 +42,29 @@ void * Memset(void * s,int c, int n)
 	for(su=s;n>0;++su,--n)
 		*su=uc;
 	return s;
+}
+
+int Getfiledfromstr(char * name,char * str,char IFS,int maxsize)
+{
+	int offset=0;
+	int i=0;
+	int limit=maxsize;
+	if(limit==0)
+		limit=maxnamelen;
+	while(str[i]==' ')
+		i++;
+	if(str[i]==0)
+		return 0;
+	
+	for(;offset<limit;i++)
+	{
+		if((str[i]==IFS) || (str[i]==0))
+		{
+			name[offset]=0;
+			return i;
+		}
+		name[offset++]=str[i];
+	}
+	name[0]=0;
+	return i;
 }

@@ -31,5 +31,7 @@ struct elem_template
 	int offset;
 	int size;
 	void * ref;	
+	int flag;
+	void  * father;
 };
 #endif

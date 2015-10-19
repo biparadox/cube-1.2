@@ -12,5 +12,9 @@ int    Strcmp(const char *s1,const char *s2);
 int    Strncmp(const char *s1,const char *s2,int n);
 char * Strcat(char * desc,const char *src);
 char * Strncat(char * desc,const char *src,int n);
+int    Strlen(char * str);
+int    Strnlen(char * str,int n);
+
+int    Getfiledfromstr(char * name,char * str,char IFS,int maxsize);
 
 #endif

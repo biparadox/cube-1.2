@@ -52,6 +52,7 @@ enum os210_struct_elem_attr
 	OS210_ELEM_FLAG_INDEX=0x01,
 	OS210_ELEM_FLAG_KEY=0x02,
 	OS210_ELEM_FLAG_DESC=0x10,
+	OS210_ELEM_FLAG_TEMP=0x1000,
 };
 
 enum json_elem_type
@@ -72,7 +73,6 @@ struct struct_elem_attr
 	enum os210_struct_elem_type type;
 	int size;     //长度值,对变长变量,则为最大长度值	
 	void * ref;
-	int  attr;
 };
 
 
@@ -114,9 +114,13 @@ int struct_free(void * addr, void * struct_template);
 int struct_free_alloc(void * addr, void * struct_template);
 int struct_size(void * struct_template);
 
+int struct_set_flag(void * struct_template,int flag, char * namelist);
+int struct_clear_flag(void * struct_template,int flag,char * namelist);
+int struct_get_flag(void * struct_template,char * name);
 
 int struct_2_blob(void * addr, void * blob, void * struct_template);
-int struct_2_part_blob(void * addr, void * blob, void * struct_template, char * name_list);
+int struct_2_part_blob(void * addr, void * blob, void * struct_template, int flag);
+int part_blob_2_struct(void * blob, void * addr, void * struct_template, int flag);
 int blob_2_struct(void * blob, void * addr, void * struct_template);
 int struct_2_text(void * blob, char * string, void * struct_template);
 int text_2_struct(char * string, void * blob, void * struct_template);
@@ -131,11 +135,13 @@ void * get_desc_from_template(void * struct_template);
 
 int dup_str(char ** dest,char * src, int size);
 void * clone_struct(void * addr, void * struct_template);
-void * struct_get_elem_attr(char * name, void * struct_template);
-int struct_set_elem_var(char * name, void * attr, void * struct_template);
-void * read_elem_addr(char * name, void * template);
+//void * struct_get_elem_attr(char * name, void * struct_template);
+//int struct_set_elem_var(char * name, void * attr, void * struct_template);
+//void * read_elem_addr(char * name, void * template);
 
 int struct_2_json(void * addr, char * json_str, void * template);
+int struct_2_part_json(void * addr, char * json_str, void * struct_template, int flag);
+int part_blob_2_strust(void * addr, void * blob, void * struct_template, char * name_list);
 int json_2_struct(void * root, void * addr, void * struct_template);
 
 void * find_json_elem(char * name, void * root);

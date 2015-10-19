@@ -49,7 +49,7 @@ static void * dynamic_db_list;
 enum base_cube_db
 {
 	DB_STRUCT_DESC,
-	DB_STRUCT_TEMPLATE,
+	DB_NAMEVALUE_TABLE,
 };
 
 struct struct_elem_attr elem_attr_octet_desc[] =
@@ -62,11 +62,7 @@ struct struct_elem_attr elem_attr_octet_desc[] =
 	{NULL,OS210_TYPE_ENDDATA,0,NULL,0}
 };
 
-struct cube_core_lib {
-	int struct_type;
-	int sub_type;
-	struct list_head head_list;
-};
+static void * base_struct_template;
 
 struct struct_desc_record
 {
@@ -75,34 +71,15 @@ struct struct_desc_record
 	struct elem_attr_octet * elem_desc_list;
 };
 
-struct memdb_desc_record
+struct db_desc_record
 {
 	UUID_HEAD head;
+	BYTE format_uuid[DIGEST_SIZE];
 	void * struct_template;	
-	void * hashlist;
 };
 
-int memdb_init()
-{
-	int ret;
-	void * struct_template; 
-	void * pointer=&static_db_list;
-	ret=Galloc(pointer,sizeof(void *)*TYPE_BASE_END);
-	if(ret<0)
-		return ret;
-	memset(static_db_list,0,sizeof(void *)*TYPE_BASE_END);
-	static_db_list[TYPE_STRUCT_DESC]=init_hash_list(8,TYPE_STRUCT_DESC,0);
-	if(static_db_list[TYPE_STRUCT_DESC]==NULL)
-	{
-		return -EINVAL;
-	}
-	struct_template=create_struct_template(&elem_attr_octet_desc);
-	
-	hashlist_set_desc(static_db_list[TYPE_STRUCT_DESC],struct_template);
-	dynamic_db_list=init_hash_list(8,TYPE_DB_LIST,0);
-	return 0;
-}
-
+int _comp_struct_digest(BYTE * digest,void * record);
+int _comp_db_digest(BYTE * digest,void * record);
 
 void *  _get_dynamic_db_bytype(int type,int subtype)
 {
@@ -136,6 +113,124 @@ void * memdb_get_dblist(int type, int subtype)
 	return db_list;
 }
 
+void * _build_struct_desc(void ** elem_attr,int type,int subtype,char * name)
+{
+	int ret;
+	struct struct_desc_record * record;
+	int len;
+	if(name!=NULL)
+	{
+		len=strlen(name);
+		if(len>DIGEST_SIZE)
+			return -EINVAL;
+	}
+	ret=Galloc(&record,sizeof(struct struct_desc_record));
+	if(ret<0)
+		return NULL;
+	record->head.type=type;		
+	record->head.subtype=subtype;		
+	memset(record->head.uuid,0,DIGEST_SIZE);
+	memset(record->head.name,0,DIGEST_SIZE);
+	record->elem_desc_list=elem_attr;
+	ret=_comp_struct_digest(record->head.uuid,struct_desc_record);
+	if(ret<0)
+		return ret;
+	if(name!=NULL)
+	{
+		memcpy(record->head.name,name,len);
+	}
+	return record;
+}
+
+int memdb_register_struct(void ** elem_attr,char * name,BYTE * uuid)
+{
+	struct struct_desc_record * record;
+	int ret;
+
+	record=_build_struct_desc(elem_attr,0,0,name);
+	if(record==NULL)
+		return -EINVAL;
+	memcpy(uuid,record->uuid,DIGEST_SIZE);
+	ret=memdb_store(record,TYPE_STRUCT_DESC,0);
+	return ret;
+	
+}
+
+int memdb_register_db(BYTE * uuid,int type,int subtype,char * name)
+{
+	struct struct_desc_record * record;
+	void * dblist;
+	int ret;
+	void * struct_template;
+	void * struct_desc;
+	if(type<0)
+		return -EINVAL;
+	if(type==TYPE_STRUCT_DESC)
+		return -EINVAL;
+	record=memdb_find(uuid,TYPE_STRUCT_DESC,0);
+	if(record==NULL)
+		return -EINVAL;
+	dblist=memdb_get_dblist(tyoe,subtype);
+	if(dblist!=NULL)
+		return -EINVAL;
+	
+	dblist=init_hash_list(8,type,subtype);
+	if(dblist==NULL)
+		return NULL;
+	
+	
+	
+	if(type< TYPE_BASE_END)
+	{
+		if(static_db_list[type]!=NULL)
+			return -EINVAL;
+		ret=Galloc(&record,sizeof(struct memdb_desc_record));
+		if(ret<0)
+			return ret;
+		static_db_list[type]=record;
+	}
+	else if(type == TYPE_DB_LIST)
+		return -EINVAL;
+	else if(type >TYPE_DB_LIST)
+	{
+		record=_get_dynamic_db_bytype(type,subtype);
+		if(record!=NULL)
+			return -EINVAL;
+		ret=Galloc(&record,sizeof(struct memdb_desc_record));
+		if(ret<0)
+			return ret;
+		ret=hashlist_add_elem(dynamic_db_list,record);
+		if(ret<0)
+			return ret;
+	}
+	else
+}
+
+int memdb_init()
+{
+	int ret;
+	void * struct_template; 
+	void * pointer=&static_db_list;
+	ret=Galloc(pointer,sizeof(void *)*TYPE_BASE_END);
+	if(ret<0)
+		return ret;
+	memset(static_db_list,0,sizeof(void *)*TYPE_BASE_END);
+	static_db_list[TYPE_STRUCT_DESC]=init_hash_list(8,TYPE_STRUCT_DESC,0);
+	if(static_db_list[TYPE_STRUCT_DESC]==NULL)
+	{
+		return -EINVAL;
+	}
+
+	base_struct_template=create_struct_template(&elem_attr_octet_desc);
+	
+	hashlist_set_desc(static_db_list[TYPE_STRUCT_DESC],base_struct_template);
+	dynamic_db_list=init_hash_list(8,TYPE_DB_LIST,0);
+	return 0;
+}
+
+
+
+
 int  memdb_store(void * data,int type,int subtype)
 {
 	int ret;
@@ -162,7 +257,6 @@ int _comp_struct_digest(BYTE * digest,void * record)
 	int offset=0;
 	int ret;
 	int i;
-	void * struct_template;
 	struct struct_desc_record * struct_record=record;
 	if(record==NULL)
 		return -EINVAL;
@@ -171,10 +265,9 @@ int _comp_struct_digest(BYTE * digest,void * record)
 	memcpy(buf+offset,&struct_record->head.subtype,sizeof(int));
 	offset+=sizeof(int);
 
-	struct_template=hashlist_get_desc(static_db_list[TYPE_STRUCT_DESC]);
 	for(i=0;i<struct_record->elem_no;i++)
 	{
-		ret=struct_2_blob(&struct_record->elem_desc_list[i],buf+offset,struct_template);
+		ret=struct_2_blob(&struct_record->elem_desc_list[i],buf+offset,base_struct_template);
 		if(ret<0)
 			return ret;
 		offset+=ret;	

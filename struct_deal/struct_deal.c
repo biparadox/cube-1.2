@@ -18,11 +18,11 @@
 #endif
 
 #include "../include/data_type.h"
-//#include "../include/string.h"
 #include "../include/alloc.h"
 #include "../include/struct_deal.h"
 #include "struct_ops.h"
 #include "struct_internal.h"
+#include "../include/string.h"
 
 static VALUE2POINTER InitFuncList [] =
 {
@@ -35,7 +35,7 @@ static VALUE2POINTER InitFuncList [] =
 };
 
 void ** struct_deal_ops;
-void * ops_list[OS210_TYPE_ENDDATA];
+static void * ops_list[OS210_TYPE_ENDDATA];
 
 static inline int struct_register_ops(int value,void * pointer)
 {
@@ -83,9 +83,11 @@ typedef struct struct_template_node
 	int offset;
 	int size;
 	int elem_no;
+	int flag;
 	void * struct_desc;
 	struct elem_template * elem_list;
 	int temp_var;
+	
 }STRUCT_NODE;
 
 static inline int _count_struct_num(struct struct_elem_attr * struct_desc)
@@ -100,7 +102,7 @@ static inline int _count_struct_num(struct struct_elem_attr * struct_desc)
 	return i;
 }
 
-const int max_name_len=64;
+const int max_name_len=DIGEST_SIZE;
 
 static inline STRUCT_NODE * _get_root_node(STRUCT_NODE * start_node)
 {
@@ -287,6 +289,10 @@ void * create_struct_template(struct struct_elem_attr * struct_desc)
 			ret=Palloc0(&(curr_node->elem_list),sizeof(struct elem_template )*curr_node->elem_no);
 			if(ret<0)
 				return NULL;
+			for(i=0;i<curr_node->elem_no;i++)
+			{
+				curr_node->elem_list[i].father=curr_node;
+			}
 			curr_node->offset=offset;
 		}
 		curr_elem=&curr_node->elem_list[curr_node->temp_var];
@@ -1133,4 +1139,482 @@ int json_2_struct(void * root,void * addr,void * struct_template)
 		}
 	}while(1);
 	return 1;
+}
+
+int struct_set_allflag(void * struct_template,int flag)
+{
+	STRUCT_NODE * root_node=struct_template;
+	STRUCT_NODE * curr_node=root_node;
+	STRUCT_NODE * temp_node;
+	curr_node->temp_var=0;
+	struct elem_template * curr_elem;
+
+	do{
+		if(curr_node->temp_var == curr_node->elem_no)
+		{
+			if(curr_node==root_node)
+				break;
+			temp_node=curr_node;
+			curr_node=curr_node->parent;
+			continue;
+		}
+		curr_elem=&curr_node->elem_list[curr_node->temp_var];
+		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+		{
+			curr_node->temp_var++;
+			curr_node=curr_elem->ref;
+			curr_node->temp_var=0;
+			curr_node->flag |=flag;
+			continue;
+		}
+		else
+		{
+			curr_elem->flag |=flag;
+		}
+		curr_node->temp_var++;
+		
+	}while(1);
+	root_node->flag |=flag;
+	return 0;
+}
+
+int struct_clear_allflag(void * struct_template,int flag)
+{
+	STRUCT_NODE * root_node=struct_template;
+	STRUCT_NODE * curr_node=root_node;
+	STRUCT_NODE * temp_node;
+	curr_node->temp_var=0;
+	struct elem_template * curr_elem;
+
+	do{
+		if(curr_node->temp_var == curr_node->elem_no)
+		{
+			if(curr_node==root_node)
+				break;
+			temp_node=curr_node;
+			curr_node=curr_node->parent;
+			continue;
+		}
+		curr_elem=&curr_node->elem_list[curr_node->temp_var];
+		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+		{
+			curr_node->temp_var++;
+			curr_node=curr_elem->ref;
+			curr_node->temp_var=0;
+			curr_node->flag &=~flag;
+			continue;
+		}
+		else
+		{
+			curr_elem->flag &=~flag;
+		}
+		curr_node->temp_var++;
+		
+	}while(1);
+	root_node->flag !=flag;
+	return 0;
+}
+
+int struct_set_flag(void * struct_template,int flag, char * namelist)
+{
+	STRUCT_NODE * root_node=struct_template;
+	STRUCT_NODE * father_node=NULL;
+	struct elem_template * curr_elem;
+	int ret;
+	char name[DIGEST_SIZE+1];
+	int offset=0;
+	int i;
+	int count=0;
+
+	while((i=Getfiledfromstr(name,namelist+offset,',',DIGEST_SIZE+1))>0)
+	{
+		offset+=i;
+		curr_elem = _get_elem_by_name(root_node,name);
+		if(curr_elem==NULL)
+			return -EINVAL;
+		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+		{
+			ret=struct_set_allflag(curr_elem->ref,flag);
+		}
+		else
+		{
+			curr_elem->flag |= flag;
+		}
+		count++;
+		if(namelist[offset]==',')
+			offset++;
+		father_node=curr_elem->father;
+		do{
+			father_node->flag |= flag;
+			if(father_node==root_node)
+				break;
+			father_node=father_node->parent;
+		}while(1);
+
+	}
+	return count;
+}
+
+int struct_clear_flag(void * struct_template,int flag, char * namelist)
+{
+	STRUCT_NODE * root_node=struct_template;
+	STRUCT_NODE * father_node;
+	STRUCT_NODE * temp_node;
+	struct elem_template * curr_elem;
+	struct elem_template * temp_elem;
+	int ret;
+	char name[DIGEST_SIZE+1];
+	int offset=0;
+	int i;
+	int count=0;
+
+	while((i=Getfiledfromstr(name,namelist+offset,',',DIGEST_SIZE+1))>0)
+	{
+		offset+=i;
+		curr_elem = _get_elem_by_name(root_node,name);
+		if(curr_elem==NULL)
+			return -EINVAL;
+		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+		{
+			ret=struct_set_allflag(curr_elem->ref,flag);
+		}
+		else
+		{
+			curr_elem->flag &= ~flag;
+		}
+		count++;
+		if(namelist[offset]==',')
+			offset++;
+		father_node=curr_elem->father;
+		do {
+			for(i=0;i<father_node->elem_no;i++)
+			{	
+				temp_elem=&father_node->elem_list[i];
+				if(temp_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+				{
+					temp_node=temp_elem->ref;
+					if(temp_node->flag &flag)
+						break;
+				}
+				else
+				{
+					if(temp_elem->flag &flag)
+						break;
+
+				}
+			}
+			if(i<father_node->elem_no)
+				break;
+			father_node->flag &=~flag;
+			if(father_node==root_node)
+				break;
+			father_node=father_node->parent;
+		}while(1);
+	}
+	return count;
+	
+}
+
+int struct_get_flag(void * struct_template,char * name)
+{
+	STRUCT_NODE * root_node=struct_template;
+	struct elem_template * curr_elem;
+	int ret;
+
+	curr_elem = _get_elem_by_name(root_node,name);
+	if(curr_elem==NULL)
+		return -1;
+	return curr_elem->flag;
+}
+
+
+int struct_2_part_blob(void * addr,void * blob, void * struct_template,int flag)
+{
+	STRUCT_NODE * root_node=struct_template;
+	STRUCT_NODE * curr_node=root_node;
+	STRUCT_NODE * temp_node;
+	curr_node->temp_var=0;
+	struct elem_template * curr_elem;
+	int addr_offset=0;
+	int blob_offset=0;
+	struct struct_elem_attr * curr_desc;
+	ELEM_OPS * elem_ops;
+	int def_value;
+	int ret;
+
+	curr_desc=root_node->struct_desc;
+
+	do{
+		// throughout the node tree: back
+		if(curr_node->temp_var == curr_node->elem_no)
+		{
+			if(curr_node==root_node)
+				break;
+			temp_node=curr_node;
+			curr_node=curr_node->parent;
+			curr_desc=curr_node->struct_desc;
+			continue;
+		}
+		curr_elem=&curr_node->elem_list[curr_node->temp_var];
+		// throughout the node tree: into the sub_struct
+		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+		{
+			temp_node=curr_elem->ref;
+			if(!(temp_node->flag &flag))
+			{
+				curr_node->temp_var++;
+				continue;
+			}
+			curr_node->temp_var++;
+			curr_node=curr_elem->ref;
+			curr_node->temp_var=0;
+			curr_desc=curr_node->struct_desc;
+			continue;
+		}
+		if(!(curr_elem->flag & flag))
+		{
+			curr_node->temp_var++;
+			continue;
+		}
+		// get this elem's ops
+		elem_ops=struct_deal_ops[curr_desc[curr_node->temp_var].type];
+		if(elem_ops==NULL)
+			return -EINVAL;
+		addr_offset=curr_elem->offset;
+		if(elem_ops->get_bin_value==NULL)
+		{
+			if(curr_elem->flag&flag)
+			{
+				memcpy(blob+blob_offset,addr+addr_offset,curr_elem->size);
+				blob_offset+=curr_elem->size;
+			}
+		}
+		else
+		{
+			if(curr_elem->flag&flag)
+			{
+				ret=elem_ops->get_bin_value(addr+addr_offset,blob+blob_offset,curr_elem);
+				if(ret<0)
+					return ret;
+				blob_offset+=ret;
+			}
+		}
+		curr_node->temp_var++;
+	}while(1);
+	return blob_offset;
+	
+}
+
+int part_blob_2_struct(void * blob,void * addr,void * struct_template,int flag)
+{
+	STRUCT_NODE * root_node=struct_template;
+	STRUCT_NODE * curr_node=root_node;
+	STRUCT_NODE * temp_node;
+	curr_node->temp_var=0;
+	struct elem_template * curr_elem;
+	int addr_offset=0;
+	int blob_offset=0;
+	struct struct_elem_attr * curr_desc;
+	ELEM_OPS * elem_ops;
+	int ret;
+
+	curr_desc=root_node->struct_desc;
+
+	do{
+		// throughout the node tree: back
+		if(curr_node->temp_var == curr_node->elem_no)
+		{
+			if(curr_node==root_node)
+				break;
+			temp_node=curr_node;
+			curr_node=curr_node->parent;
+			curr_desc=curr_node->struct_desc;
+			continue;
+		}
+		curr_elem=&curr_node->elem_list[curr_node->temp_var];
+		// throughout the node tree: into the sub_struct
+		if(!(curr_elem->flag & flag))
+		{
+			curr_node->temp_var++;
+			continue;
+		}
+		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+		{
+			temp_node=curr_elem->ref;
+			if(!(temp_node->flag &flag))
+			{
+				curr_node->temp_var++;
+				continue;
+			}
+			curr_node->temp_var++;
+			curr_node=curr_elem->ref;
+			curr_node->temp_var=0;
+			curr_desc=curr_node->struct_desc;
+			continue;
+		}
+		// get this elem's ops
+		elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
+		if(elem_ops==NULL)
+			return -EINVAL;
+		// pre_fretch the define value
+		if(_isvalidvalue(curr_elem->elem_desc->type) &&
+			((int)curr_elem->ref & DEFINE_TAG))
+		{
+			if(elem_ops->get_int_value == NULL)
+				return -EINVAL;
+			int define_value;
+			define_value = elem_ops->get_int_value(addr+curr_elem->offset,curr_elem);
+			if((define_value<0)||define_value>=1024)
+				return define_value;
+			curr_elem->ref=(int)curr_elem->ref&DEFINE_TAG+define_value;			
+		}
+		addr_offset=curr_elem->offset;
+		if(elem_ops->get_bin_value==NULL)
+		{
+			if(curr_elem->flag&flag)
+			{
+				memcpy(addr+addr_offset,blob+blob_offset,curr_elem->size);
+				blob_offset+=curr_elem->size;
+			}
+		}
+		else
+		{
+			if(curr_elem->flag&flag)
+			{
+				ret=elem_ops->set_bin_value(addr+addr_offset,blob+blob_offset,curr_elem);
+				if(ret<0)
+					return ret;
+				blob_offset+=ret;
+			}
+		}
+		curr_node->temp_var++;
+	}while(1);
+	return blob_offset;
+
+}
+
+int struct_2_part_json(void * addr,char * json_str,void *struct_template,int flag)
+{
+	STRUCT_NODE * root_node=struct_template;
+	STRUCT_NODE * curr_node=root_node;
+	STRUCT_NODE * temp_node;
+	curr_node->temp_var=0;
+	struct elem_template * curr_elem;
+	int str_offset;
+	int text_len=0;
+	int str_len=0;
+	struct struct_elem_attr * curr_desc;
+	ELEM_OPS * elem_ops;
+	int ret;
+	char buf[1024];
+
+	curr_desc=root_node->struct_desc;
+	*json_str='{';
+	str_offset=1;
+
+	do{
+		// throughout the node tree: back
+		if(curr_node->temp_var == curr_node->elem_no)
+		{
+			*(json_str+str_offset)='}';
+			str_offset++;	
+			*(json_str+str_offset)=',';
+			str_offset++;	
+			if(curr_node==root_node)
+				break;
+			temp_node=curr_node;
+			curr_node=curr_node->parent;
+			curr_desc=curr_node->struct_desc;
+
+			continue;
+		}
+		curr_elem=&curr_node->elem_list[curr_node->temp_var];
+		// print this elem's name
+		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+		{
+			temp_node=curr_elem->ref;
+			if(!(temp_node->flag &flag))
+			{
+				curr_node->temp_var++;
+				continue;
+			}
+		}
+		else if(!(curr_elem->flag & flag))
+		{
+			curr_node->temp_var++;
+			continue;
+		}
+		text_len=strnlen(curr_elem->elem_desc->name,64);
+		*(json_str+str_offset)='\"';
+		memcpy(json_str+str_offset+1,curr_elem->elem_desc->name,text_len);
+		str_offset+=text_len+1;
+		*(json_str+str_offset)='\"';
+		*(json_str+str_offset+1)=':';
+		str_offset+=2;
+		// throughout the node tree: into the sub_struct
+		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+		{
+			curr_node->temp_var++;
+			curr_node=curr_elem->ref;
+			curr_node->temp_var=0;
+			curr_desc=curr_node->struct_desc;
+	
+			*(json_str+str_offset)='{';
+			str_offset+=1;
+
+			continue;
+		}
+		// get this elem's ops
+		elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
+		if(elem_ops==NULL)
+			return -EINVAL;
+		// pre_fretch the define value
+		if(_isvalidvalue(curr_elem->elem_desc->type) &&
+			((int)curr_elem->ref & DEFINE_TAG))
+		{
+			if(elem_ops->get_int_value == NULL)
+				return -EINVAL;
+			int define_value;
+			define_value = elem_ops->get_int_value(addr+curr_elem->offset,curr_elem);
+			if((define_value<0)||define_value>=1024)
+				return define_value;
+			curr_elem->ref=((int)curr_elem->ref&DEFINE_TAG)+define_value;			
+		}
+		if(elem_ops->get_text_value==NULL)
+		{
+			if(curr_elem->flag & flag)
+			{
+				if(_ispointerelem(curr_elem->elem_desc->type))
+				{
+					text_len=strlen(*(char **)(addr+curr_elem->offset));
+					if((text_len<0)||(text_len>1024))
+						return -EINVAL;
+					strncpy(buf,*(char **)(addr+curr_elem->offset),text_len);
+				}
+				else
+				{
+					text_len=strnlen(addr+curr_elem->offset,curr_elem->size)+1;
+					if(text_len>curr_elem->size)
+						text_len=curr_elem->size;
+					strncpy(buf,addr+curr_elem->offset,text_len);
+				}
+			}	
+		}
+		else
+		{
+			if(curr_elem->flag & flag)
+			{
+				text_len=elem_ops->get_text_value(addr+curr_elem->offset,buf,curr_elem);
+				if(text_len<0)
+					return text_len;
+			}
+		}
+		str_len = _getjsonstr(json_str+str_offset,buf,text_len,_getelemjsontype(curr_elem->elem_desc->type));
+		*(json_str+str_offset+str_len)=',';
+		str_offset+=str_len+1;
+		curr_node->temp_var++;
+	}while(1);
+	*(json_str+str_offset-1)=0;
+	return str_offset;
+	
 }

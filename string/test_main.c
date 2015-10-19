@@ -25,12 +25,17 @@
 
 int main() {
 
+
 //	struct connect_login test_login={"HuJun","openstack"};
-	char * src="hello,world!";
+	char * src=" hello,  world!";
+	int i;
 	char buffer[20];
 	Memset(buffer,0,20);
 	Memcpy(buffer,src,9);
 	printf("\n%s\n",buffer);
-
+	i=Getfiledfromstr(buffer,src,',',0);
+	printf("\n%s\n %c",buffer,src[i]);
+	i=Getfiledfromstr(buffer,src+i+1,',',0);
+	printf("\n%s\n",buffer);
 	return 0;
 }

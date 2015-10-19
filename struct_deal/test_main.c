@@ -43,17 +43,17 @@ struct verify_login
 
 static struct struct_elem_attr connect_login_desc[]=
 {
-    {"user",OS210_TYPE_STRING,DIGEST_SIZE,NULL,0},
-    {"passwd",OS210_TYPE_ESTRING,sizeof(char *),NULL,0},
+    {"user",OS210_TYPE_STRING,DIGEST_SIZE,NULL},
+    {"passwd",OS210_TYPE_ESTRING,sizeof(char *),NULL},
     {NULL,OS210_TYPE_ENDDATA,0,NULL}
 };
 
 static struct struct_elem_attr verify_login_desc[]=
 {
-    {"login_info",OS210_TYPE_ORGCHAIN,0,&connect_login_desc,0},
-    {"nonce_len",OS210_TYPE_STRING,4,NULL,0},
-    {"nonce",OS210_TYPE_DEFINE,sizeof(char *),"nonce_len",0},
-    {NULL,OS210_TYPE_ENDDATA,0,NULL,0}
+    {"login_info",OS210_TYPE_ORGCHAIN,0,&connect_login_desc},
+    {"nonce_len",OS210_TYPE_STRING,4,NULL},
+    {"nonce",OS210_TYPE_DEFINE,sizeof(char *),"nonce_len"},
+    {NULL,OS210_TYPE_ENDDATA,0,NULL}
 };
 
 int main() {
@@ -69,6 +69,10 @@ int main() {
 //		"\"nonce\":\"AAAAAAAABBBBBBBBCCCCCCCCDDDDEEFG\"}";
 	int ret;
 	struct verify_login * recover_struct;
+	
+	//char * namelist= "login_info.user,login_info.passwd";
+	char * namelist= "login_info";
+	int flag;
 
   	mem_init();
 	test_login.nonce=Talloc(0x20);
@@ -81,6 +85,14 @@ int main() {
 	recover_struct=Calloc(struct_size(struct_template));
 	ret=struct_2_blob(&test_login,buffer,struct_template);	
 	ret=struct_read_elem("login_info.passwd",&test_login,text,struct_template);
+	ret=struct_set_flag(struct_template,OS210_ELEM_FLAG_TEMP,namelist);
+	flag=struct_get_flag(struct_template,"login_info.passwd");
+	
+	memset(buffer,0,500);
+	ret=struct_2_part_blob(&test_login,buffer,struct_template,OS210_ELEM_FLAG_TEMP);
+	ret=struct_2_part_json(&test_login,text,struct_template,OS210_ELEM_FLAG_TEMP);
+	printf("%s\n",text);
+
 	ret=blob_2_struct(buffer,&test_login,struct_template);	
 	ret=struct_2_json(&test_login,text,struct_template);
 	printf("%s\n",text);
