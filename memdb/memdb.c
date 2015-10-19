@@ -39,7 +39,6 @@ struct elem_attr_octet
 	enum os210_struct_elem_type type;
 	int size;     //³¤¶ÈÖµ,¶Ô±ä³¤±äÁ¿,ÔòÎª×î´ó³¤¶ÈÖµ	
 	char ref_uuid[DIGEST_SIZE];
-	int  attr;
 };
 
 static void ** static_db_list;
@@ -54,12 +53,11 @@ enum base_cube_db
 
 struct struct_elem_attr elem_attr_octet_desc[] =
 {
-	{"name",OS210_TYPE_ESTRING,sizeof(char *),NULL,0},
-	{"type",OS210_TYPE_ENUM,sizeof(int),&elem_type_valuelist,0},
-	{"size",OS210_TYPE_INT,sizeof(int),NULL,0},
-	{"ref",OS210_TYPE_UUID,DIGEST_SIZE,NULL,0},
-	{"attr",OS210_TYPE_FLAG,sizeof(int),&elem_attr_flaglist,0},
-	{NULL,OS210_TYPE_ENDDATA,0,NULL,0}
+	{"name",OS210_TYPE_ESTRING,sizeof(char *),NULL},
+	{"type",OS210_TYPE_ENUM,sizeof(int),&elem_type_valuelist},
+	{"size",OS210_TYPE_INT,sizeof(int),NULL},
+	{"ref",OS210_TYPE_UUID,DIGEST_SIZE,NULL},
+	{NULL,OS210_TYPE_ENDDATA,0,NULL}
 };
 
 static void * base_struct_template;
@@ -71,7 +69,7 @@ struct struct_desc_record
 	struct elem_attr_octet * elem_desc_list;
 };
 
-struct db_desc_record
+struct memdb_desc_record
 {
 	UUID_HEAD head;
 	BYTE format_uuid[DIGEST_SIZE];
@@ -131,8 +129,7 @@ void * _build_struct_desc(void ** elem_attr,int type,int subtype,char * name)
 	record->head.subtype=subtype;		
 	memset(record->head.uuid,0,DIGEST_SIZE);
 	memset(record->head.name,0,DIGEST_SIZE);
-	record->elem_desc_list=elem_attr;
-	ret=_comp_struct_digest(record->head.uuid,struct_desc_record);
+	ret=_comp_struct_digest(record->head.uuid,record);
 	if(ret<0)
 		return ret;
 	if(name!=NULL)
@@ -150,12 +147,12 @@ int memdb_register_struct(void ** elem_attr,char * name,BYTE * uuid)
 	record=_build_struct_desc(elem_attr,0,0,name);
 	if(record==NULL)
 		return -EINVAL;
-	memcpy(uuid,record->uuid,DIGEST_SIZE);
+	memcpy(uuid,record->head.uuid,DIGEST_SIZE);
 	ret=memdb_store(record,TYPE_STRUCT_DESC,0);
 	return ret;
 	
 }
-
+/*
 int memdb_register_db(BYTE * uuid,int type,int subtype,char * name)
 {
 	struct struct_desc_record * record;
@@ -170,7 +167,7 @@ int memdb_register_db(BYTE * uuid,int type,int subtype,char * name)
 	record=memdb_find(uuid,TYPE_STRUCT_DESC,0);
 	if(record==NULL)
 		return -EINVAL;
-	dblist=memdb_get_dblist(tyoe,subtype);
+	dblist=memdb_get_dblist(type,subtype);
 	if(dblist!=NULL)
 		return -EINVAL;
 	
@@ -204,7 +201,7 @@ int memdb_register_db(BYTE * uuid,int type,int subtype,char * name)
 			return ret;
 	}
 	else
-}
+}*/
 
 int memdb_init()
 {
@@ -355,7 +352,6 @@ int read_struct_json_desc(void * root, BYTE * uuid)
 				return -EINVAL;
 			struct_desc[i].type=OS210_TYPE_ORGCHAIN;
 			struct_desc[i].size=DIGEST_SIZE;
-			struct_desc[i].attr=0;
 
 			elem_no = json_get_elemno(curr_node);
 			i=0;

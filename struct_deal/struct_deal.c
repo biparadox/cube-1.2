@@ -31,6 +31,9 @@ static VALUE2POINTER InitFuncList [] =
 	{OS210_TYPE_BINDATA,&bindata_convert_ops},
 	{OS210_TYPE_DEFINE,&define_convert_ops},
 	{OS210_TYPE_UUID,&uuid_convert_ops},
+	{OS210_TYPE_INT,&int_convert_ops},
+	{OS210_TYPE_ENUM,&enum_convert_ops},
+	{OS210_TYPE_FLAG,&flag_convert_ops},
 	{OS210_TYPE_ENDDATA,NULL},
 };
 

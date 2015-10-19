@@ -344,15 +344,98 @@ int get_int_value(void * addr,void * elem_attr)
 	return *(int *)addr; 
 }
 
+int int_get_text_value(void * elem,char * text,void * elem_attr)
+{
+	struct elem_template * curr_elem=elem_attr;
+	int i;
+	long long value=0;
+	int len;
+	char buffer[DIGEST_SIZE];
+	memcpy(&value,elem,curr_elem->size);
+	i=1;
+	len=2;
+	char *pch=text;
+	while(value/i)
+	{
+		i*=10;
+		len++;
+	}
+	if(value==0)
+		i=10;
+	while(i/=10)
+	{
+		*pch++=value/i+'0';
+		value%=i;
+	}	
+	*pch='\0';
+	return len;
+}
+int int_set_text_value(void * addr,char * text,void * elem_attr)
+{
+	struct elem_template * curr_elem=elem_attr;
+	char * string=addr;
+	int ret=0;
+	int i;
+	int base=10;
+	int temp_value;
 
+	int str_len;
+
+	str_len=strnlen(string,DIGEST_SIZE);
+
+	// process the head
+	for(i=0;i<str_len;i++)
+	{
+		if(string[i]==0)
+			break;
+		if(string[i]==' ')
+		{
+			i++;
+			continue;
+		}
+		// change the base
+		if(string[i]=='0')
+		{
+			switch(string[i+1])
+			{
+				case 0:
+					return 0;
+				case 'b':
+				case 'B':
+					i+=2;
+					base=2;
+					break;
+				case 'x':
+				case 'X':
+					i+=2;
+					base=16;
+					break;
+				default:
+					i++;
+					base=8;
+					break;
+
+			}
+			break;
+		}
+		
+	}
+	for(;i<str_len;i++)
+	{
+		if(string[i]==0)
+			break;
+		temp_value=_get_char_value(string[i]);
+		if((temp_value <0)||(temp_value>=base))
+			return -EINVAL;
+		ret=ret*base+temp_value;		
+	}
+	memcpy(addr,&ret,curr_elem->size);
+	return str_len+1;
+}
 
 ELEM_OPS string_convert_ops =
 {
 	.get_int_value=get_string_value,
-};
-ELEM_OPS int_convert_ops =
-{
-	.get_int_value=get_int_value,
 };
 ELEM_OPS bindata_convert_ops =
 {
@@ -382,4 +465,11 @@ ELEM_OPS define_convert_ops =
 //	.elem_alloc_size = estring_alloc_size,
 };
 
+ELEM_OPS int_convert_ops =
+{
+	.get_int_value=get_int_value,
+	.get_text_value = int_get_text_value,
+	.set_text_value = int_set_text_value,
+//	.elem_alloc_size = estring_alloc_size,
+};
 
