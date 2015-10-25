@@ -114,8 +114,9 @@ int json_get_elemno(void * node)
 int json_comp_elemno(void * node)
 {
     JSON_NODE * json_node = (JSON_NODE *)node;
-    if((json_node->elem_type==JSON_ELEM_MAP) ||
-    	(json_node->elem_type==JSON_ELEM_ARRAY))
+    int type =json_get_type(json_node);
+    if((type==JSON_ELEM_MAP) ||
+    	(type==JSON_ELEM_ARRAY))
     {
 	json_node->elem_no = get_record_list_no(&json_node->childlist);
 	return json_node->elem_no;
@@ -163,7 +164,7 @@ void * json_find_elem(char * name,void * root)
 	JSON_NODE * root_node = (JSON_NODE * )root;
 	JSON_NODE * this_node ;
 
-	if(root_node->elem_type!=JSON_ELEM_MAP)
+	if(json_get_type(root_node)!=JSON_ELEM_MAP)
 		return NULL;
         this_node = (JSON_NODE *)json_get_first_child(root);
 	

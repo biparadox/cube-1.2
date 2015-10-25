@@ -24,6 +24,7 @@
 #include <string.h>
 #include "../include/data_type.h"
 #include "../include/alloc.h"
+#include "../include/json.h"
 #include "../include/struct_deal.h"
 
 struct connect_login

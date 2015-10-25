@@ -55,17 +55,6 @@ enum os210_struct_elem_attr
 	OS210_ELEM_FLAG_TEMP=0x1000,
 };
 
-enum json_elem_type
-{
-    JSON_ELEM_INIT,
-    JSON_ELEM_NUM,
-    JSON_ELEM_STRING,
-    JSON_ELEM_BOOL,
-    JSON_ELEM_MAP,
-    JSON_ELEM_ARRAY,
-    JSON_ELEM_VALUE,
-    JSON_ELEM_NULL
-};
 // pointer stack function
 struct struct_elem_attr
 {
@@ -144,6 +133,7 @@ int struct_2_part_json(void * addr, char * json_str, void * struct_template, int
 int part_blob_2_strust(void * addr, void * blob, void * struct_template, char * name_list);
 int json_2_struct(void * root, void * addr, void * struct_template);
 
+/*
 void * find_json_elem(char * name, void * root);
 void * get_first_json_child(void * father);
 void * get_next_json_child(void * father);
@@ -160,4 +150,5 @@ int  json_node_set_no(void * node,int no);
 int  json_node_get_no(void * node);
 int  json_node_set_pointer(void * node,void * pointer);
 void * json_node_get_pointer(void * node);
+*/
 #endif

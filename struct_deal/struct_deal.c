@@ -21,8 +21,8 @@
 #include "../include/alloc.h"
 #include "../include/struct_deal.h"
 #include "struct_ops.h"
-#include "struct_internal.h"
 #include "../include/string.h"
+#include "../include/json.h"
 
 static VALUE2POINTER InitFuncList [] =
 {
@@ -1118,16 +1118,15 @@ int struct_2_json(void * addr, char * json_str, void * struct_template)
 
 int json_2_struct(void * root,void * addr,void * struct_template)
 {
-	JSON_NODE * root_json_node = (JSON_NODE *)root;
-	JSON_NODE * curr_json_node = (JSON_NODE *)root;
-	JSON_NODE * temp_json_node = (JSON_NODE *)root;
+	void * curr_json_node = root;
+	void * temp_json_node  = root;
 
 	STRUCT_NODE * root_node=struct_template;
 	STRUCT_NODE * curr_node=root_node;
 	STRUCT_NODE * temp_node;
 
 	// json node init
-	if(json_get_type(root_json_node) != JSON_ELEM_MAP)
+	if(json_get_type(root) != JSON_ELEM_MAP)
 		return -EINVAL;
 //	curr_json_node=get_first_json_child(root_json_node);
 
@@ -1148,14 +1147,14 @@ int json_2_struct(void * root,void * addr,void * struct_template)
 				break;
 			temp_node=curr_node;
 			curr_node=curr_node->parent;
-			curr_json_node=get_json_father(curr_json_node);
+			curr_json_node=json_get_father(curr_json_node);
 			curr_desc=curr_node->struct_desc;
 			continue;
 		}
 		curr_elem=&curr_node->elem_list[curr_node->temp_var];
 		curr_node->temp_var++;
 		// find this elem's node
-		temp_json_node=find_json_elem(curr_elem->elem_desc->name,curr_json_node);
+		temp_json_node=json_find_elem(curr_elem->elem_desc->name,curr_json_node);
 		// if there is no json node for this elem,use default value
 		if(temp_json_node == NULL)
 		{
