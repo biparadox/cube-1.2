@@ -68,3 +68,27 @@ int Getfiledfromstr(char * name,char * str,char IFS,int maxsize)
 	name[0]=0;
 	return i;
 }
+
+int Itoa(int n,char *str)
+{
+	int i=0,isNegative=0;
+	int len=0;
+	char temp;
+	if((isNegative=n)<0)
+		n=-n;
+	do
+	{
+		str[len++]=n%10+'0';
+		n=n/10;
+	}while(n>0);
+	if(isNegative<0)
+		str[len++]='-';
+	str[len]=0;
+	for(i=0;i<len/2;i++)
+	{
+		temp=str[i];
+		str[i]=str[len-1-i];
+		str[len-1-i]=temp;	
+	}
+	return len;
+}

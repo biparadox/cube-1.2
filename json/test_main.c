@@ -30,6 +30,7 @@
 #include "../include/data_type.h"
 #include "../include/alloc.h"
 #include "../include/json.h"
+#include "../include/string.h"
 int main() {
 
 	char json_buffer[1024];
@@ -55,6 +56,12 @@ int main() {
 		printf("solve json str error!\n");
 		return ret;
 	}
-
+	ret=json_print_str(root,text);
+	if(ret<0)
+	{
+		printf("print  json str error!\n");
+		return ret;
+	}
+	printf("%s\n",text);
 	return 0;
 }

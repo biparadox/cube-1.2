@@ -16,5 +16,6 @@ int    Strlen(char * str);
 int    Strnlen(char * str,int n);
 
 int    Getfiledfromstr(char * name,char * str,char IFS,int maxsize);
+int    Itoa(int n,char * str);
 
 #endif

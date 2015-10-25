@@ -15,6 +15,7 @@
 
 #include "../include/data_type.h"
 #include "../include/errno.h"
+#include "../include/string.h"
 #include "../include/json.h"
 #include "../include/alloc.h"
 #include "../include/attrlist.h"
@@ -385,15 +386,14 @@ int json_solve_str(void ** root, char *str)
                	        memcpy(child_node->name,value_buffer,len+1);
 		    else
                	        memcpy(child_node->name,value_buffer,DIGEST_SIZE);
-               	        offset++;
 		}
 		while(str[offset]!='\0')
 		{
         	    if(!IsIgnoreChar(str[offset]))
 		    {		
-             	        offset++;
               	        break;
         	    }
+             	    offset++;
 		}
 		if(str[offset]!=':')
 		    return -EINVAL;
@@ -402,9 +402,9 @@ int json_solve_str(void ** root, char *str)
 		{
         	    if(!IsIgnoreChar(str[offset]))
 		    {		
-             	        offset++;
               	        break;
         	    }
+             	    offset++;
 		}
 
 		// if this value is a map
@@ -483,6 +483,7 @@ int json_solve_str(void ** root, char *str)
 		    break;
 		}
 		// if this value is a map
+		child_node=_new_json_node(curr_node);
 		if(str[offset]=='{')
 		{
 			json_set_type(child_node,JSON_ELEM_MAP,1);
@@ -544,8 +545,183 @@ int json_solve_str(void ** root, char *str)
 	if(curr_node==NULL)
 		break;
     }
-    *root=curr_node;
+    *root=root_node;
     return offset;
+}
+
+int json_print_str(void * root,char * str)
+{
+    int offset=0;
+    JSON_NODE * root_node=(JSON_NODE *)root;
+    JSON_NODE * father_node;
+    JSON_NODE * curr_node=root_node;
+    JSON_NODE * child_node;
+    int len;
+
+    json_node_set_no(root_node,0);
+    do
+    {
+	switch(json_get_type(curr_node))
+	{
+		case JSON_ELEM_MAP:
+			if(curr_node->elem_no==0)
+			{
+				str[offset++]='{';
+				str[offset++]='}';
+				if(curr_node==root_node)
+					return offset;				
+				curr_node=json_get_father(curr_node);
+				break;
+			}
+			if(curr_node->comp_no==0)
+			{
+				str[offset++]='{';
+				child_node=json_get_first_child(curr_node);
+				if(child_node==NULL)
+					return -EINVAL;
+				curr_node->comp_no++;
+			}
+			else if(curr_node->comp_no==curr_node->elem_no)
+			{
+				str[offset++]='}';
+				if(curr_node==root_node)
+					return offset;				
+				curr_node=json_get_father(curr_node);
+				break;
+			}
+			else
+			{
+				child_node=json_get_next_child(curr_node);
+				if(child_node==NULL)
+					return -EINVAL;
+				str[offset++]=',';	
+				curr_node->comp_no++;
+			}
+
+			str[offset++]='"';
+			len=strnlen(child_node->name,DIGEST_SIZE);
+			memcpy(str+offset,child_node->name,len);
+			offset+=len;
+			str[offset++]='"';
+			str[offset++]=':';
+			
+			switch(json_get_type(child_node))
+			{
+				case JSON_ELEM_MAP:
+				case JSON_ELEM_ARRAY:
+					curr_node=child_node;
+					curr_node->comp_no=0;
+					break;
+				case JSON_ELEM_STRING:
+					str[offset++]='"';
+					len=strnlen(child_node->value_str,DIGEST_SIZE);
+					memcpy(str+offset,child_node->value_str,len);
+					offset+=len;
+					str[offset++]='"';
+					break;
+					
+				case JSON_ELEM_NUM:
+					len=Itoa(child_node->value,str+offset);
+					offset+=len;
+					break;
+					
+				case JSON_ELEM_BOOL:
+					if(child_node->value)
+					{
+						memcpy(str+offset,'true',4);
+						offset+=4;
+					}	
+					else
+					{
+						memcpy(str+offset,'false',5);
+						offset+=5;
+					}
+					break;
+				default:
+					return -EINVAL;
+			}	
+			// at the beginning 
+			break;
+		case JSON_ELEM_ARRAY:
+			if(curr_node->elem_no==0)
+			{
+				str[offset++]='[';
+				str[offset++]=']';
+				if(curr_node==root_node)
+					return offset;				
+				curr_node=json_get_father(curr_node);
+				break;
+			}
+			if(curr_node->comp_no==0)
+			{
+				str[offset++]='[';
+				child_node=json_get_first_child(curr_node);
+				if(child_node==NULL)
+					return -EINVAL;
+				curr_node->comp_no++;
+			}
+			else if(curr_node->comp_no==curr_node->elem_no)
+			{
+				str[offset++]=']';
+				if(curr_node==root_node)
+					return offset;				
+				curr_node=json_get_father(curr_node);
+				break;
+			}
+			else
+			{
+				child_node=json_get_next_child(curr_node);
+				if(child_node==NULL)
+					return -EINVAL;
+				str[offset++]=',';	
+				curr_node->comp_no++;
+			}
+
+			switch(json_get_type(child_node))
+			{
+				case JSON_ELEM_MAP:
+				case JSON_ELEM_ARRAY:
+					curr_node=child_node;
+					curr_node->comp_no=0;
+					break;
+				case JSON_ELEM_STRING:
+					str[offset++]='"';
+					len=strnlen(child_node->value_str,DIGEST_SIZE);
+					memcpy(str+offset,child_node->value_str,len);
+					offset+=len;
+					str[offset++]='"';
+					break;
+					
+				case JSON_ELEM_NUM:
+					len=Itoa(child_node->value,str+offset);
+					offset+=len;
+					break;
+					
+				case JSON_ELEM_BOOL:
+					if(child_node->value)
+					{
+						memcpy(str+offset,'true',4);
+						offset+=4;
+					}	
+					else
+					{
+						memcpy(str+offset,'false',5);
+						offset+=5;
+					}
+					break;
+				default:
+					return -EINVAL;
+			}	
+			// at the beginning 
+			break;
+		default:
+			return -EINVAL;
+	}
+
+    }while(1);
+  
+    return offset; 
+    
 }
 
 int  json_node_set_no(void * node,int no)

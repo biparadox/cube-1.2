@@ -37,5 +37,7 @@ int main() {
 	printf("\n%s\n %c",buffer,src[i]);
 	i=Getfiledfromstr(buffer,src+i+1,',',0);
 	printf("\n%s\n",buffer);
+	i=Itoa(-216342,buffer);
+	printf("\n%s\n",buffer);
 	return 0;
 }
