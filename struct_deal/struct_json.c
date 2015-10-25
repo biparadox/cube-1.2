@@ -84,10 +84,22 @@ char * json_get_valuestr(void * node)
 
 int json_get_elemno(void * node)
 {
+    int no;
+    struct list_head * root;
+    struct list_head * child;
     if(node==NULL)
 		return -EINVAL;
+	
     JSON_NODE * json_node = (JSON_NODE *)node;
-    return json_node->elem_no;
+    if(json_node->elem_type==JSON_ELEM_MAP)
+    {
+	return get_record_list_no(&json_node->childlist);
+    }
+    if(json_node->elem_type==JSON_ELEM_ARRAY)
+    {
+	return get_record_list_no(&json_node->childlist);
+    }
+    return 0;	
 }
 
 Record_List * get_new_Record_List(void * record)
@@ -287,6 +299,7 @@ int json_solve_str(void ** root, char *str)
     father_node=NULL;
     curr_node=root_node;
     curr_node->layer=0;
+    curr_node->elem_no=0;
     root_node->elem_type=JSON_ELEM_INIT;
 
     curr_node->solve_state=SOLVE_INIT;
@@ -342,6 +355,7 @@ int json_solve_str(void ** root, char *str)
                 curr_node->elem_str=str+offset;
                 offset++;
                 curr_node->solve_state=SOLVE_NAME;
+		curr_node->elem_no=0;
                 break;
            case SOLVE_NAME:
                 ret=get_json_strvalue(value_buffer,str+offset);

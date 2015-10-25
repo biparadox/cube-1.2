@@ -222,6 +222,57 @@ static inline int _ispointerelem(int type)
 	}
 }
 
+int get_fixed_elemsize(int type)
+{
+
+	switch(type)
+	{
+		case OS210_TYPE_STRING:
+			return -1;
+		case OS210_TYPE_UUID:
+			return DIGEST_SIZE;
+		case OS210_TYPE_ENUM:
+		case OS210_TYPE_FLAG:
+		case OS210_TYPE_TIME:
+			return sizeof(int);
+		case OS210_TYPE_BINDATA: 
+		case OS210_TYPE_HEXDATA:	 
+			return -1;
+		case OS210_TYPE_ESTRING:
+		case OS210_TYPE_JSONSTRING:
+		case OS210_TYPE_DEFINE:
+		case OS210_TYPE_DEFSTR:	
+		case OS210_TYPE_DEFSTRARRAY:
+			return sizeof(char *);
+		case OS210_TYPE_BINARRAY:
+		case OS210_TYPE_BITMAP:	 
+			return -1;
+		case OS210_TYPE_INT:
+			return sizeof(int);
+		case OS210_TYPE_UCHAR:    
+			return sizeof(char);
+		case OS210_TYPE_USHORT:   
+			return sizeof(short);
+		case OS210_TYPE_LONGLONG: 
+		case TPM_TYPE_UINT64:
+			return sizeof(long long);
+		case TPM_TYPE_UINT32:
+			return sizeof(int);
+		case TPM_TYPE_UINT16:
+			return 2;
+		case OS210_TYPE_NODATA:
+			return 0;
+        	case OS210_TYPE_CHOICE:
+		case OS210_TYPE_ENDDATA:
+			return 0;
+		case OS210_TYPE_ORGCHAIN:
+			return -1;
+		default:
+			break;
+	}
+	return -1;	
+}
+
 static inline int _getelemjsontype(int type)
 {
 	switch(type)
@@ -805,6 +856,30 @@ int struct_read_elem(char * name,void * addr, void * elem_data,void * struct_tem
 	return ret;
 }
 
+int struct_read_elem_text(char * name,void * addr, char * text,void * struct_template)
+{
+	STRUCT_NODE * curr_node=struct_template;
+	ELEM_OPS * elem_ops;
+	struct struct_elem_attr * curr_desc;
+	int ret;
+	struct elem_template * curr_elem= _get_elem_by_name(curr_node,name);
+	if(curr_elem==NULL)
+		return -EINVAL;
+	curr_desc=curr_elem->elem_desc;
+	elem_ops=struct_deal_ops[curr_desc->type];
+	if(elem_ops==NULL)
+		return -EINVAL;
+	if(elem_ops->get_text_value==NULL)
+	{
+		ret=curr_elem->size;
+		memcpy(text,addr+curr_elem->offset,curr_elem->size);
+	}
+	else
+	{
+		ret=elem_ops->get_text_value(addr+curr_elem->offset,text,curr_elem);
+	}
+	return ret;
+}
 int struct_write_elem(char * name,void * addr, void * elem_data,void * struct_template)
 {
 	STRUCT_NODE * curr_node=struct_template;

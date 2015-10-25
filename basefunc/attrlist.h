@@ -133,7 +133,7 @@ static __inline__ struct list_head * typefind_elem_with_tag(
 }
 /* *************************************************************
  *  名称:  队列偏序极值元素查找 
-/* *************************************************************
+ * *************************************************************
  *  名称:  队列偏序极值元素查找 
  *  描述:  在队列查找与特定记录成偏序关系的元素的最小上界,如带目
  *  	   录文件名中最接近该文件的一个
@@ -248,5 +248,18 @@ static __inline__ Record_List * get_record_from_list(Record_List * record,Record
 		return NULL;
 	return list_entry(list->next,Record_List,list);	
 
+}
+
+static __inline__ int * get_record_list_no(Record_List * root)
+{
+	struct list_head * list;
+	int no=0;
+	list=root->list.next;
+	while(list!=&(root->list))
+	{
+		no++;
+		list=list->next;
+	}
+	return no;
 }
 #endif

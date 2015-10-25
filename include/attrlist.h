@@ -249,4 +249,16 @@ static __inline__ Record_List * get_record_from_list(Record_List * record,Record
 	return list_entry(list->next,Record_List,list);	
 
 }
+static __inline__ int * get_record_list_no(Record_List * root)
+{
+	struct list_head * list;
+	int no=0;
+	list=root->list.next;
+	while(list!=&(root->list))
+	{
+		no++;
+		list=list->next;
+	}
+	return no;
+}
 #endif

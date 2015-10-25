@@ -54,7 +54,7 @@ enum base_cube_db
 struct struct_elem_attr elem_attr_octet_desc[] =
 {
 	{"name",OS210_TYPE_ESTRING,sizeof(char *),NULL},
-	{"type",OS210_TYPE_ENUM,sizeof(int),&elem_type_valuelist},
+	{"type",OS210_TYPE_ENUM,sizeof(int),&elem_type_valuelist_array},
 	{"size",OS210_TYPE_INT,sizeof(int),NULL},
 	{"ref",OS210_TYPE_UUID,DIGEST_SIZE,NULL},
 	{NULL,OS210_TYPE_ENDDATA,0,NULL}
@@ -278,11 +278,13 @@ int read_struct_json_desc(void * root, BYTE * uuid)
 	int ret;
 	void * struct_db = memdb_get_dblist(TYPE_STRUCT_DESC,0);
 	void * root_node = root;
+	void * father_node = root;
 	void * curr_node = root;
 	void * temp_node = NULL;
 	void * struct_template ; 
 	int i;
 	int elem_no;
+	int elem_size;
 	struct struct_desc_record * struct_desc_record;
 	BYTE struct_uuid[DIGEST_SIZE];
 
@@ -293,28 +295,28 @@ int read_struct_json_desc(void * root, BYTE * uuid)
 	if(json_get_type(root_node)!= JSON_ELEM_MAP)
 		return -EINVAL;
 
-	curr_node=find_json_elem("desc",root);
-	if(curr_node==NULL)
+	father_node=find_json_elem("desc",root);
+	if(father_node==NULL)
 		return -EINVAL;
-	if(json_get_type(curr_node)!=JSON_ELEM_ARRAY)
+	if(json_get_type(father_node)!=JSON_ELEM_ARRAY)
 		return -EINVAL;	
 
-	root_node=curr_node;
+	root_node=father_node;
 	struct_template=hashlist_get_desc(static_db_list[TYPE_STRUCT_DESC]);
 	
-	elem_no = json_get_elemno(curr_node);
+	elem_no = json_get_elemno(father_node);
 	
 	ret=Galloc(&struct_desc,sizeof(struct elem_attr_octet)*(elem_no+1));
 	if(ret<0)
 		return ret;
-	json_node_set_pointer(curr_node,struct_desc);
+	json_node_set_pointer(father_node,struct_desc);
 
 	i=0;
 	do
 	{
 		if(i==0)
 		{
-			curr_node=get_first_json_child(curr_node);
+			curr_node=get_first_json_child(father_node);
 			if(curr_node==NULL)
 				return -EINVAL;
 		}
@@ -322,7 +324,8 @@ int read_struct_json_desc(void * root, BYTE * uuid)
 		{
 			struct_desc[i].type=OS210_TYPE_ENDDATA;
 				
-			curr_node=get_json_father(curr_node);
+			curr_node=father_node;
+			father_node=get_json_father(curr_node);
 			ret=Galloc(&struct_desc_record,sizeof(struct struct_desc_record));
 			if(ret<0)
 				return ret;
@@ -337,22 +340,35 @@ int read_struct_json_desc(void * root, BYTE * uuid)
 			struct_desc=json_node_get_pointer(curr_node);
 			i=json_node_get_no(curr_node);
 			memcpy(struct_desc[i].ref_uuid,struct_desc_record->head.uuid,DIGEST_SIZE);
+			if(father_node==root_node)
+				break;
 			continue;
 		}
-		if(json_get_type(curr_node)==JSON_ELEM_MAP)
+		if(json_get_type(curr_node)!=JSON_ELEM_MAP)
+			return -EINVAL;
+		
+		json_node_set_no(father_node,i);
+		temp_node=find_json_elem("name",curr_node);
+		if(temp_node==NULL)
+			return -EINVAL;
+		char value[128];
+		ret=json_node_getvalue(temp_node,value,128);
+		ret=struct_write_elem_text("name",&struct_desc[i],value,struct_template);
+		if(ret<0)
+			return -EINVAL;
+		temp_node=find_json_elem("type",curr_node);
+		if(temp_node==NULL)	
+			return -EINVAL;
+		// deal with type
+		ret=json_node_getvalue(temp_node,value,DIGEST_SIZE*2);
+		ret=struct_write_elem_text("type",&struct_desc[i],value,struct_template);
+		if(struct_desc[i].type == OS210_TYPE_ORGCHAIN)
 		{
-			json_node_set_no(get_json_father(curr_node),i);
-			temp_node=find_json_elem("name",curr_node);
-			if(temp_node==NULL)
-				return -EINVAL;
-			char value[128];
-			ret=json_node_getvalue(temp_node,value,128);
-			ret=struct_write_elem_text("name",&struct_desc[i],value,struct_template);
-			if(ret<0)
-				return -EINVAL;
-			struct_desc[i].type=OS210_TYPE_ORGCHAIN;
 			struct_desc[i].size=DIGEST_SIZE;
-
+			temp_node=find_json_elem("ref",curr_node);
+			if(curr_node==NULL)
+				return -EINVAL;
+			json_node_set_no(curr_node,0);
 			elem_no = json_get_elemno(curr_node);
 			i=0;
 
@@ -360,13 +376,51 @@ int read_struct_json_desc(void * root, BYTE * uuid)
 			if(ret<0)
 				return ret;
 			json_node_set_pointer(curr_node,struct_desc);
+			father_node=curr_node;
 			continue;
-			
 		}	
 		ret=json_2_struct(curr_node,&struct_desc[i],struct_template);
 		if(ret<0)
 			return ret;
-		curr_node=get_next_json_child(get_json_father(curr_node));
+		elem_size=get_fixed_elemsize(struct_desc[i].type);
+		// compute size
+		if(elem_size>0)
+			struct_desc[i].size=elem_size;
+		else
+		{
+			temp_node=find_json_elem("size",curr_node);
+			if(temp_node==NULL)
+				return -EINVAL;
+			ret=json_node_getvalue(temp_node,value,DIGEST_SIZE*2);
+			if(ret<0)
+				return ret;
+			ret=struct_write_elem_text("size",&struct_desc[i],value,struct_template);
+		}	
+		// compute ref	
+		memset(struct_desc[i].ref_uuid,0,DIGEST_SIZE);
+		temp_node=find_json_elem("ref",curr_node);
+		if(temp_node!=NULL)
+		{
+			switch(struct_desc[i].type)
+			{
+				case OS210_TYPE_DEFINE:
+				case OS210_TYPE_DEFSTR:
+				case OS210_TYPE_DEFSTRARRAY:
+					ret=json_node_getvalue(temp_node,value,DIGEST_SIZE);
+					if(ret<0)
+						return ret;
+					strncpy(struct_desc[i].ref_uuid,value,DIGEST_SIZE);	
+					break;
+				case OS210_TYPE_ENUM:
+				case OS210_TYPE_FLAG:
+					break;
+				default:
+					return -EINVAL;
+			}
+		}
+			
+		curr_node=get_next_json_child(father_node);
+		i++;
 
 	}while(curr_node!=root_node);
 

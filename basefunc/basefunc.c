@@ -258,6 +258,7 @@ void * hashlist_get_next(void * hashlist)
 	return NULL;
 }
 
+
 typedef struct tagpointer_stack
 {
 	void ** top;
@@ -377,3 +378,4 @@ int pointer_queue_get(void * pointer_queue,void **pointer)
 		queue->tail++;
 	return 0;
 }
+

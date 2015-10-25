@@ -112,6 +112,23 @@ int estring_get_text_value(void * addr, char * text, void * elem_template){
 	return retval;
 }
 
+int estring_set_text_value(void * addr, char * text, void * elem_template){
+
+	struct elem_template * elem_attr=elem_template;
+	struct struct_elem_attr * elem_desc = elem_attr->elem_desc;
+	int retval;
+	char * estring;
+	retval = estring_get_length(text,elem_template);
+	if (retval<0)
+		return retval;
+	int ret = Palloc(addr,retval);
+	if (ret <0)
+		return -ENOMEM;
+	memcpy(*(char **)addr, text, retval);
+
+	return retval;
+
+}
 int define_get_bin_value(void * addr,void * elem_data,void * elem_template){
 	struct elem_template * curr_elem=elem_template;
 	struct struct_elem_attr * elem_desc = curr_elem->elem_desc;
@@ -373,7 +390,7 @@ int int_get_text_value(void * elem,char * text,void * elem_attr)
 int int_set_text_value(void * addr,char * text,void * elem_attr)
 {
 	struct elem_template * curr_elem=elem_attr;
-	char * string=addr;
+	char * string=text;
 	int ret=0;
 	int i;
 	int base=10;
@@ -399,7 +416,9 @@ int int_set_text_value(void * addr,char * text,void * elem_attr)
 			switch(string[i+1])
 			{
 				case 0:
-					return 0;
+					ret=0;
+					memcpy(addr,&ret,curr_elem->size);
+					return str_len+1;
 				case 'b':
 				case 'B':
 					i+=2;
@@ -416,9 +435,8 @@ int int_set_text_value(void * addr,char * text,void * elem_attr)
 					break;
 
 			}
-			break;
 		}
-		
+		break;
 	}
 	for(;i<str_len;i++)
 	{
@@ -453,7 +471,7 @@ ELEM_OPS estring_convert_ops =
 	.get_bin_value = estring_get_bin_value,
 	.set_bin_value = estring_set_bin_value,
 	.get_text_value = estring_get_text_value,
-//	.set_text_value = estring_set_text_value,
+	.set_text_value = estring_set_text_value,
 	.elem_get_length = estring_get_length,
 };
 ELEM_OPS define_convert_ops =

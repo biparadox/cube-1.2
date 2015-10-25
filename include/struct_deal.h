@@ -107,7 +107,7 @@ typedef struct elem_convert_ops
 int struct_deal_init();
 
 // alloc and free the struct
-
+int get_fixed_elem_size(int type);
 void * create_struct_template(struct struct_elem_attr * struct_desc);
 void free_struct_template(void * struct_template);
 int struct_free(void * addr, void * struct_template);
