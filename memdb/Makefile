@@ -7,7 +7,7 @@ STRUCTOBJ= memdb.o
 
 main: ../lib/libmemdb.a  test_main
 test_main: test_main.c ../lib/libstruct.a 
-	$(CC) $(FLAGS) test_main test_main.c -L../lib -lmemdb -lbasefunc -lcrypto_func -lstruct -lalloc -lstring 
+	$(CC) $(FLAGS) test_main test_main.c -L../lib -lmemdb -lbasefunc -lcrypto_func -lstruct -ljson -lalloc -lstring 
 ../lib/libmemdb.a: $(STRUCTOBJ)
 	ar rs libmemdb.a $(STRUCTOBJ)
 	mv    libmemdb.a ../lib

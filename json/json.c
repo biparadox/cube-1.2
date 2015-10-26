@@ -134,28 +134,44 @@ Record_List * get_new_Record_List(void * record)
     return newrecord;
 }
 
-static inline int json_get_numvalue(char * valuestr,char * json_str)
+static inline int json_get_numvalue(void * value_addr,char * json_str)
 {
-    int i;
-    int point=0;
+    int i=0;
+    int value=0;
+    int isnegative=0;
+
      if(json_str[0]!='.')
     {
-        if((json_str[0]<'0')||(json_str[0]>'9'))
+	if(json_str[0]=='-')
+	{
+		isnegative=1;
+		i++;
+	}
+        if((json_str[i]<'0')||(json_str[i]>'9'))
             return -EINVAL;
+	value=json_str[i++]-'0';
     }
-    for(i=0;i<1024;i++)
+    for(;i<DIGEST_SIZE;i++)
     {
         if(json_str[i]==0)
             return -EINVAL;
         if(IsValueEnd(json_str[i]))
             break;
-        valuestr[i]=json_str[i];
+        if((json_str[i]<'0')||(json_str[i]>'9'))
+            return -EINVAL;
+	value=value*10+(json_str[i]-'0');
     }
-    if(i==0)
+    if(i==DIGEST_SIZE)
         return -EINVAL;
-    if(i==1024)
-        return -EINVAL;
-    valuestr[i]=0;
+
+    if(isnegative)
+    {
+    	*((int *)value_addr)=-value;
+    }
+    else
+    {
+    	*((int *)value_addr)=value;
+    }
     return i;
 }
 
@@ -175,28 +191,68 @@ void * json_find_elem(char * name,void * root)
 		this_node=(JSON_NODE *)json_get_next_child(root);
 	}
 	return this_node;
-
 }
 
-static inline int json_get_boolvalue(char * valuestr,char * json_str)
+static inline int json_get_boolvalue(void * value_addr,char * json_str)
 {
    int i;
-   if((json_str[0]!='b')||(json_str[0]!='B')
-            ||(json_str[0]!='f')||(json_str[0]!='F'))
-        return -EINVAL;
-   for(i=0;i<6;i++)
+   const char * truestring[3]={"true","True","TRUE"};
+   const char * falsestring[3]={"false","False","FALSE"};
+
+   switch(json_str[0])
    {
-       if(json_str[i]==0)
-           return -EINVAL;
-       if(IsValueEnd(json_str[i]))
-           break;
-       valuestr[i]=json_str[i];
+	case 't':
+		if(memcmp(json_str,"true",4)==0)
+		{
+			*(int *)value_addr=1;
+			i=4;
+			break;
+		}
+		else
+			return -EINVAL;
+	case 'T':
+		if(memcmp(json_str,"True",4)==0)
+		{
+			*(int *)value_addr=1;
+			i=4;
+			break;
+		}
+		else if(memcmp(json_str,"TRUE",4)==0)
+		{
+			*(int *)value_addr=1;
+			i=4;
+			break;
+		}
+		else
+			return -EINVAL;
+	case 'f':
+		if(memcmp(json_str,"false",5)==0)
+		{
+			*(int *)value_addr=1;
+			i=5;
+			break;
+		}
+		else
+			return -EINVAL;
+	case 'F':
+		if(memcmp(json_str,"False",5)==0)
+		{
+			*(int *)value_addr=1;
+			i=5;
+			break;
+		}
+		else if(memcmp(json_str,"FALSE",5)==0)
+		{
+			*(int *)value_addr=1;
+			i=5;
+			break;
+		}
+		else
+			return -EINVAL;
+
+	default:
+		return -EINVAL;
    }
-   if(i==0)
-        return -EINVAL;
-   if(i==6)
-        return -EINVAL;
-   valuestr[i]=0;
    return i;
 }
 

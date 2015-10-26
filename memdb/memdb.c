@@ -20,6 +20,7 @@
 #include "../include/list.h"
 #include "../include/string.h"
 #include "../include/alloc.h"
+#include "../include/json.h"
 #include "../include/struct_deal.h"
 #include "../include/valuelist.h"
 #include "../include/basefunc.h"
@@ -295,7 +296,7 @@ int read_struct_json_desc(void * root, BYTE * uuid)
 	if(json_get_type(root_node)!= JSON_ELEM_MAP)
 		return -EINVAL;
 
-	father_node=find_json_elem("desc",root);
+	father_node=json_find_elem("desc",root);
 	if(father_node==NULL)
 		return -EINVAL;
 	if(json_get_type(father_node)!=JSON_ELEM_ARRAY)
@@ -316,7 +317,7 @@ int read_struct_json_desc(void * root, BYTE * uuid)
 	{
 		if(i==0)
 		{
-			curr_node=get_first_json_child(father_node);
+			curr_node=json_get_first_child(father_node);
 			if(curr_node==NULL)
 				return -EINVAL;
 		}
@@ -325,7 +326,7 @@ int read_struct_json_desc(void * root, BYTE * uuid)
 			struct_desc[i].type=OS210_TYPE_ENDDATA;
 				
 			curr_node=father_node;
-			father_node=get_json_father(curr_node);
+			father_node=json_get_father(curr_node);
 			ret=Galloc(&struct_desc_record,sizeof(struct struct_desc_record));
 			if(ret<0)
 				return ret;
@@ -348,7 +349,7 @@ int read_struct_json_desc(void * root, BYTE * uuid)
 			return -EINVAL;
 		
 		json_node_set_no(father_node,i);
-		temp_node=find_json_elem("name",curr_node);
+		temp_node=json_find_elem("name",curr_node);
 		if(temp_node==NULL)
 			return -EINVAL;
 		char value[128];
@@ -356,7 +357,7 @@ int read_struct_json_desc(void * root, BYTE * uuid)
 		ret=struct_write_elem_text("name",&struct_desc[i],value,struct_template);
 		if(ret<0)
 			return -EINVAL;
-		temp_node=find_json_elem("type",curr_node);
+		temp_node=json_find_elem("type",curr_node);
 		if(temp_node==NULL)	
 			return -EINVAL;
 		// deal with type
@@ -365,18 +366,18 @@ int read_struct_json_desc(void * root, BYTE * uuid)
 		if(struct_desc[i].type == OS210_TYPE_ORGCHAIN)
 		{
 			struct_desc[i].size=DIGEST_SIZE;
-			temp_node=find_json_elem("ref",curr_node);
-			if(curr_node==NULL)
+			temp_node=json_find_elem("ref",curr_node);
+			if(temp_node==NULL)
 				return -EINVAL;
-			json_node_set_no(curr_node,0);
-			elem_no = json_get_elemno(curr_node);
+			json_node_set_no(temp_node,0);
+			elem_no = json_get_elemno(temp_node);
 			i=0;
 
 			ret=Galloc(&struct_desc,sizeof(struct elem_attr_octet)*(elem_no+1));
 			if(ret<0)
 				return ret;
-			json_node_set_pointer(curr_node,struct_desc);
-			father_node=curr_node;
+			json_node_set_pointer(temp_node,struct_desc);
+			father_node=temp_node;
 			continue;
 		}	
 		ret=json_2_struct(curr_node,&struct_desc[i],struct_template);
@@ -388,7 +389,7 @@ int read_struct_json_desc(void * root, BYTE * uuid)
 			struct_desc[i].size=elem_size;
 		else
 		{
-			temp_node=find_json_elem("size",curr_node);
+			temp_node=json_find_elem("size",curr_node);
 			if(temp_node==NULL)
 				return -EINVAL;
 			ret=json_node_getvalue(temp_node,value,DIGEST_SIZE*2);
@@ -398,7 +399,7 @@ int read_struct_json_desc(void * root, BYTE * uuid)
 		}	
 		// compute ref	
 		memset(struct_desc[i].ref_uuid,0,DIGEST_SIZE);
-		temp_node=find_json_elem("ref",curr_node);
+		temp_node=json_find_elem("ref",curr_node);
 		if(temp_node!=NULL)
 		{
 			switch(struct_desc[i].type)
@@ -419,7 +420,7 @@ int read_struct_json_desc(void * root, BYTE * uuid)
 			}
 		}
 			
-		curr_node=get_next_json_child(father_node);
+		curr_node=json_get_next_child(father_node);
 		i++;
 
 	}while(curr_node!=root_node);
