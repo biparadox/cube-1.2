@@ -92,3 +92,80 @@ int Itoa(int n,char *str)
 	}
 	return len;
 }
+
+static inline int _get_lowest_bit(long long value)
+{
+	int i;
+	int ret=0;
+	int offset=sizeof(long long)*8/2;
+
+	long long mask[6]=
+	{
+		0x00000000FFFFFFFF,
+		0x0000FFFF0000FFFF,
+		0x00FF00FF00FF00FF,
+		0x0F0F0F0F0F0F0F0F,
+		0x3333333333333333,
+		0x7777777777777777,
+	};
+//	long long mask=-1;
+	if(value==0)
+		return 0;
+	for(i=0;i<6;i++)
+	{
+		if(!(mask[i]&value))
+		{
+			ret+=offset;
+		}
+		else
+		{
+			value&=mask[i];
+		}
+		offset/=2;
+	}
+	return ret+1;	
+}
+
+int    Getlowestbit(BYTE  * addr,int size,int bit)
+{
+	long long test=0;
+	int ret=0;
+	int i;
+	if(size<=0)
+		return 0;
+	if(size<=8)
+	{
+		memcpy(&test,addr,size);	
+		if(bit)
+			return _get_lowest_bit(test);	
+		else
+			return _get_lowest_bit(~test);
+	}
+	for(i=0;i<size;i+=8)
+	{
+		test=0;
+		if(i+8>size)
+			memcpy(&test,addr+i,size-i);
+		else
+			memcpy(&test,addr+i,8);
+		if(bit)
+		{
+			if(test==0)
+			{
+				ret+=64;
+				continue;
+			}
+			return ret+_get_lowest_bit(test);
+		}
+		else
+		{
+			if(test==-1)
+			{
+				ret+=64;
+				continue;
+			}
+			return ret+_get_lowest_bit(~test);
+		}
+	}
+	return 0;
+} 
