@@ -19,17 +19,6 @@ static inline int _jsonelem_isvalue(int type)
 	return type & JSON_ELEM_VALUE;
 }
 
-enum solve_state
-{
-    SOLVE_INIT,
-    SOLVE_ARRAY,
-    SOLVE_MAP,
-    SOLVE_NAME,
-    SOLVE_VALUE,
-    SOLVE_UPGRADE,
-    SOLVE_FINISH
-};
-
 typedef struct json_elem_node
 {
     int elem_type;            //  this json elem's type, it can be
@@ -39,7 +28,7 @@ typedef struct json_elem_node
                               // if this json elem is the root elem,
                               //  its name is "__ROOT__"
     char * value_str;         // this json elem's value string
-    int  value;         //  if solve_state is JSON_SOLVE_PROCESS,
+    long long  value;         //  if solve_state is JSON_SOLVE_PROCESS,
                               //  it is this json elem str's offset, if
                               // solve_state is JSON_SOLVE_FINISH,it is
                               // this json elem str's length                         // this

@@ -129,78 +129,6 @@ int estring_set_text_value(void * addr, char * text, void * elem_template){
 	return retval;
 
 }
-int define_get_bin_value(void * addr,void * elem_data,void * elem_template){
-	struct elem_template * curr_elem=elem_template;
-	struct struct_elem_attr * elem_desc = curr_elem->elem_desc;
-
-	struct elem_template * temp_elem;
-	int retval;
-	int def_offset;
-	int def_value;
-	ELEM_OPS * elem_ops;
-	temp_elem=curr_elem->ref;
-	if(temp_elem==NULL)
-		return -EINVAL;
-	def_offset=temp_elem->offset;
-
-	if(curr_elem->offset <def_offset)
-		return -EINVAL;
-
-	elem_ops=struct_deal_ops[temp_elem->elem_desc->type];
-	if(elem_ops==NULL)
-		return -EINVAL;
-	def_value=elem_ops->get_int_value(addr-(curr_elem->offset-def_offset),temp_elem);
-	
-	if(def_value==0)
-		return 0;
-	if(def_value<0)
-		return -EINVAL;
-	unsigned char * defdata;
-	defdata = *(unsigned char **)addr;
-	// if the string is an empty string
-	if (defdata == NULL)
-	{
-		return -EINVAL;
-	}
-	retval =def_value;
-	memcpy(elem_data, defdata, retval);
-
-	return retval;
-}
-
-int define_set_bin_value(void * elem,void * addr,void * elem_template){
-	struct elem_template * curr_elem=elem_template;
-	struct struct_elem_attr * elem_desc = curr_elem->elem_desc;
-
-	struct elem_template * temp_elem;
-	int retval;
-	int def_offset;
-	int def_value;
-	ELEM_OPS * elem_ops;
-	temp_elem=curr_elem->ref;
-	if(temp_elem==NULL)
-		return -EINVAL;
-
-	def_value=(int)temp_elem->ref & 0x00000FFF;
-	
-	if(def_value==0)
-		return 0;
-	if(def_value<0)
-		return -EINVAL;
-	retval = Palloc(addr,def_value);
-	if(retval<0)
-		return retval;
-	unsigned char * defdata;
-	defdata = *(unsigned char **)addr;
-	// if the string is an empty string
-	if (defdata == NULL)
-	{
-		return -EINVAL;
-	}
-	memcpy(defdata,addr,def_value);
-
-	return def_value;
-}
 
 int uuid_get_text_value(void * addr, char * text,void * elem_template)
 {
@@ -229,7 +157,6 @@ int uuid_get_text_value(void * addr, char * text,void * elem_template)
 	}
 	return 0;
 }
-
 int uuid_set_text_value(void * addr, char * text,void * elem_template)
 {
 	int i,j,k,retval;
@@ -476,9 +403,9 @@ ELEM_OPS estring_convert_ops =
 };
 ELEM_OPS define_convert_ops =
 {
-	.get_bin_value = define_get_bin_value,
-	.set_bin_value = define_set_bin_value,
-	.get_text_value = define_get_text_value,
+//	.get_bin_value = define_get_bin_value,
+//	.set_bin_value = define_set_bin_value,
+//	.get_text_value = define_get_text_value,
 //	.set_text_value = define_set_text_value,
 //	.elem_alloc_size = estring_alloc_size,
 };

@@ -85,6 +85,12 @@ int main() {
     	void * struct_template=create_struct_template(verify_login_desc);
 	recover_struct=Calloc(struct_size(struct_template));
 	ret=struct_2_blob(&test_login,buffer,struct_template);	
+	printf("get %d size blob!\n",ret);
+	ret=struct_set_flag(struct_template,OS210_ELEM_FLAG_TEMP,namelist);
+	ret=struct_2_part_blob(&test_login,buffer,struct_template,OS210_ELEM_FLAG_TEMP);
+	printf("get %d size blob!\n",ret);
+
+/*
 	ret=struct_read_elem("login_info.passwd",&test_login,text,struct_template);
 	ret=struct_set_flag(struct_template,OS210_ELEM_FLAG_TEMP,namelist);
 	flag=struct_get_flag(struct_template,"login_info.passwd");
@@ -105,6 +111,7 @@ int main() {
 //	ret=blob_2_text(buffer,text,struct_template);	
 //	ret=text_2_blob(buffer,text,struct_template);	
 	ret=blob_2_struct(buffer,recover_struct,struct_template);
+*/
 	
 	struct_free_alloc(recover_struct,struct_template);
     	free_struct_template(struct_template);
