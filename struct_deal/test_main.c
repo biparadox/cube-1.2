@@ -62,6 +62,7 @@ int main() {
 //	struct connect_login test_login={"HuJun","openstack"};
 	struct verify_login test_login={{"HuJun","openstack"},"0x20",""};
 	char buffer[512];
+	char buffer1[512];
 	char text[512];
 	char text1[512];
 	void * root;
@@ -87,9 +88,11 @@ int main() {
 	ret=struct_2_blob(&test_login,buffer,struct_template);	
 	printf("get %d size blob!\n",ret);
 	ret=struct_set_flag(struct_template,OS210_ELEM_FLAG_TEMP,namelist);
-	ret=struct_2_part_blob(&test_login,buffer,struct_template,OS210_ELEM_FLAG_TEMP);
+	ret=struct_2_part_blob(&test_login,buffer1,struct_template,OS210_ELEM_FLAG_TEMP);
 	printf("get %d size blob!\n",ret);
 
+	ret=blob_2_struct(buffer,recover_struct,struct_template);
+	printf("read %d size blob!\n",ret);
 /*
 	ret=struct_read_elem("login_info.passwd",&test_login,text,struct_template);
 	ret=struct_set_flag(struct_template,OS210_ELEM_FLAG_TEMP,namelist);

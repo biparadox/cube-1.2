@@ -629,6 +629,9 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 		if(elem_ops==NULL)
 			return -EINVAL;
 
+		ret=funcs->proc_func(addr,data,curr_elem,para);
+		if(ret<0)
+			return ret;
 		// pre_fretch the define value
 		if(_isvalidvalue(curr_elem->elem_desc->type) &&
 			((int)curr_elem->ref & DEFINE_TAG))
@@ -641,20 +644,13 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 				return -EINVAL;
 			curr_elem->ref=((int)curr_elem->ref&DEFINE_TAG)+define_value;			
 		}
-		ret=funcs->proc_func(addr,data,curr_elem,para);
-		if(ret<0)
-			return ret;
 		curr_node->temp_var++;
 	}while(1);
+	if(funcs->finish==NULL)
+		return 0;
 	return funcs->finish(addr,data,struct_template,para);
 }
 		
-int default_finish(void * addr,void * data,void * struct_template,void *para)
-{
-	struct default_para  * my_para = para;
-	return my_para->offset;
-}
-
 int proc_struct_2_blob(void * addr,void * data,void * elem,void * para)
 {
 	struct default_para  * my_para = para;
@@ -667,16 +663,23 @@ int proc_struct_2_blob(void * addr,void * data,void * elem,void * para)
 
 	if(elem_ops->get_bin_value==NULL)
 	{
-		if(_isdefineelem(curr_elem->elem_desc->type))
+		if(_ispointerelem(curr_elem->elem_desc->type))
 		{
-			struct elem_template * temp_elem=curr_elem->ref;
-			ret = (int)temp_elem->ref & 0x00000FFF;
+			if(_isdefineelem(curr_elem->elem_desc->type))
+			{
+				struct elem_template * temp_elem=curr_elem->ref;
+				ret = (int)temp_elem->ref & 0x00000FFF;
+			}
+			else 
+				ret=strnlen(*(char **)(addr+curr_elem->offset),DIGEST_SIZE*2);
+			memcpy(data+my_para->offset,*(char **)(addr+curr_elem->offset),ret);
 		}
-		else if( (ret=get_fixed_elemsize(curr_elem->elem_desc->type))<0)
+		else
 		{
-			ret=curr_elem->size;
+			if( (ret=get_fixed_elemsize(curr_elem->elem_desc->type))<0)
+				ret=curr_elem->size;
+			Memcpy(data+my_para->offset,addr+curr_elem->offset,ret);
 		}
-		memcpy(data+my_para->offset,addr+curr_elem->offset,ret);
 	}
 	else
 	{
@@ -691,14 +694,17 @@ int proc_struct_2_blob(void * addr,void * data,void * elem,void * para)
 
 int struct_2_blob(void * addr, void * blob, void * struct_template)
 {
+	int ret;
 	struct struct_deal_ops struct_2_blob_ops =
 	{
 		.proc_func=&proc_struct_2_blob,
-		.finish=&default_finish,
 	};	
 	static struct default_para my_para;
 	my_para.offset=0;
-	return _convert_frame_func(addr,blob,struct_template,&struct_2_blob_ops,		&my_para);
+	ret = _convert_frame_func(addr,blob,struct_template,&struct_2_blob_ops,		&my_para);
+	if(ret<0)
+		return ret;
+	return my_para.offset;
 }
 
 struct part_deal_para
@@ -721,17 +727,81 @@ int part_deal_test(void * addr,void * data,void * elem,void *para)
 
 int struct_2_part_blob(void * addr,void * blob, void * struct_template,int flag)
 {
+	int ret;
 	struct struct_deal_ops struct_2_blob_ops =
 	{
 		.testelem=part_deal_test,
 		.proc_func=&proc_struct_2_blob,
-		.finish=&default_finish,
 	};	
 	static struct part_deal_para my_para;
 	my_para.flag=flag;
 	my_para.offset=0;
-	return _convert_frame_func(addr,blob,struct_template,&struct_2_blob_ops,		&my_para);
+	ret= _convert_frame_func(addr,blob,struct_template,&struct_2_blob_ops,		&my_para);
+	if(ret<0)
+		return ret;
+	return my_para.offset;
 }
+
+
+int proc_blob_2_struct(void * addr,void * data,void * elem,void * para)
+{
+	struct default_para  * my_para = para;
+	struct elem_template	* curr_elem=elem;
+	int ret;
+	// get this elem's ops
+	ELEM_OPS * elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
+	if(elem_ops==NULL)
+		return -EINVAL;
+
+	if(elem_ops->get_bin_value==NULL)
+	{
+		if(_ispointerelem(curr_elem->elem_desc->type))
+		{
+			if(_isdefineelem(curr_elem->elem_desc->type))
+			{
+				struct elem_template * temp_elem=curr_elem->ref;
+				ret = (int)temp_elem->ref & 0x00000FFF;
+			}
+			else 
+				ret=strnlen(data+my_para->offset,DIGEST_SIZE*2);
+			int tempret=Palloc(addr+curr_elem->offset,ret);
+			if(tempret<0)
+				return tempret;
+			Memcpy(*(char **)(addr+curr_elem->offset),data+my_para->offset,ret);
+		}
+		else
+		{
+			if( (ret=get_fixed_elemsize(curr_elem->elem_desc->type))<0)
+				ret=curr_elem->size;
+			Memcpy(addr+curr_elem->offset,data+my_para->offset,ret);
+		}
+	}
+	else
+	{
+		ret=elem_ops->set_bin_value(addr+curr_elem->offset,
+			data+my_para->offset,curr_elem);
+		if(ret<0)
+			return ret;
+	}
+	my_para->offset+=ret;
+	return ret;
+} 
+
+int blob_2_struct(void * blob, void * addr, void * struct_template)
+{
+	int ret;
+	struct struct_deal_ops blob_2_struct_ops =
+	{
+		.proc_func=&proc_blob_2_struct,
+	};	
+	static struct default_para my_para;
+	my_para.offset=0;
+	ret = _convert_frame_func(addr,blob,struct_template,&blob_2_struct_ops,		&my_para);
+	if(ret<0)
+		return ret;
+	return my_para.offset;
+}
+
 
 /*
 int struct_2_blob(void * addr, void * blob, void * struct_template)
