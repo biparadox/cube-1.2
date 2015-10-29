@@ -71,6 +71,7 @@ int main() {
 //		"\"nonce\":\"AAAAAAAABBBBBBBBCCCCCCCCDDDDEEFG\"}";
 	int ret;
 	struct verify_login * recover_struct;
+	struct verify_login * recover_struct1;
 	
 	//char * namelist= "login_info.user,login_info.passwd";
 	char * namelist= "login_info";
@@ -84,7 +85,8 @@ int main() {
 
 //	recover_struct=Calloc(sizeof(struct verify_login));
     	void * struct_template=create_struct_template(verify_login_desc);
-	recover_struct=Calloc(struct_size(struct_template));
+	recover_struct=Talloc(struct_size(struct_template));
+	recover_struct1=Talloc(struct_size(struct_template));
 	ret=struct_2_blob(&test_login,buffer,struct_template);	
 	printf("get %d size blob!\n",ret);
 	ret=struct_set_flag(struct_template,OS210_ELEM_FLAG_TEMP,namelist);
@@ -93,6 +95,13 @@ int main() {
 
 	ret=blob_2_struct(buffer,recover_struct,struct_template);
 	printf("read %d size blob!\n",ret);
+	ret=blob_2_part_struct(buffer,recover_struct1,struct_template,OS210_ELEM_FLAG_TEMP);
+	printf("read %d size blob!\n",ret);
+
+	ret=struct_2_json(&test_login,text,struct_template);
+	printf("read %d size to json %s!\n",ret,text);
+	ret=struct_2_part_json(&test_login,text1,struct_template,OS210_ELEM_FLAG_TEMP);
+	printf("read %d size to json %s!\n",ret,text1);
 /*
 	ret=struct_read_elem("login_info.passwd",&test_login,text,struct_template);
 	ret=struct_set_flag(struct_template,OS210_ELEM_FLAG_TEMP,namelist);

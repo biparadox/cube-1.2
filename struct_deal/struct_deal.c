@@ -545,7 +545,7 @@ int struct_free_alloc(void * addr,void * struct_template)
 
 struct struct_deal_ops
 {
-	int (*start)(void * addr, void * data,void *elem,void ** para);
+	int (*start)(void * addr, void * data,void *elem,void * para);
 	int (*testelem)(void * addr, void * data,void *elem,void * para);
 	int (*enterstruct)(void * addr,void * data, void * elem,void * para);
 	int (*exitstruct)(void * addr,void * data,void * elem,void * para);
@@ -593,7 +593,7 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 			if(funcs->exitstruct!=NULL)
 			{
 				ret=funcs->exitstruct(addr,data,curr_node,
-					&para);
+					para);
 				if(ret<0)
 					return ret;
 			}
@@ -617,8 +617,8 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 			curr_node->temp_var=0;
 			if(funcs->enterstruct!=NULL)
 			{
-				ret=funcs->enterstruct(addr,data,curr_node,
-					&para);
+				ret=funcs->enterstruct(addr,data,curr_elem,
+					para);
 				if(ret<0)
 					return ret;
 			}
@@ -803,301 +803,21 @@ int blob_2_struct(void * blob, void * addr, void * struct_template)
 }
 
 
-/*
-int struct_2_blob(void * addr, void * blob, void * struct_template)
+int blob_2_part_struct(void * blob,void * addr, void * struct_template,int flag)
 {
-	STRUCT_NODE * root_node=struct_template;
-	STRUCT_NODE * curr_node=root_node;
-	STRUCT_NODE * temp_node;
-	curr_node->temp_var=0;
-	struct elem_template * curr_elem;
-	int addr_offset=0;
-	int blob_offset=0;
-	struct struct_elem_attr * curr_desc;
-	ELEM_OPS * elem_ops;
-	int def_value;
 	int ret;
-
-	curr_desc=root_node->struct_desc;
-
-	do{
-		// throughout the node tree: back
-		if(curr_node->temp_var == curr_node->elem_no)
-		{
-			if(curr_node==root_node)
-				break;
-			temp_node=curr_node;
-			curr_node=curr_node->parent;
-			curr_desc=curr_node->struct_desc;
-			continue;
-		}
-		curr_elem=&curr_node->elem_list[curr_node->temp_var];
-		// throughout the node tree: into the sub_struct
-		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
-		{
-			curr_node->temp_var++;
-			curr_node=curr_elem->ref;
-			curr_node->temp_var=0;
-			curr_desc=curr_node->struct_desc;
-			continue;
-		}
-		// get this elem's ops
-		elem_ops=struct_deal_ops[curr_desc[curr_node->temp_var].type];
-		if(elem_ops==NULL)
-			return -EINVAL;
-		addr_offset=curr_elem->offset;
-		if(elem_ops->get_bin_value==NULL)
-		{
-			memcpy(blob+blob_offset,addr+addr_offset,curr_elem->size);
-			blob_offset+=curr_elem->size;
-		}
-		else
-		{
-			ret=elem_ops->get_bin_value(addr+addr_offset,blob+blob_offset,curr_elem);
-			if(ret<0)
-				return ret;
-			blob_offset+=ret;
-		}
-		curr_node->temp_var++;
-	}while(1);
-	return blob_offset;
-}
-
-int blob_2_struct(void * blob, void * addr, void * struct_template)
-{
-	STRUCT_NODE * root_node=struct_template;
-	STRUCT_NODE * curr_node=root_node;
-	STRUCT_NODE * temp_node;
-	curr_node->temp_var=0;
-	struct elem_template * curr_elem;
-	int addr_offset=0;
-	int blob_offset=0;
-	struct struct_elem_attr * curr_desc;
-	ELEM_OPS * elem_ops;
-	int ret;
-
-	curr_desc=root_node->struct_desc;
-
-	do{
-		// throughout the node tree: back
-		if(curr_node->temp_var == curr_node->elem_no)
-		{
-			if(curr_node==root_node)
-				break;
-			temp_node=curr_node;
-			curr_node=curr_node->parent;
-			curr_desc=curr_node->struct_desc;
-			continue;
-		}
-		curr_elem=&curr_node->elem_list[curr_node->temp_var];
-		// throughout the node tree: into the sub_struct
-		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
-		{
-			curr_node->temp_var++;
-			curr_node=curr_elem->ref;
-			curr_node->temp_var=0;
-			curr_desc=curr_node->struct_desc;
-			continue;
-		}
-		// get this elem's ops
-		elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
-		if(elem_ops==NULL)
-			return -EINVAL;
-		// pre_fretch the define value
-		if(_isvalidvalue(curr_elem->elem_desc->type) &&
-			((int)curr_elem->ref & DEFINE_TAG))
-		{
-			if(elem_ops->get_int_value == NULL)
-				return -EINVAL;
-			int define_value;
-			define_value = elem_ops->get_int_value(addr+curr_elem->offset,curr_elem);
-			if((define_value<0)||define_value>=1024)
-				return define_value;
-			curr_elem->ref=(int)curr_elem->ref&DEFINE_TAG+define_value;			
-		}
-		addr_offset=curr_elem->offset;
-		if(elem_ops->get_bin_value==NULL)
-		{
-			memcpy(addr+addr_offset,blob+blob_offset,curr_elem->size);
-			blob_offset+=curr_elem->size;
-		}
-		else
-		{
-			ret=elem_ops->set_bin_value(addr+addr_offset,blob+blob_offset,curr_elem);
-			if(ret<0)
-				return ret;
-			blob_offset+=ret;
-		}
-		curr_node->temp_var++;
-	}while(1);
-	return blob_offset;
-}
-
-int struct_2_text(void * addr, char * text, void * struct_template)
-{
-	STRUCT_NODE * root_node=struct_template;
-	STRUCT_NODE * curr_node=root_node;
-	STRUCT_NODE * temp_node;
-	curr_node->temp_var=0;
-	struct elem_template * curr_elem;
-	int str_offset=0;
-	int text_len=0;
-	struct struct_elem_attr * curr_desc;
-	ELEM_OPS * elem_ops;
-	int ret;
-
-	curr_desc=root_node->struct_desc;
-
-	do{
-		// throughout the node tree: back
-		if(curr_node->temp_var == curr_node->elem_no)
-		{
-			if(curr_node==root_node)
-				break;
-			temp_node=curr_node;
-			curr_node=curr_node->parent;
-			curr_desc=curr_node->struct_desc;
-			continue;
-		}
-		curr_elem=&curr_node->elem_list[curr_node->temp_var];
-		// throughout the node tree: into the sub_struct
-		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
-		{
-			curr_node->temp_var++;
-			curr_node=curr_elem->ref;
-			curr_node->temp_var=0;
-			curr_desc=curr_node->struct_desc;
-			continue;
-		}
-		// get this elem's ops
-		elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
-		if(elem_ops==NULL)
-			return -EINVAL;
-		// pre_fretch the define value
-		if(_isvalidvalue(curr_elem->elem_desc->type) &&
-			((int)curr_elem->ref & DEFINE_TAG))
-		{
-			if(elem_ops->get_int_value == NULL)
-				return -EINVAL;
-			int define_value;
-			define_value = elem_ops->get_int_value(addr+curr_elem->offset,curr_elem);
-			if((define_value<0)||define_value>=1024)
-				return define_value;
-			curr_elem->ref=((int)curr_elem->ref&DEFINE_TAG)+define_value;			
-		}
-		if(elem_ops->get_text_value==NULL)
-		{
-			if(_ispointerelem(curr_elem->elem_desc->type))
-			{
-				text_len=strlen(*(char **)(addr+curr_elem->offset))+1;
-				if((text_len<0)||(text_len>1024))
-					return -EINVAL;
-				strncpy(text+str_offset,*(char **)(addr+curr_elem->offset),text_len);
-			}
-			else
-			{
-				text_len=strnlen(addr+curr_elem->offset,curr_elem->size)+1;
-				if(text_len>curr_elem->size)
-					text_len=curr_elem->size;
-				strncpy(text+str_offset,addr+curr_elem->offset,text_len);
-			}
-			str_offset+=text_len;
-		}
-		else
-		{
-			text_len=elem_ops->get_text_value(addr+curr_elem->offset,text+str_offset,curr_elem);
-			if(text_len<0)
-				return text_len;
-			str_offset+=text_len;
-		}
-		curr_node->temp_var++;
-	}while(1);
-	return str_offset;
-}
-
-int text_2_struct(char * text, void * addr, void * struct_template)
-{
-	STRUCT_NODE * root_node=struct_template;
-	STRUCT_NODE * curr_node=root_node;
-	STRUCT_NODE * temp_node;
-	curr_node->temp_var=0;
-	struct elem_template * curr_elem;
-	int text_len=0;
-	int str_offset=0;
-	struct struct_elem_attr * curr_desc;
-	ELEM_OPS * elem_ops;
-	int ret;
-
-	curr_desc=root_node->struct_desc;
-
-	do{
-		// throughout the node tree: back
-		if(curr_node->temp_var == curr_node->elem_no)
-		{
-			if(curr_node==root_node)
-				break;
-			temp_node=curr_node;
-			curr_node=curr_node->parent;
-			curr_desc=curr_node->struct_desc;
-			continue;
-		}
-		curr_elem=&curr_node->elem_list[curr_node->temp_var];
-		// throughout the node tree: into the sub_struct
-		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
-		{
-			curr_node->temp_var++;
-			curr_node=curr_elem->ref;
-			curr_node->temp_var=0;
-			curr_desc=curr_node->struct_desc;
-			continue;
-		}
-		// get this elem's ops
-		elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
-		if(elem_ops==NULL)
-			return -EINVAL;
-		// pre_fretch the define value
-		if(_isvalidvalue(curr_elem->elem_desc->type) &&
-			((int)curr_elem->ref & DEFINE_TAG))
-		{
-			if(elem_ops->get_int_value == NULL)
-				return -EINVAL;
-			int define_value;
-			define_value = get_string_value(text+str_offset,curr_elem);
-			if((define_value<0)||define_value>=1024)
-				return define_value;
-			curr_elem->ref=(int)curr_elem->ref&DEFINE_TAG+define_value;			
-		}
-		if(elem_ops->set_text_value==NULL)
-		{
-			if(_ispointerelem(curr_elem->elem_desc->type))
-			{
-				text_len=strlen(text+str_offset)+1;
-				if((text_len<0)||(text_len>1024))
-					return -EINVAL;
-				ret=Palloc(addr+curr_elem->offset,text_len);
-				if(ret<0)
-					return ret;
-				strncpy(*(char **)(addr+curr_elem->offset),text+str_offset,text_len);
-			}
-			else
-			{
-				text_len=strnlen(text+str_offset,curr_elem->size)+1;
-				if(text_len>curr_elem->size)
-					text_len=curr_elem->size;
-				strncpy(addr+curr_elem->offset,text+str_offset,text_len);
-			}
-			str_offset+=text_len;
-		}
-		else
-		{
-			text_len=elem_ops->set_text_value(text,addr+curr_elem->offset,curr_elem);
-			if(text_len<0)
-				return text_len;
-			str_offset+=text_len;
-		}
-		curr_node->temp_var++;
-	}while(1);
-	return str_offset;
+	struct struct_deal_ops blob_2_struct_ops =
+	{
+		.testelem=part_deal_test,
+		.proc_func=&proc_blob_2_struct,
+	};	
+	static struct part_deal_para my_para;
+	my_para.flag=flag;
+	my_para.offset=0;
+	ret= _convert_frame_func(addr,blob,struct_template,&blob_2_struct_ops,		&my_para);
+	if(ret<0)
+		return ret;
+	return my_para.offset;
 }
 
 int struct_read_elem(char * name,void * addr, void * elem_data,void * struct_template)
@@ -1280,111 +1000,154 @@ int _getjsonstr(char * json_str,char * text,int text_len,int json_type)
 	return str_offset;	
 }
 
-int struct_2_json(void * addr, char * json_str, void * struct_template)
+int _print_elem_name(void * data,void * elem,void * para)
 {
-	STRUCT_NODE * root_node=struct_template;
-	STRUCT_NODE * curr_node=root_node;
-	STRUCT_NODE * temp_node;
-	curr_node->temp_var=0;
-	struct elem_template * curr_elem;
-	int str_offset;
-	int text_len=0;
-	int str_len=0;
-	struct struct_elem_attr * curr_desc;
-	ELEM_OPS * elem_ops;
-	int ret;
-	char buf[1024];
+	struct default_para  * my_para = para;
+	char * json_str=data;
+	struct elem_template	* curr_elem=elem;
+	int ret,text_len;
+	// print this elem's name
+	text_len=strnlen(curr_elem->elem_desc->name,64);
+	*(json_str+my_para->offset)='\"';
+	Memcpy(json_str+my_para->offset+1,curr_elem->elem_desc->name,text_len);
+	ret=text_len+1;	
+	my_para->offset+=ret;
+	*(json_str+my_para->offset)='\"';
+	*(json_str+my_para->offset+1)=':';
+	ret+=2;
+	my_para->offset+=2;
+	return ret;
+}
 
-	curr_desc=root_node->struct_desc;
-	*json_str='{';
-	str_offset=1;
+struct tojson_para
+{
+	int offset;
+	void * node;	
+};
 
-	do{
-		// throughout the node tree: back
-		if(curr_node->temp_var == curr_node->elem_no)
-		{
-			*(json_str+str_offset)='}';
-			str_offset++;	
-			*(json_str+str_offset)=',';
-			str_offset++;	
-			if(curr_node==root_node)
-				break;
-			temp_node=curr_node;
-			curr_node=curr_node->parent;
-			curr_desc=curr_node->struct_desc;
-
-			continue;
-		}
-		curr_elem=&curr_node->elem_list[curr_node->temp_var];
-		// print this elem's name
-		text_len=strnlen(curr_elem->elem_desc->name,64);
-		*(json_str+str_offset)='\"';
-		memcpy(json_str+str_offset+1,curr_elem->elem_desc->name,text_len);
-		str_offset+=text_len+1;
-		*(json_str+str_offset)='\"';
-		*(json_str+str_offset+1)=':';
-		str_offset+=2;
-		// throughout the node tree: into the sub_struct
-		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
-		{
-			curr_node->temp_var++;
-			curr_node=curr_elem->ref;
-			curr_node->temp_var=0;
-			curr_desc=curr_node->struct_desc;
+int _tojson_start(void * addr, void * data,void *elem,void * para)
+{
+	struct default_para * my_para=para;
+	char * json_str=data;
 	
-			*(json_str+str_offset)='{';
-			str_offset+=1;
+	*json_str='{';
+	my_para->offset=1;
+	return 1;	
+}
 
-			continue;
-		}
-		// get this elem's ops
-		elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
-		if(elem_ops==NULL)
-			return -EINVAL;
-		// pre_fretch the define value
-		if(_isvalidvalue(curr_elem->elem_desc->type) &&
-			((int)curr_elem->ref & DEFINE_TAG))
+int _tojson_enterstruct(void * addr,void * data, void * elem,void * para)
+{
+	struct default_para * my_para=para;
+	char * json_str=data;
+	_print_elem_name(data,elem,para);
+	*(json_str+my_para->offset)='{';
+	my_para->offset+=1;
+	return my_para->offset;
+}
+int _tojson_exitstruct(void * addr,void * data, void * elem,void * para)
+{
+	struct default_para * my_para=para;
+	char * json_str=data;
+
+	*(json_str+my_para->offset)='}';
+	my_para->offset+=1;
+	return my_para->offset;
+}
+
+int _tojson_proc_func(void * addr, void * data, void * elem,void * para)
+{
+	struct default_para  * my_para = para;
+	char * json_str=data;
+	struct elem_template	* curr_elem=elem;
+	int ret,text_len;
+	char buf[512];
+	// get this elem's ops
+	ELEM_OPS * elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
+	if(elem_ops==NULL)
+		return -EINVAL;
+	_print_elem_name(data,elem,para);
+
+	if(elem_ops->get_text_value==NULL)
+	{
+		if(_ispointerelem(curr_elem->elem_desc->type))
 		{
-			if(elem_ops->get_int_value == NULL)
+			text_len=strlen(*(char **)(addr+curr_elem->offset));
+			if((text_len<0)||(text_len>1024))
 				return -EINVAL;
-			int define_value;
-			define_value = elem_ops->get_int_value(addr+curr_elem->offset,curr_elem);
-			if((define_value<0)||define_value>=1024)
-				return define_value;
-			curr_elem->ref=((int)curr_elem->ref&DEFINE_TAG)+define_value;			
-		}
-		if(elem_ops->get_text_value==NULL)
-		{
-			if(_ispointerelem(curr_elem->elem_desc->type))
-			{
-				text_len=strlen(*(char **)(addr+curr_elem->offset));
-				if((text_len<0)||(text_len>1024))
-					return -EINVAL;
-				strncpy(buf,*(char **)(addr+curr_elem->offset),text_len);
-			}
-			else
-			{
-				text_len=strnlen(addr+curr_elem->offset,curr_elem->size)+1;
-				if(text_len>curr_elem->size)
-					text_len=curr_elem->size;
-				strncpy(buf,addr+curr_elem->offset,text_len);
-			}
+			strncpy(buf,*(char **)(addr+curr_elem->offset),text_len);
 		}
 		else
 		{
-			text_len=elem_ops->get_text_value(addr+curr_elem->offset,buf,curr_elem);
-			if(text_len<0)
-				return text_len;
+			text_len=strnlen(addr+curr_elem->offset,curr_elem->size)+1;
+			if(text_len>curr_elem->size)
+				text_len=curr_elem->size;
+			strncpy(buf,addr+curr_elem->offset,text_len);
 		}
-		str_len = _getjsonstr(json_str+str_offset,buf,text_len,_getelemjsontype(curr_elem->elem_desc->type));
-		*(json_str+str_offset+str_len)=',';
-		str_offset+=str_len+1;
-		curr_node->temp_var++;
-	}while(1);
-	*(json_str+str_offset-1)=0;
-	return str_offset;
+	}
+	else
+	{
+		text_len=elem_ops->get_text_value(addr+curr_elem->offset,buf,curr_elem);
+		if(text_len<0)
+			return text_len;
+	}
+	text_len = _getjsonstr(json_str+my_para->offset,buf,text_len,_getelemjsontype(curr_elem->elem_desc->type));
+	*(json_str+my_para->offset+text_len)=',';
+	text_len+=1;
+	my_para->offset+=text_len;
+	return ret+text_len;
 }
 
+int _tojson_finish(void * addr, void * data,void *elem,void * para)
+{
+	struct default_para * my_para=para;
+	char * json_str=data;
+	
+	*(json_str+my_para->offset)='}';
+	my_para->offset+=1;
+	*(json_str+my_para->offset)='\0';
+	return 1;	
+}
+
+
+int struct_2_json(void * addr, char * json_str, void * struct_template)
+{
+	int ret;
+	struct struct_deal_ops struct_2_json_ops =
+	{
+		.start=&_tojson_start,
+		.enterstruct=&_tojson_enterstruct,
+		.exitstruct=&_tojson_exitstruct,
+		.proc_func=&_tojson_proc_func,
+		.finish=&_tojson_finish,
+	};	
+	static struct default_para my_para;
+	my_para.offset=0;
+	ret = _convert_frame_func(addr,json_str,struct_template,&struct_2_json_ops,		&my_para);
+	if(ret<0)
+		return ret;
+	return my_para.offset;
+}
+int struct_2_part_json(void * addr, char * json_str, void * struct_template,int flag)
+{
+	int ret;
+	struct struct_deal_ops struct_2_part_json_ops =
+	{
+		.start=&_tojson_start,
+		.testelem=part_deal_test,
+		.enterstruct=&_tojson_enterstruct,
+		.exitstruct=&_tojson_exitstruct,
+		.proc_func=&_tojson_proc_func,
+		.finish=&_tojson_finish,
+	};	
+	static struct part_deal_para my_para;
+	my_para.offset=0;
+	my_para.flag=flag;
+	ret = _convert_frame_func(addr,json_str,struct_template,&struct_2_part_json_ops,		&my_para);
+	if(ret<0)
+		return ret;
+	return my_para.offset;
+}
+/*
 int json_2_struct(void * root,void * addr,void * struct_template)
 {
 	void * curr_json_node = root;
@@ -1785,297 +1548,3 @@ int struct_get_flag(void * struct_template,char * name)
 		return -1;
 	return curr_elem->flag;
 }
-
-/*
-
-int struct_2_part_blob(void * addr,void * blob, void * struct_template,int flag)
-{
-	STRUCT_NODE * root_node=struct_template;
-	STRUCT_NODE * curr_node=root_node;
-	STRUCT_NODE * temp_node;
-	curr_node->temp_var=0;
-	struct elem_template * curr_elem;
-	int addr_offset=0;
-	int blob_offset=0;
-	struct struct_elem_attr * curr_desc;
-	ELEM_OPS * elem_ops;
-	int def_value;
-	int ret;
-
-	curr_desc=root_node->struct_desc;
-
-	do{
-		// throughout the node tree: back
-		if(curr_node->temp_var == curr_node->elem_no)
-		{
-			if(curr_node==root_node)
-				break;
-			temp_node=curr_node;
-			curr_node=curr_node->parent;
-			curr_desc=curr_node->struct_desc;
-			continue;
-		}
-		curr_elem=&curr_node->elem_list[curr_node->temp_var];
-		// throughout the node tree: into the sub_struct
-		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
-		{
-			temp_node=curr_elem->ref;
-			if(!(temp_node->flag &flag))
-			{
-				curr_node->temp_var++;
-				continue;
-			}
-			curr_node->temp_var++;
-			curr_node=curr_elem->ref;
-			curr_node->temp_var=0;
-			curr_desc=curr_node->struct_desc;
-			continue;
-		}
-		if(!(curr_elem->flag & flag))
-		{
-			curr_node->temp_var++;
-			continue;
-		}
-		// get this elem's ops
-		elem_ops=struct_deal_ops[curr_desc[curr_node->temp_var].type];
-		if(elem_ops==NULL)
-			return -EINVAL;
-		addr_offset=curr_elem->offset;
-		if(elem_ops->get_bin_value==NULL)
-		{
-			if(curr_elem->flag&flag)
-			{
-				memcpy(blob+blob_offset,addr+addr_offset,curr_elem->size);
-				blob_offset+=curr_elem->size;
-			}
-		}
-		else
-		{
-			if(curr_elem->flag&flag)
-			{
-				ret=elem_ops->get_bin_value(addr+addr_offset,blob+blob_offset,curr_elem);
-				if(ret<0)
-					return ret;
-				blob_offset+=ret;
-			}
-		}
-		curr_node->temp_var++;
-	}while(1);
-	return blob_offset;
-	
-}
-
-int part_blob_2_struct(void * blob,void * addr,void * struct_template,int flag)
-{
-	STRUCT_NODE * root_node=struct_template;
-	STRUCT_NODE * curr_node=root_node;
-	STRUCT_NODE * temp_node;
-	curr_node->temp_var=0;
-	struct elem_template * curr_elem;
-	int addr_offset=0;
-	int blob_offset=0;
-	struct struct_elem_attr * curr_desc;
-	ELEM_OPS * elem_ops;
-	int ret;
-
-	curr_desc=root_node->struct_desc;
-
-	do{
-		// throughout the node tree: back
-		if(curr_node->temp_var == curr_node->elem_no)
-		{
-			if(curr_node==root_node)
-				break;
-			temp_node=curr_node;
-			curr_node=curr_node->parent;
-			curr_desc=curr_node->struct_desc;
-			continue;
-		}
-		curr_elem=&curr_node->elem_list[curr_node->temp_var];
-		// throughout the node tree: into the sub_struct
-		if(!(curr_elem->flag & flag))
-		{
-			curr_node->temp_var++;
-			continue;
-		}
-		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
-		{
-			temp_node=curr_elem->ref;
-			if(!(temp_node->flag &flag))
-			{
-				curr_node->temp_var++;
-				continue;
-			}
-			curr_node->temp_var++;
-			curr_node=curr_elem->ref;
-			curr_node->temp_var=0;
-			curr_desc=curr_node->struct_desc;
-			continue;
-		}
-		// get this elem's ops
-		elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
-		if(elem_ops==NULL)
-			return -EINVAL;
-		// pre_fretch the define value
-		if(_isvalidvalue(curr_elem->elem_desc->type) &&
-			((int)curr_elem->ref & DEFINE_TAG))
-		{
-			if(elem_ops->get_int_value == NULL)
-				return -EINVAL;
-			int define_value;
-			define_value = elem_ops->get_int_value(addr+curr_elem->offset,curr_elem);
-			if((define_value<0)||define_value>=1024)
-				return define_value;
-			curr_elem->ref=(int)curr_elem->ref&DEFINE_TAG+define_value;			
-		}
-		addr_offset=curr_elem->offset;
-		if(elem_ops->get_bin_value==NULL)
-		{
-			if(curr_elem->flag&flag)
-			{
-				memcpy(addr+addr_offset,blob+blob_offset,curr_elem->size);
-				blob_offset+=curr_elem->size;
-			}
-		}
-		else
-		{
-			if(curr_elem->flag&flag)
-			{
-				ret=elem_ops->set_bin_value(addr+addr_offset,blob+blob_offset,curr_elem);
-				if(ret<0)
-					return ret;
-				blob_offset+=ret;
-			}
-		}
-		curr_node->temp_var++;
-	}while(1);
-	return blob_offset;
-
-}
-
-int struct_2_part_json(void * addr,char * json_str,void *struct_template,int flag)
-{
-	STRUCT_NODE * root_node=struct_template;
-	STRUCT_NODE * curr_node=root_node;
-	STRUCT_NODE * temp_node;
-	curr_node->temp_var=0;
-	struct elem_template * curr_elem;
-	int str_offset;
-	int text_len=0;
-	int str_len=0;
-	struct struct_elem_attr * curr_desc;
-	ELEM_OPS * elem_ops;
-	int ret;
-	char buf[1024];
-
-	curr_desc=root_node->struct_desc;
-	*json_str='{';
-	str_offset=1;
-
-	do{
-		// throughout the node tree: back
-		if(curr_node->temp_var == curr_node->elem_no)
-		{
-			*(json_str+str_offset)='}';
-			str_offset++;	
-			*(json_str+str_offset)=',';
-			str_offset++;	
-			if(curr_node==root_node)
-				break;
-			temp_node=curr_node;
-			curr_node=curr_node->parent;
-			curr_desc=curr_node->struct_desc;
-
-			continue;
-		}
-		curr_elem=&curr_node->elem_list[curr_node->temp_var];
-		// print this elem's name
-		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
-		{
-			temp_node=curr_elem->ref;
-			if(!(temp_node->flag &flag))
-			{
-				curr_node->temp_var++;
-				continue;
-			}
-		}
-		else if(!(curr_elem->flag & flag))
-		{
-			curr_node->temp_var++;
-			continue;
-		}
-		text_len=strnlen(curr_elem->elem_desc->name,64);
-		*(json_str+str_offset)='\"';
-		memcpy(json_str+str_offset+1,curr_elem->elem_desc->name,text_len);
-		str_offset+=text_len+1;
-		*(json_str+str_offset)='\"';
-		*(json_str+str_offset+1)=':';
-		str_offset+=2;
-		// throughout the node tree: into the sub_struct
-		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
-		{
-			curr_node->temp_var++;
-			curr_node=curr_elem->ref;
-			curr_node->temp_var=0;
-			curr_desc=curr_node->struct_desc;
-	
-			*(json_str+str_offset)='{';
-			str_offset+=1;
-
-			continue;
-		}
-		// get this elem's ops
-		elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
-		if(elem_ops==NULL)
-			return -EINVAL;
-		// pre_fretch the define value
-		if(_isvalidvalue(curr_elem->elem_desc->type) &&
-			((int)curr_elem->ref & DEFINE_TAG))
-		{
-			if(elem_ops->get_int_value == NULL)
-				return -EINVAL;
-			int define_value;
-			define_value = elem_ops->get_int_value(addr+curr_elem->offset,curr_elem);
-			if((define_value<0)||define_value>=1024)
-				return define_value;
-			curr_elem->ref=((int)curr_elem->ref&DEFINE_TAG)+define_value;			
-		}
-		if(elem_ops->get_text_value==NULL)
-		{
-			if(curr_elem->flag & flag)
-			{
-				if(_ispointerelem(curr_elem->elem_desc->type))
-				{
-					text_len=strlen(*(char **)(addr+curr_elem->offset));
-					if((text_len<0)||(text_len>1024))
-						return -EINVAL;
-					strncpy(buf,*(char **)(addr+curr_elem->offset),text_len);
-				}
-				else
-				{
-					text_len=strnlen(addr+curr_elem->offset,curr_elem->size)+1;
-					if(text_len>curr_elem->size)
-						text_len=curr_elem->size;
-					strncpy(buf,addr+curr_elem->offset,text_len);
-				}
-			}	
-		}
-		else
-		{
-			if(curr_elem->flag & flag)
-			{
-				text_len=elem_ops->get_text_value(addr+curr_elem->offset,buf,curr_elem);
-				if(text_len<0)
-					return text_len;
-			}
-		}
-		str_len = _getjsonstr(json_str+str_offset,buf,text_len,_getelemjsontype(curr_elem->elem_desc->type));
-		*(json_str+str_offset+str_len)=',';
-		str_offset+=str_len+1;
-		curr_node->temp_var++;
-	}while(1);
-	*(json_str+str_offset-1)=0;
-	return str_offset;
-	
-}
-*/
