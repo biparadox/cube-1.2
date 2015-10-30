@@ -489,8 +489,8 @@ int json_solve_str(void ** root, char *str)
                 	ret=json_get_strvalue(value_buffer,str+offset);
                 	if(ret<0)
                     		return ret;
-                	if(ret>=DIGEST_SIZE*2)
-                    		return ret;
+                	if(ret>DIGEST_SIZE*2+2)
+                    		return -EINVAL;
 			json_set_type(child_node,JSON_ELEM_STRING,0);
 			Palloc(&(child_node->value_str),ret);
 			memcpy(child_node->value_str,value_buffer,ret);

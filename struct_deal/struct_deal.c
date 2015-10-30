@@ -780,7 +780,7 @@ int    _elem_set_text_value(void * addr,char * text,void * elem)
 	struct elem_template * curr_elem=elem;
 	ELEM_OPS * elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
 	
-	if(elem_ops->set_bin_value==NULL)
+	if(elem_ops->set_text_value==NULL)
 	{
 		if(_ispointerelem(curr_elem->elem_desc->type))
 		{

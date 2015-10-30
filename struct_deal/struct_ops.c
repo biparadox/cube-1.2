@@ -118,7 +118,7 @@ int uuid_get_text_value(void * addr, char * text,void * elem_template)
 				
 		}
 	}
-	return 0;
+	return DIGEST_SIZE*2;
 }
 int uuid_set_text_value(void * addr, char * text,void * elem_template)
 {

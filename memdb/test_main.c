@@ -36,7 +36,6 @@
 
 int main() {
 
-//	struct connect_login test_login={"HuJun","openstack"};
 	char json_buffer[1024];
 	int fd;
 	int ret;
