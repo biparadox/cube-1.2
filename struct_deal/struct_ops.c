@@ -33,43 +33,6 @@ int dup_str(char ** dest,char * src, int size)
 	return len;			
 }
 
-int string_get_bin_value(void * addr, void * elem_data,  void * elem_attr);
-int string_set_bin_value(void * addr, void * elem_data,  void * elem_attr);
-
-int estring_get_bin_value(void * addr, void * elem_data,  void * elem_attr);
-int estring_set_bin_value(void * addr, void * elem_data,  void * elem_attr);
-
-
-int estring_get_length(void * value,void * elem_attr);
-
-//}
-
-int estring_get_bin_value(void * addr,void * elem_data,void * elem_template){
-	struct elem_template * elem_attr=elem_template;
-	struct struct_elem_attr * elem_desc = elem_attr->elem_desc;
-
-	int retval;
-	char * estring;
-	estring = *(char **)addr;
-	// if the string is an empty string
-	if (estring == NULL)
-		{
-			retval = 1;
-			memset(elem_data, 0, retval);
-		}
-		else
-		{
-
-			retval = strlen(estring);
-			if (retval<0)
-				return -EINVAL;
-			retval++;
-			memcpy(elem_data, estring, retval);
-		}
-
-		return retval;
-}
-
 int estring_get_length (void * value,void * attr)
 {
 
@@ -83,7 +46,7 @@ int estring_get_length (void * value,void * attr)
 	return retval;
 }
 
-
+/*
 int estring_set_bin_value(void * addr, void * elem_data, void * elem_template){
 
 	struct elem_template * elem_attr=elem_template;
@@ -129,7 +92,7 @@ int estring_set_text_value(void * addr, char * text, void * elem_template){
 	return retval;
 
 }
-
+*/
 int uuid_get_text_value(void * addr, char * text,void * elem_template)
 {
 	int i,j,k,retval;
@@ -384,30 +347,19 @@ ELEM_OPS string_convert_ops =
 };
 ELEM_OPS bindata_convert_ops =
 {
-//	.calculate_offset=Calculate_offset,
 };
 
 ELEM_OPS uuid_convert_ops =
 {
-//	.calculate_offset=Calculate_offset,
-	.get_text_value = estring_get_bin_value,
-	.set_text_value = estring_set_bin_value,
+	.get_text_value = uuid_get_text_value,
+	.set_text_value = uuid_set_text_value,
 };
 ELEM_OPS estring_convert_ops =
 {
-	.get_bin_value = estring_get_bin_value,
-	.set_bin_value = estring_set_bin_value,
-	.get_text_value = estring_get_text_value,
-	.set_text_value = estring_set_text_value,
 	.elem_get_length = estring_get_length,
 };
 ELEM_OPS define_convert_ops =
 {
-//	.get_bin_value = define_get_bin_value,
-//	.set_bin_value = define_set_bin_value,
-//	.get_text_value = define_get_text_value,
-//	.set_text_value = define_set_text_value,
-//	.elem_alloc_size = estring_alloc_size,
 };
 
 ELEM_OPS int_convert_ops =

@@ -668,7 +668,7 @@ int    _elem_get_bin_value(void * addr,void * data,void * elem)
 			}
 			else 
 			{ 
-				ret=strnlen(*(char **)addr+curr_elem->offset,DIGEST_SIZE*2);
+				ret=strnlen(*(char **)(addr+curr_elem->offset),DIGEST_SIZE*2);
 				if(ret<DIGEST_SIZE*2)
 					ret+=1;
 			}

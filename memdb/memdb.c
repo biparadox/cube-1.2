@@ -277,6 +277,7 @@ int _comp_struct_digest(BYTE * digest,void * record)
 int read_struct_json_desc(void * root, BYTE * uuid)
 {
 	int ret;
+	// get the struct desc db
 	void * struct_db = memdb_get_dblist(TYPE_STRUCT_DESC,0);
 	void * root_node = root;
 	void * father_node = root;
