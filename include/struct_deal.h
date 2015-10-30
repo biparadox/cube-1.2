@@ -133,22 +133,4 @@ int struct_2_part_json(void * addr, char * json_str, void * struct_template, int
 int part_blob_2_strust(void * addr, void * blob, void * struct_template, char * name_list);
 int json_2_struct(void * root, void * addr, void * struct_template);
 
-/*
-void * find_json_elem(char * name, void * root);
-void * get_first_json_child(void * father);
-void * get_next_json_child(void * father);
-void * get_json_father(void * child);
-int json_node_getvalue(void * node, char * value, int max_len);
-int json_node_getname(void * node, char * name);
-
-int json_solve_str(void ** root, char *str);
-int json_get_type(void * node);
-int json_get_elemno(void * node);
-char * json_get_valuestr(void * node);
-
-int  json_node_set_no(void * node,int no);
-int  json_node_get_no(void * node);
-int  json_node_set_pointer(void * node,void * pointer);
-void * json_node_get_pointer(void * node);
-*/
 #endif

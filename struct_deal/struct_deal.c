@@ -1054,12 +1054,22 @@ int _getjsonstr(char * json_str,char * text,int text_len,int json_type)
 int _setvaluefromjson(void * addr,void * node,void * elem)
 {
 	struct elem_template * curr_elem=elem;
+	int ret;
 	switch(json_get_type(node))
 	{
 		case JSON_ELEM_STRING:
-
+			ret=_elem_set_text_value(addr,json_get_valuestr(node),curr_elem);
+			break;		
 		case JSON_ELEM_NUM:
 		case JSON_ELEM_BOOL:
+			{
+				long long tempdata;
+				ret=json_node_getvalue(node,&tempdata,sizeof(long long));
+				if(ret<0)
+					return ret;
+				ret=_elem_set_bin_value(addr,&tempdata,curr_elem);
+			}
+			break;		
 		case JSON_ELEM_ARRAY:
 			
 		case JSON_ELEM_MAP:
@@ -1134,30 +1144,9 @@ int _tojson_proc_func(void * addr, void * data, void * elem,void * para)
 	if(elem_ops==NULL)
 		return -EINVAL;
 	_print_elem_name(data,elem,para);
-
-	if(elem_ops->get_text_value==NULL)
-	{
-		if(_ispointerelem(curr_elem->elem_desc->type))
-		{
-			text_len=strlen(*(char **)(addr+curr_elem->offset));
-			if((text_len<0)||(text_len>1024))
-				return -EINVAL;
-			strncpy(buf,*(char **)(addr+curr_elem->offset),text_len);
-		}
-		else
-		{
-			text_len=strnlen(addr+curr_elem->offset,curr_elem->size)+1;
-			if(text_len>curr_elem->size)
-				text_len=curr_elem->size;
-			strncpy(buf,addr+curr_elem->offset,text_len);
-		}
-	}
-	else
-	{
-		text_len=elem_ops->get_text_value(addr+curr_elem->offset,buf,curr_elem);
-		if(text_len<0)
-			return text_len;
-	}
+	text_len=_elem_get_text_value(addr,buf,curr_elem);
+	if(text_len<0)
+		return text_len;
 	text_len = _getjsonstr(json_str+my_para->offset,buf,text_len,_getelemjsontype(curr_elem->elem_desc->type));
 	*(json_str+my_para->offset+text_len)=',';
 	text_len+=1;
@@ -1175,7 +1164,6 @@ int _tojson_finish(void * addr, void * data,void *elem,void * para)
 	*(json_str+my_para->offset)='\0';
 	return 1;	
 }
-
 
 int struct_2_json(void * addr, char * json_str, void * struct_template)
 {
@@ -1243,6 +1231,7 @@ int _jsonto_exitstruct(void * addr,void * data, void * elem,void * para)
 {
 	struct jsonto_para * my_para=para;
 	void * temp_json_node=json_get_father(my_para->json_node);
+	my_para->json_node=temp_json_node;
 
 	return 1;
 }
@@ -1253,41 +1242,66 @@ int _jsonto_proc_func(void * addr, void * data, void * elem,void * para)
 	struct elem_template	* curr_elem=elem;
 	void * temp_json_node=json_find_elem(curr_elem->elem_desc->name,my_para->json_node);
 	int ret,text_len;
-	char buf[512];
-	// get this elem's ops
-	ELEM_OPS * elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
-	if(elem_ops==NULL)
-		return -EINVAL;
 
-	ret=_setvaluefromjson(addr,temp_json_node,curr_elem);
+	return _setvaluefromjson(addr,temp_json_node,curr_elem);
+}
+
+int json_2_struct(void * root, void * addr, void * struct_template)
+{
+	int ret;
+	struct struct_deal_ops json_2_struct_ops =
+	{
+		.start=&_jsonto_start,
+		.enterstruct=&_jsonto_enterstruct,
+		.exitstruct=&_jsonto_exitstruct,
+		.proc_func=&_jsonto_proc_func,
+	};	
+	static struct jsonto_para my_para;
+	my_para.json_node=root;
+	ret = _convert_frame_func(addr,root,struct_template,&json_2_struct_ops,		&my_para);
 	if(ret<0)
 		return ret;
-
-	if(elem_ops->get_text_value==NULL)
-	{
-		if(_ispointerelem(curr_elem->elem_desc->type))
-		{
-			text_len=strlen(*(char **)(addr+curr_elem->offset));
-			if((text_len<0)||(text_len>1024))
-				return -EINVAL;
-			strncpy(buf,*(char **)(addr+curr_elem->offset),text_len);
-		}
-		else
-		{
-			text_len=strnlen(addr+curr_elem->offset,curr_elem->size)+1;
-			if(text_len>curr_elem->size)
-				text_len=curr_elem->size;
-			strncpy(buf,addr+curr_elem->offset,text_len);
-		}
-	}
-	else
-	{
-		text_len=elem_ops->get_text_value(addr+curr_elem->offset,buf,curr_elem);
-		if(text_len<0)
-			return text_len;
-	}
-	return ret+text_len;
+	return 0;
 }
+
+struct part_jsonto_para
+{
+	void * json_node;
+	int flag;
+};
+int part_json_test(void * addr,void * data,void * elem,void *para)
+{
+	struct part_jsonto_para * my_para=para;
+	struct elem_template * curr_elem=elem;
+	if(curr_elem->elem_desc->type == OS210_TYPE_ORGCHAIN)
+	{
+		STRUCT_NODE * temp_node=curr_elem->ref;
+		return temp_node->flag & my_para->flag;
+	}
+	return curr_elem->flag & my_para->flag;	
+}
+
+int json_2_part_struct(void * addr, void * root, void * struct_template,int flag)
+{
+	int ret;
+	struct struct_deal_ops json_2_part_struct_ops =
+	{
+		.start=&_jsonto_start,
+		.testelem=part_json_test,
+		.enterstruct=&_jsonto_enterstruct,
+		.exitstruct=&_jsonto_exitstruct,
+		.proc_func=&_jsonto_proc_func,
+	};	
+	static struct part_jsonto_para my_para;
+	my_para.json_node=root;
+	my_para.flag=flag;
+	ret = _convert_frame_func(addr,root,struct_template,&json_2_part_struct_ops,		&my_para);
+	if(ret<0)
+		return ret;
+	return 0;
+}
+
+	// json node init
 
 /*
 int json_2_struct(void * root,void * addr,void * struct_template)

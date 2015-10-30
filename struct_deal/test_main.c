@@ -102,6 +102,9 @@ int main() {
 	printf("read %d size to json %s!\n",ret,text);
 	ret=struct_2_part_json(&test_login,text1,struct_template,OS210_ELEM_FLAG_TEMP);
 	printf("read %d size to json %s!\n",ret,text1);
+	ret=json_solve_str(&root,text);
+	ret=json_2_struct(root,recover_struct,struct_template);
+	printf("read %d size to json %s!\n",ret,text1);
 
 	ret=struct_read_elem_text("login_info.passwd",&test_login,text,struct_template);
 	printf("read passwd %s from struct!\n",text);
