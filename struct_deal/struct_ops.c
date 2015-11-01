@@ -9,6 +9,21 @@
 
 //const int deftag=0x00FFF000;
 
+static inline int _ispointerelem(int type)
+{
+	switch(type)
+	{
+		case OS210_TYPE_ESTRING:
+		case OS210_TYPE_DEFINE:
+		case OS210_TYPE_DEFSTR:
+		case OS210_TYPE_DEFSTRARRAY:
+		case OS210_TYPE_UUIDARRAY:
+			return 1;
+		default:
+			return 0;
+	}
+}
+
 int dup_str(char ** dest,char * src, int size)
 {
 	int len;
@@ -46,58 +61,17 @@ int estring_get_length (void * value,void * attr)
 	return retval;
 }
 
-/*
-int estring_set_bin_value(void * addr, void * elem_data, void * elem_template){
-
-	struct elem_template * elem_attr=elem_template;
-	struct struct_elem_attr * elem_desc = elem_attr->elem_desc;
-	int retval;
-	char * estring;
-	retval = estring_get_length(elem_data,elem_template);
-	if (retval<0)
-		return retval;
-	int ret = Palloc(addr,retval);
-	if (ret <0)
-		return -ENOMEM;
-	memcpy(*(char **)addr, elem_data, retval);
-
-	return retval;
-
-}
-int estring_get_text_value(void * addr, char * text, void * elem_template){
-
-	char * blob = *(char **)addr;
-	struct elem_template * elem_attr=elem_template;
-	struct struct_elem_attr * elem_desc = elem_attr->elem_desc;
-	int retval;
-	retval=strlen(blob)+1;
-	memcpy(text,blob,retval);
-	return retval;
-}
-
-int estring_set_text_value(void * addr, char * text, void * elem_template){
-
-	struct elem_template * elem_attr=elem_template;
-	struct struct_elem_attr * elem_desc = elem_attr->elem_desc;
-	int retval;
-	char * estring;
-	retval = estring_get_length(text,elem_template);
-	if (retval<0)
-		return retval;
-	int ret = Palloc(addr,retval);
-	if (ret <0)
-		return -ENOMEM;
-	memcpy(*(char **)addr, text, retval);
-
-	return retval;
-
-}
-*/
-int uuid_get_text_value(void * addr, char * text,void * elem_template)
+int uuid_get_text_value(void * addr, void * data,void * elem_template)
 {
 	int i,j,k,retval;
 	unsigned char char_value;
-	BYTE * digest=addr;
+	char * text=data;
+	struct elem_template * curr_elem=elem_template;
+	BYTE * digest;
+	if(_ispointerelem(curr_elem->elem_desc->type))
+		digest= *(BYTE **)addr;
+	else
+		digest=addr;	
 	retval=DIGEST_SIZE;
 	k=0;
 	for(i=0;i<retval;i++)
@@ -350,6 +324,11 @@ ELEM_OPS bindata_convert_ops =
 };
 
 ELEM_OPS uuid_convert_ops =
+{
+	.get_text_value = uuid_get_text_value,
+	.set_text_value = uuid_set_text_value,
+};
+ELEM_OPS uuidarray_convert_ops =
 {
 	.get_text_value = uuid_get_text_value,
 	.set_text_value = uuid_set_text_value,

@@ -31,6 +31,7 @@ static VALUE2POINTER InitFuncList [] =
 	{OS210_TYPE_BINDATA,&bindata_convert_ops},
 	{OS210_TYPE_DEFINE,&define_convert_ops},
 	{OS210_TYPE_UUID,&uuid_convert_ops},
+	{OS210_TYPE_UUIDARRAY,&uuidarray_convert_ops},
 	{OS210_TYPE_INT,&int_convert_ops},
 	{OS210_TYPE_ENUM,&enum_convert_ops},
 	{OS210_TYPE_FLAG,&flag_convert_ops},
@@ -220,6 +221,7 @@ static inline int _ispointerelem(int type)
 		case OS210_TYPE_DEFINE:
 		case OS210_TYPE_DEFSTR:
 		case OS210_TYPE_DEFSTRARRAY:
+		case OS210_TYPE_UUIDARRAY:
 			return 1;
 		default:
 			return 0;

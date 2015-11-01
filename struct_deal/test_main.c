@@ -41,6 +41,7 @@ struct verify_login
 	char nonce_len[4];
    	char *nonce;
 	char uuid[DIGEST_SIZE];
+	char *uuidlist;
 } __attribute__((packed));
 
 static struct struct_elem_attr connect_login_desc[]=
@@ -56,13 +57,15 @@ static struct struct_elem_attr verify_login_desc[]=
     {"nonce_len",OS210_TYPE_STRING,4,NULL},
     {"nonce",OS210_TYPE_DEFINE,sizeof(char *),"nonce_len"},
     {"uuid",OS210_TYPE_UUID,DIGEST_SIZE,NULL},
+    {"uuidlist",OS210_TYPE_UUIDARRAY,DIGEST_SIZE,4},
     {NULL,OS210_TYPE_ENDDATA,0,NULL}
 };
 
 int main() {
 
 //	struct connect_login test_login={"HuJun","openstack"};
-	struct verify_login test_login={{"HuJun","openstack"},"0x20","",""};
+	struct verify_login test_login={{"HuJun","openstack"},"0x20","","",
+		""};
 	char buffer[512];
 	char buffer1[512];
 	char text[512];
@@ -83,6 +86,8 @@ int main() {
 	test_login.nonce=Talloc(0x20);
 	memset(test_login.nonce,'A',0x20);
 	memset(test_login.uuid,'B',0x20);
+	test_login.uuidlist=Talloc(DIGEST_SIZE*4);
+	memset(test_login.uuidlist,'C',DIGEST_SIZE*4);
 
 	struct_deal_init();
 
