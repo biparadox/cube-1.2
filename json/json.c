@@ -813,19 +813,19 @@ void * json_node_get_pointer(void * node)
 	return json_node->comp_pointer;
 }
 
-int json_node_getvalue(void * node,char * value, int max_len)
+int json_node_getvalue(void * node,void * value, int max_len)
 {
 	JSON_NODE * json_node=node;
 	int len;
 	if(node==NULL)
 		return -EINVAL;
-	if(json_node->value_str==NULL)
+	if(json_node->value==0)
+	{
+		memset(value,0,max_len);
 		return 0;
-	len=strnlen(json_node->value_str,max_len);
-	memcpy(value,json_node->value_str,len);
-	if(len<max_len)
-		value[len]=0;
-	return len;
+	}
+	memcpy(value,&json_node->value,max_len);
+	return 0;
 }
 
 int json_node_getname(void * node,char * name)

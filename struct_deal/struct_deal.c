@@ -34,6 +34,7 @@ static VALUE2POINTER InitFuncList [] =
 	{OS210_TYPE_UUID,&uuid_convert_ops},
 	{OS210_TYPE_UUIDARRAY,&uuidarray_convert_ops},
 	{OS210_TYPE_DEFUUIDARRAY,&defuuidarray_convert_ops},
+	{OS210_TYPE_DEFNAMELIST,&defnamelist_convert_ops},
 	{OS210_TYPE_INT,&int_convert_ops},
 	{OS210_TYPE_ENUM,&enum_convert_ops},
 	{OS210_TYPE_FLAG,&flag_convert_ops},
@@ -365,7 +366,7 @@ void * create_struct_template(struct struct_elem_attr * struct_desc)
 				return NULL;
 			curr_elem->elem_desc=elem_desc;
 			curr_elem->offset=offset;
-			curr_elem->size=elem_desc->size;
+			curr_elem->size=sizeof(void *);
 			offset+=curr_elem->size;
 		}
 		else
@@ -963,15 +964,16 @@ int _getjsonstr(char * json_str,char * text,int text_len,int json_type)
 					str_offset++;
 				}
 			}
-			if(*(text+i-1)!=0)
+			if((*(text+i-1)!=0)&&(*(text+i-1)!=','))
 			{
-				*(json_str+str_offset)='\"';
-				*(json_str+str_offset+1)=',';
-				str_offset+=2;	
+				*(json_str+str_offset++)='\"';
+				*(json_str+str_offset++)=']';
+				*(json_str+str_offset)=0;
 			}
 			else
-			{
+			{		
 				*(json_str+str_offset-1)=']';
+				*(json_str+str_offset)=0;
 			}
 			break;
 	

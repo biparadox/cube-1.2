@@ -93,6 +93,82 @@ int Itoa(int n,char *str)
 	return len;
 }
 
+static inline int _isdigit(char c)
+{
+	if((c>='0') && (c<='9'))
+		return 1;
+	return 0;
+}
+static inline int _get_char_value(char c)
+{
+	if(_isdigit(c))
+		return c-'0';
+	if((c>='a') && (c<='f'))
+		return c-'a'+9;
+	if((c>='A') && (c<='F'))
+		return c-'a'+9;
+	return -EINVAL;
+}
+int Atoi(char * string,int maxlen)
+{
+	int ret=0;
+	int i;
+	int base=10;
+	int temp_value;
+	int str_len;
+	if(maxlen==0)
+		str_len=strnlen(string,DIGEST_SIZE);
+	else
+		str_len=strnlen(string,maxlen);
+
+	// process the head
+	for(i=0;i<str_len;i++)
+	{
+		if(string[i]==0)
+			break;
+		if(string[i]==' ')
+		{
+			i++;
+			continue;
+		}
+		// change the base
+		if(string[i]=='0')
+		{
+			switch(string[i+1])
+			{
+				case 0:
+					return 0;
+				case 'b':
+				case 'B':
+					i+=2;
+					base=2;
+					break;
+				case 'x':
+				case 'X':
+					i+=2;
+					base=16;
+					break;
+				default:
+					i++;
+					base=8;
+					break;
+
+			}
+			break;
+		}
+		break;
+	}
+	for(;i<str_len;i++)
+	{
+		if(string[i]==0)
+			break;
+		temp_value=_get_char_value(string[i]);
+		if((temp_value <0)||(temp_value>=base))
+			return -EINVAL;
+		ret=ret*base+temp_value;		
+	}
+	return ret;
+}
 static inline int _get_lowest_bit(long long value)
 {
 	int i;

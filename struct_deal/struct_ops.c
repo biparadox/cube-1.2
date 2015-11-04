@@ -204,6 +204,171 @@ int defuuidarray_set_text_value(void * addr, char * text,void * elem_template)
 	return offset;
 }
 
+int namelist_get_bin_value(void * addr, void * data,void * elem_template)
+{
+	int i,retval;
+	void * namelist=*(void **)addr;
+	int addroffset=0;
+	int offset=0;
+//	char * text=data;
+	struct elem_template * curr_elem=elem_template;
+	int textlen=0;
+	int array_num=_elem_get_defvalue(curr_elem);
+	if(array_num<=0)
+		return array_num;
+	
+	if(array_num>DIGEST_SIZE*2)
+		return -EINVAL;
+	for(i=0;i<array_num;i++)
+	{
+		textlen=strlen(*(char **)(namelist+addroffset));
+		if(textlen>DIGEST_SIZE)
+			return -EINVAL;
+		memcpy(data+offset,*(char **)(namelist+addroffset),textlen+1);
+		offset+=textlen+1;
+		addroffset+=sizeof(char *);
+		memcpy(data+offset,namelist+addroffset,sizeof(int));
+		offset+=sizeof(int);
+		addroffset+=sizeof(int);
+	}	
+	return offset;
+}
+
+int namelist_set_bin_value(void * addr, void * data,void * elem_template)
+{
+	int i,j,retval;
+	void * namelist;
+	struct elem_template * curr_elem=elem_template;
+	int offset=0;
+	int addroffset=0;
+	int textlen=0;
+	int array_num=_elem_get_defvalue(curr_elem);
+	if(array_num<=0)
+		return array_num;
+	if(array_num>DIGEST_SIZE*2)
+		return -EINVAL;
+
+	retval=Palloc0(addr,array_num*(sizeof(char *)+sizeof(int)));
+	if(retval<0)
+		return retval;
+	namelist=*(void **)addr;
+	for(i=0;i<array_num;i++)
+	{
+		textlen=strlen((char *)(data+offset));
+		if(textlen>DIGEST_SIZE)
+			return -EINVAL;
+		retval=Palloc0(namelist+addroffset,textlen+1);
+		if(retval<0)
+			return -ENOMEM;
+		memcpy(*(char **)(namelist+addroffset),data+offset,textlen+1);
+		offset+=textlen+1;
+		addroffset+=sizeof(char *);
+		memcpy(namelist+addroffset,data+offset,sizeof(int));
+		offset+=sizeof(int);
+		addroffset+=sizeof(int);
+	}	
+	return offset;
+}
+
+int namelist_get_text_value(void * addr, void * data,void * elem_template)
+{
+	int i,retval;
+	void * namelist=*(void **)addr;
+	int addroffset=0;
+	int offset=0;
+	char * text=data;
+	char * name;
+	int  value;
+	int  base=0;
+	struct elem_template * curr_elem=elem_template;
+	int textlen=0;
+	int array_num=_elem_get_defvalue(curr_elem);
+	if(array_num<=0)
+		return array_num;
+	
+	if(array_num>DIGEST_SIZE*2)
+		return -EINVAL;
+	for(i=0;i<array_num;i++)
+	{
+		if(i!=0)
+			text[offset++]=',';
+		textlen=strlen(*(char **)(namelist+addroffset));
+		if(textlen>DIGEST_SIZE)
+			return -EINVAL;
+		memcpy(text+offset,*(char **)(namelist+addroffset),textlen);
+		offset+=textlen;
+		addroffset+=sizeof(char *);
+		value=*(unsigned int*)(namelist+addroffset);
+		if(value<base)
+			return -EINVAL;
+		if(value>base)
+		{
+			text[offset++]='=';
+			textlen=Itoa(value,data+offset);
+			if(textlen<0)
+				return textlen;
+			offset+=textlen;
+			base=value;
+		}
+		addroffset+=sizeof(int);
+		base++;
+	}	
+	text[offset]=0;
+	return offset;
+}
+
+int namelist_set_text_value(void * addr, char * text,void * elem_template)
+{
+	int i,j,retval;
+	void * namelist;
+	struct elem_template * curr_elem=elem_template;
+	int offset=0;
+	int addroffset=0;
+	int textlen=0;
+	int namelen=0;
+	char * name;
+	int  value;
+	int  base=0;
+	int array_num=_elem_get_defvalue(curr_elem);
+	if(array_num<=0)
+		return array_num;
+	if(array_num>DIGEST_SIZE*2)
+		return -EINVAL;
+	char buf[128];
+
+	retval=Palloc0(addr,array_num*(sizeof(char *)+sizeof(int)));
+	if(retval<0)
+		return retval;
+	namelist=*(void **)addr;
+	for(i=0;i<array_num;i++)
+	{
+		textlen=Getfiledfromstr(buf,text+offset,',',128);
+		if(textlen>DIGEST_SIZE*2)
+			return -EINVAL;
+		namelen=Getfiledfromstr(buf+DIGEST_SIZE*2,buf,'=',textlen);
+		if(namelen==textlen)
+			value=base;
+		else
+		{
+			value=Atoi(buf+namelen+1,textlen-namelen);
+			if(value<base)
+				return -EINVAL;
+			base=value;
+		}
+		retval=Palloc0(namelist+addroffset,namelen+1);
+		if(retval<0)
+			return -ENOMEM;
+		memcpy(*(char **)(namelist+addroffset),text+offset,namelen);
+		*(*(char **)(namelist+addroffset)+namelen)=0;
+		offset+=textlen+1;
+		addroffset+=sizeof(char *);
+		memcpy(namelist+addroffset,&value,sizeof(int));
+		addroffset+=sizeof(int);
+		base++;
+	}	
+	return offset;
+}
+
 int define_get_text_value(void * addr,char * text,void * elem_template){
 	char * blob = *(char **)addr;
 	struct elem_template * curr_elem=elem_template;
@@ -399,6 +564,7 @@ ELEM_OPS string_convert_ops =
 {
 	.get_int_value=get_string_value,
 };
+
 ELEM_OPS bindata_convert_ops =
 {
 };
@@ -431,6 +597,12 @@ ELEM_OPS int_convert_ops =
 	.get_int_value=get_int_value,
 	.get_text_value = int_get_text_value,
 	.set_text_value = int_set_text_value,
-//	.elem_alloc_size = estring_alloc_size,
+};
+ELEM_OPS defnamelist_convert_ops =
+{
+	.get_bin_value= namelist_get_bin_value,
+	.set_bin_value= namelist_set_bin_value,
+	.get_text_value= namelist_get_text_value,
+	.set_text_value= namelist_set_text_value,
 };
 

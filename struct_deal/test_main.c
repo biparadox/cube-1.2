@@ -43,6 +43,7 @@ struct verify_login
 	char uuid[DIGEST_SIZE];
 	int  listnum;
 	char *uuidlist;
+	void * namelist;
 } __attribute__((packed));
 
 static struct struct_elem_attr connect_login_desc[]=
@@ -60,14 +61,14 @@ static struct struct_elem_attr verify_login_desc[]=
     {"uuid",OS210_TYPE_UUID,DIGEST_SIZE,NULL},
     {"listnum",OS210_TYPE_INT,DIGEST_SIZE,NULL},
     {"uuidlist",OS210_TYPE_DEFUUIDARRAY,DIGEST_SIZE,"listnum"},
+    {"namelist",OS210_TYPE_DEFNAMELIST,DIGEST_SIZE,"listnum"},
     {NULL,OS210_TYPE_ENDDATA,0,NULL}
 };
 
 int main() {
 
 //	struct connect_login test_login={"HuJun","openstack"};
-	struct verify_login test_login={{"HuJun","openstack"},"0x20","","",4,"",
-		};
+	struct verify_login test_login={{"HuJun","openstack"},"0x20","","",4,"",		""};
 	char buffer[512];
 	char buffer1[512];
 	char text[512];
@@ -81,8 +82,9 @@ int main() {
 	struct verify_login * recover_struct1;
 	
 	//char * namelist= "login_info.user,login_info.passwd";
-	char * namelist= "login_info";
+//	char * namelist= "login_info";
 	int flag;
+	int i;
 
   	mem_init();
 	test_login.nonce=Talloc(0x20);
@@ -90,6 +92,18 @@ int main() {
 	memset(test_login.uuid,'B',0x20);
 	test_login.uuidlist=Talloc(DIGEST_SIZE*4);
 	memset(test_login.uuidlist,'C',DIGEST_SIZE*4);
+	test_login.namelist=Talloc(sizeof(NAME2VALUE)*test_login.listnum);
+	NAME2VALUE * namelist=test_login.namelist;
+
+	for(i=0;i<test_login.listnum;i++)
+	{
+		namelist[i].name=Talloc(10);
+		sprintf(namelist[i].name,"name_%d",i);
+	}
+	namelist[0].value=0;
+	namelist[1].value=1;
+	namelist[2].value=3;
+	namelist[3].value=4;
 
 	struct_deal_init();
 
@@ -119,10 +133,10 @@ int main() {
 */
 	ret=json_solve_str(&root,text);
 	ret=json_2_struct(root,recover_struct1,struct_template);
-	printf("read %d size to json %s!\n",ret,text1);
+	printf("read %d size to json!",ret);
 
 	ret=struct_2_json(recover_struct1,text1,struct_template);
-	printf("recover struct %d size to json %s!\n",ret,text);
+	printf("recover struct %d size to json %s!\n",ret,text1);
 
 //	ret=struct_read_elem_text("login_info.passwd",&test_login,text,struct_template);
 //	printf("read passwd %s from struct!\n",text);

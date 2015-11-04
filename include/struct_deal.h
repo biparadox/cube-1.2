@@ -73,7 +73,7 @@ typedef struct tagnameofvalue
 {
 	char * name;
 	int value;
-}NAME2VALUE;
+}__attribute__((packed)) NAME2VALUE;
 
 typedef struct tagnameofpointer
 {
