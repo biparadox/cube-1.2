@@ -24,6 +24,8 @@ enum os210_struct_elem_type   // describe types could be used in the struct
 	OS210_TYPE_HEXDATA,   // a sequence of octets with fixed size(just like BINDATA),but we use 2 hex string (like ce) to show them	 
 	OS210_TYPE_BINARRAY,   // an array of sequence of octets with fixed size, attr is the sequence's size, size is array's length	 
 	OS210_TYPE_UUIDARRAY,   // an array of sequence of octets with fixed size, attr is the sequence's size, size is array's length	 
+	OS210_TYPE_DEFUUIDARRAY,   // an array of sequence of octets with fixed size, attr is the sequence's size, size is array's length	 
+	OS210_TYPE_DEFNAMELIST,   // an array of sequence of octets with fixed size, attr is the sequence's size, size is array's length	 
 	OS210_TYPE_BOOL,  
 	OS210_TYPE_ESTRING,  // a variable length string ended with '\0'
 	OS210_TYPE_JSONSTRING,  // a variable length string encluded in "{}", "[]" or "\"\"" or "\'\'", it is only special in struct_json, other times,

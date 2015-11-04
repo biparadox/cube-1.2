@@ -41,6 +41,7 @@ struct verify_login
 	char nonce_len[4];
    	char *nonce;
 	char uuid[DIGEST_SIZE];
+	int  listnum;
 	char *uuidlist;
 } __attribute__((packed));
 
@@ -57,15 +58,16 @@ static struct struct_elem_attr verify_login_desc[]=
     {"nonce_len",OS210_TYPE_STRING,4,NULL},
     {"nonce",OS210_TYPE_DEFINE,sizeof(char *),"nonce_len"},
     {"uuid",OS210_TYPE_UUID,DIGEST_SIZE,NULL},
-    {"uuidlist",OS210_TYPE_UUIDARRAY,DIGEST_SIZE,4},
+    {"listnum",OS210_TYPE_INT,DIGEST_SIZE,NULL},
+    {"uuidlist",OS210_TYPE_DEFUUIDARRAY,DIGEST_SIZE,"listnum"},
     {NULL,OS210_TYPE_ENDDATA,0,NULL}
 };
 
 int main() {
 
 //	struct connect_login test_login={"HuJun","openstack"};
-	struct verify_login test_login={{"HuJun","openstack"},"0x20","","",
-		""};
+	struct verify_login test_login={{"HuJun","openstack"},"0x20","","",4,"",
+		};
 	char buffer[512];
 	char buffer1[512];
 	char text[512];
@@ -97,25 +99,33 @@ int main() {
 	recover_struct1=Talloc(struct_size(struct_template));
 	ret=struct_2_blob(&test_login,buffer,struct_template);	
 	printf("get %d size blob!\n",ret);
+
+/*
 	ret=struct_set_flag(struct_template,OS210_ELEM_FLAG_TEMP,namelist);
 	ret=struct_2_part_blob(&test_login,buffer1,struct_template,OS210_ELEM_FLAG_TEMP);
 	printf("get %d size blob!\n",ret);
-
+*/
 	ret=blob_2_struct(buffer,recover_struct,struct_template);
 	printf("read %d size blob!\n",ret);
+/*
 	ret=blob_2_part_struct(buffer,recover_struct1,struct_template,OS210_ELEM_FLAG_TEMP);
 	printf("read %d size blob!\n",ret);
-
-	ret=struct_2_json(&test_login,text,struct_template);
+*/
+	ret=struct_2_json(recover_struct,text,struct_template);
 	printf("read %d size to json %s!\n",ret,text);
+/*
 	ret=struct_2_part_json(&test_login,text1,struct_template,OS210_ELEM_FLAG_TEMP);
 	printf("read %d size to json %s!\n",ret,text1);
+*/
 	ret=json_solve_str(&root,text);
-	ret=json_2_struct(root,recover_struct,struct_template);
+	ret=json_2_struct(root,recover_struct1,struct_template);
 	printf("read %d size to json %s!\n",ret,text1);
 
-	ret=struct_read_elem_text("login_info.passwd",&test_login,text,struct_template);
-	printf("read passwd %s from struct!\n",text);
+	ret=struct_2_json(recover_struct1,text1,struct_template);
+	printf("recover struct %d size to json %s!\n",ret,text);
+
+//	ret=struct_read_elem_text("login_info.passwd",&test_login,text,struct_template);
+//	printf("read passwd %s from struct!\n",text);
 /*	
 	ret=struct_set_flag(struct_template,OS210_ELEM_FLAG_TEMP,namelist);
 	flag=struct_get_flag(struct_template,"login_info.passwd");

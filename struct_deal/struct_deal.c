@@ -21,6 +21,7 @@
 #include "../include/alloc.h"
 #include "../include/struct_deal.h"
 #include "struct_ops.h"
+#include "struct_attr.h"
 #include "../include/string.h"
 #include "../include/json.h"
 
@@ -32,6 +33,7 @@ static VALUE2POINTER InitFuncList [] =
 	{OS210_TYPE_DEFINE,&define_convert_ops},
 	{OS210_TYPE_UUID,&uuid_convert_ops},
 	{OS210_TYPE_UUIDARRAY,&uuidarray_convert_ops},
+	{OS210_TYPE_DEFUUIDARRAY,&defuuidarray_convert_ops},
 	{OS210_TYPE_INT,&int_convert_ops},
 	{OS210_TYPE_ENUM,&enum_convert_ops},
 	{OS210_TYPE_FLAG,&flag_convert_ops},
@@ -167,66 +169,6 @@ void * _get_elem_by_name(void * start_node, char * name)
 	return NULL;
 }
 
-static inline int _isdefineelem(int type)
-{
-	switch(type)
-	{
-		case OS210_TYPE_DEFINE:
-		case OS210_TYPE_DEFSTR:
-		case OS210_TYPE_DEFSTRARRAY:
-			return 1;
-		default:
-			return 0;
-	}
-}
-
-static inline int _isarrayelem(int type)
-{
-	switch(type)
-	{
-		case OS210_TYPE_UUIDARRAY:
-		case OS210_TYPE_BINARRAY:
-		case OS210_TYPE_DEFSTRARRAY:
-			return 1;
-		default:
-			return 0;
-	}
-}
-
-static inline int _isvalidvalue(int type)
-{
-	switch(type)
-	{
-		case OS210_TYPE_STRING:
-		case OS210_TYPE_ESTRING:
-		case OS210_TYPE_INT:
-		case OS210_TYPE_UCHAR:
-		case OS210_TYPE_USHORT:
-		case OS210_TYPE_LONGLONG:
-		case TPM_TYPE_UINT64:
-		case TPM_TYPE_UINT32:
-		case TPM_TYPE_UINT16:
-			return 1;
-		default:
-			return 0;
-	}
-}
-
-
-static inline int _ispointerelem(int type)
-{
-	switch(type)
-	{
-		case OS210_TYPE_ESTRING:
-		case OS210_TYPE_DEFINE:
-		case OS210_TYPE_DEFSTR:
-		case OS210_TYPE_DEFSTRARRAY:
-		case OS210_TYPE_UUIDARRAY:
-			return 1;
-		default:
-			return 0;
-	}
-}
 
 int get_fixed_elemsize(int type)
 {
@@ -250,6 +192,9 @@ int get_fixed_elemsize(int type)
 		case OS210_TYPE_DEFINE:
 		case OS210_TYPE_DEFSTR:	
 		case OS210_TYPE_DEFSTRARRAY:
+		case OS210_TYPE_UUIDARRAY:
+		case OS210_TYPE_DEFUUIDARRAY:
+		case OS210_TYPE_DEFNAMELIST:
 			return sizeof(char *);
 		case OS210_TYPE_BINARRAY:
 		case OS210_TYPE_BITMAP:	 
@@ -299,6 +244,8 @@ static inline int _getelemjsontype(int type)
 		case OS210_TYPE_DEFSTRARRAY:
 		case OS210_TYPE_BINARRAY:
 		case OS210_TYPE_UUIDARRAY:
+		case OS210_TYPE_DEFUUIDARRAY:
+		case OS210_TYPE_DEFNAMELIST:
 		case OS210_TYPE_BITMAP:	 
 			return JSON_ELEM_ARRAY;
 		case OS210_TYPE_INT:
@@ -432,7 +379,8 @@ void * create_struct_template(struct struct_elem_attr * struct_desc)
 			curr_elem->offset=offset;
 			if(elem_ops->elem_size==NULL)
 			{
-				curr_elem->size=elem_desc->size;
+				if( (curr_elem->size=get_fixed_elemsize(elem_desc->type))<0)
+					curr_elem->size=elem_desc->size;
 				offset+=curr_elem->size;
 			}
 			else
@@ -652,6 +600,43 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 		return 0;
 	return funcs->finish(addr,data,struct_template,para);
 }
+
+int _elem_get_bin_length(void * value,void * elem)
+{
+	int ret;
+	struct elem_template * curr_elem=elem;
+	if(_ispointerelem(curr_elem->elem_desc->type))
+	{
+		if(_isdefineelem(curr_elem->elem_desc->type))
+		{
+			struct elem_template * temp_elem=curr_elem->ref;
+			ret = (int)temp_elem->ref & 0x00000FFF;
+			if(_isarrayelem(curr_elem->elem_desc->type))
+				ret*=curr_elem->elem_desc->size;
+		}
+		else 
+		{ 
+			if(_isarrayelem(curr_elem->elem_desc->type))
+			{
+				ret=curr_elem->elem_desc->size*(int)curr_elem->elem_desc->ref;
+				if((ret<0) ||(ret>DIGEST_SIZE*16))
+					return -EINVAL;
+			}
+			else
+			{
+				ret=strnlen(value,DIGEST_SIZE*16);
+				if(ret<DIGEST_SIZE*16)
+						ret+=1;
+			}
+		}
+	}
+	else
+	{
+		if( (ret=get_fixed_elemsize(curr_elem->elem_desc->type))<0)
+			ret=curr_elem->size;
+	}
+	return ret;
+}
 		
 int    _elem_get_bin_value(void * addr,void * data,void * elem)
 {
@@ -661,27 +646,12 @@ int    _elem_get_bin_value(void * addr,void * data,void * elem)
 	
 	if(elem_ops->get_bin_value==NULL)
 	{
+		if((ret=_elem_get_bin_length(*(char **)(addr+curr_elem->offset),			elem))<0)
+			return ret;
 		if(_ispointerelem(curr_elem->elem_desc->type))
-		{
-			if(_isdefineelem(curr_elem->elem_desc->type))
-			{
-				struct elem_template * temp_elem=curr_elem->ref;
-				ret = (int)temp_elem->ref & 0x00000FFF;
-			}
-			else 
-			{ 
-				ret=strnlen(*(char **)(addr+curr_elem->offset),DIGEST_SIZE*2);
-				if(ret<DIGEST_SIZE*2)
-					ret+=1;
-			}
 			Memcpy(data,*(char **)(addr+curr_elem->offset),ret);
-		}
 		else
-		{
-			if( (ret=get_fixed_elemsize(curr_elem->elem_desc->type))<0)
-				ret=curr_elem->size;
 			Memcpy(data,addr+curr_elem->offset,ret);
-		}
 	}
 	else
 	{
@@ -701,30 +671,17 @@ int    _elem_set_bin_value(void * addr,void * data,void * elem)
 	
 	if(elem_ops->set_bin_value==NULL)
 	{
+		if((ret=_elem_get_bin_length(data,elem))<0)
+			return ret;
 		if(_ispointerelem(curr_elem->elem_desc->type))
 		{
-			if(_isdefineelem(curr_elem->elem_desc->type))
-			{
-				struct elem_template * temp_elem=curr_elem->ref;
-				ret = (int)temp_elem->ref & 0x00000FFF;
-			}
-			else
-			{ 
-				ret=strnlen(data,DIGEST_SIZE*2);
-				if(ret<DIGEST_SIZE*2)
-					ret+=1;
-			}
 			int tempret=Palloc0(addr+curr_elem->offset,ret);
 			if(tempret<0)
 				return tempret;
 			Memcpy(*(char **)(addr+curr_elem->offset),data,ret);
 		}
 		else
-		{
-			if( (ret=get_fixed_elemsize(curr_elem->elem_desc->type))<0)
-				ret=curr_elem->size;
 			Memcpy(addr+curr_elem->offset,data,ret);
-		}
 	}
 	else
 	{
@@ -744,27 +701,12 @@ int    _elem_get_text_value(void * addr,char * text,void * elem)
 	
 	if(elem_ops->get_text_value==NULL)
 	{
+		if((ret=_elem_get_bin_length(*(char **)(addr+curr_elem->offset),			elem))<0)
+			return ret;
 		if(_ispointerelem(curr_elem->elem_desc->type))
-		{
-			if(_isdefineelem(curr_elem->elem_desc->type))
-			{
-				struct elem_template * temp_elem=curr_elem->ref;
-				ret = (int)temp_elem->ref & 0x00000FFF;
-			}
-			else 
-			{
-				ret=strnlen(*(char **)(addr+curr_elem->offset),DIGEST_SIZE*2);
-				if(ret<DIGEST_SIZE*2)
-					ret+=1;
-			}
 			Memcpy(text,*(char **)(addr+curr_elem->offset),ret);
-		}
 		else
-		{
-			if( (ret=get_fixed_elemsize(curr_elem->elem_desc->type))<0)
-				ret=curr_elem->size;
 			Memcpy(text,addr+curr_elem->offset,ret);
-		}
 	}
 	else
 	{
@@ -784,30 +726,17 @@ int    _elem_set_text_value(void * addr,char * text,void * elem)
 	
 	if(elem_ops->set_text_value==NULL)
 	{
+		if((ret=_elem_get_bin_length(text,elem))<0)
+			return ret;
 		if(_ispointerelem(curr_elem->elem_desc->type))
 		{
-			if(_isdefineelem(curr_elem->elem_desc->type))
-			{
-				struct elem_template * temp_elem=curr_elem->ref;
-				ret = (int)temp_elem->ref & 0x00000FFF;
-			}
-			else 
-			{
-				ret=strnlen(text,DIGEST_SIZE*2);
-				if(ret<DIGEST_SIZE*2)
-					ret+=1;
-			}
 			int tempret=Palloc0(addr+curr_elem->offset,ret);
 			if(tempret<0)
 				return tempret;
 			Memcpy(*(char **)(addr+curr_elem->offset),text,ret);
 		}
 		else
-		{
-			if( (ret=get_fixed_elemsize(curr_elem->elem_desc->type))<0)
-				ret=curr_elem->size;
 			Memcpy(addr+curr_elem->offset,text,ret);
-		}
 	}
 	else
 	{
@@ -1021,7 +950,7 @@ int _getjsonstr(char * json_str,char * text,int text_len,int json_type)
 			str_offset+=2;
 			for(i=0;i<text_len;i++)
 			{
-				if(text[i]==0)
+				if((text[i]==0) || (text[i]==','))
 				{	
 					*(json_str+str_offset)='\"';
 					*(json_str+str_offset+1)=',';
@@ -1053,10 +982,137 @@ int _getjsonstr(char * json_str,char * text,int text_len,int json_type)
 	return str_offset;	
 }
 
+int _stripjsonarraychar(char * text,int len)
+{
+	int i;
+	int offset=0;
+	int bracket_order=0;
+	int quota_order=0;
+	enum stat_list
+	{
+		STRIP_START,
+		STRIP_INBRACKET,
+		STRIP_INELEM,
+		STRIP_FINISH,
+	};
+	int state=STRIP_START;
+
+	for(i=0;i<len;i++)
+	{
+		switch(state)
+		{
+			case STRIP_START:
+				if((*(text+i)==' ')||(*(text+i)=='\t'))
+				{
+					offset++;
+					break;
+				}
+				if(*(text+i)=='[')
+				{
+					offset++;
+					bracket_order++;
+					state=STRIP_INBRACKET;
+				}
+				else
+					return -EINVAL;
+				break;
+			case STRIP_INBRACKET:
+				if(Ischarinset(*(text+i)," \t\n\r,")
+					||(*(text+i)==','))
+				{
+					offset++;
+					break;
+				}
+				if(*(text+i)=='\"')
+				{
+					if(quota_order==0)
+					{
+						quota_order++;
+						state=STRIP_INELEM;
+						offset++;
+						break;
+					}
+					return -EINVAL;
+				}
+				if(*(text+i)==']')
+				{
+					bracket_order--;
+					if(bracket_order==0)
+					{
+						offset++;
+						state=STRIP_FINISH;
+						break;
+					}
+					return -EINVAL;
+				}
+				if(Ischarinset(*(text+i),":{}"))
+					return -EINVAL;
+				state=STRIP_INELEM;
+				break;
+			case 	STRIP_INELEM:
+				if(*(text+i)==',')
+				{
+					*(text+i-offset)=*(text+i);
+					if((quota_order==0)&&
+						(bracket_order==1))
+						state=STRIP_INBRACKET;
+				}	
+				else if(*(text+i)=='\"')
+				{
+					if(bracket_order==1)
+					{
+						if(quota_order==1)
+						{
+							quota_order--;
+							*(text+i-offset)=',';
+							state=STRIP_INBRACKET;
+						}
+						else
+							return -EINVAL;
+					}
+					else
+						*(text+i-offset)=*(text+i);
+				}
+				else if(*(text+i)=='[')
+				{
+					if(quota_order==0)
+						bracket_order++;
+					*(text+i-offset)=*(text+i);
+				}
+				else if(*(text+i)==']')
+				{
+					if(quota_order==0)
+					{
+						bracket_order--;
+						offset++;
+					}
+				}
+				else
+				{
+					*(text+i-offset)=*(text+i);
+				}
+				break;
+			default:
+				return -EINVAL;
+		}
+		if(state==STRIP_FINISH)
+		{
+			*(text+i-offset+1)=0;
+			break;
+		}
+						
+	}
+	if(state!=STRIP_FINISH)
+		return -EINVAL;
+	return i-offset;
+	
+}
+
 int _setvaluefromjson(void * addr,void * node,void * elem)
 {
 	struct elem_template * curr_elem=elem;
 	int ret;
+	char buf[DIGEST_SIZE*16];
 	switch(json_get_type(node))
 	{
 		case JSON_ELEM_STRING:
@@ -1073,7 +1129,17 @@ int _setvaluefromjson(void * addr,void * node,void * elem)
 			}
 			break;		
 		case JSON_ELEM_ARRAY:
+			{
+				ret=json_print_str(node,buf);
+				if(ret<0)
+					return ret;
+				ret=_stripjsonarraychar(buf,ret);	
+				if(ret<0)
+					return ret;
+				ret=_elem_set_text_value(addr,buf,curr_elem);
+			}
 			
+			break;
 		case JSON_ELEM_MAP:
 		default:
 			return -EINVAL;

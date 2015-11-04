@@ -564,8 +564,8 @@ int json_solve_str(void ** root, char *str)
                 	ret=json_get_strvalue(value_buffer,str+offset);
                 	if(ret<0)
                     		return ret;
-                	if(ret>=DIGEST_SIZE*2)
-                    		return ret;
+                	if(ret>DIGEST_SIZE*16+2)
+                    		return -EINVAL;
 			json_set_type(child_node,JSON_ELEM_STRING,1);
 			Palloc(&(child_node->value_str),ret);
 			memcpy(child_node->value_str,value_buffer,ret);
@@ -671,7 +671,7 @@ int json_print_str(void * root,char * str)
 					break;
 				case JSON_ELEM_STRING:
 					str[offset++]='"';
-					len=strnlen(child_node->value_str,DIGEST_SIZE);
+					len=strnlen(child_node->value_str,DIGEST_SIZE*16);
 					memcpy(str+offset,child_node->value_str,len);
 					offset+=len;
 					str[offset++]='"';
@@ -743,7 +743,7 @@ int json_print_str(void * root,char * str)
 					break;
 				case JSON_ELEM_STRING:
 					str[offset++]='"';
-					len=strnlen(child_node->value_str,DIGEST_SIZE);
+					len=strnlen(child_node->value_str,DIGEST_SIZE*16);
 					memcpy(str+offset,child_node->value_str,len);
 					offset+=len;
 					str[offset++]='"';

@@ -5,24 +5,10 @@
 //#include "../include/string.h"
 #include "../include/struct_deal.h"
 #include "struct_ops.h"
+#include "struct_attr.h"
 
 
 //const int deftag=0x00FFF000;
-
-static inline int _ispointerelem(int type)
-{
-	switch(type)
-	{
-		case OS210_TYPE_ESTRING:
-		case OS210_TYPE_DEFINE:
-		case OS210_TYPE_DEFSTR:
-		case OS210_TYPE_DEFSTRARRAY:
-		case OS210_TYPE_UUIDARRAY:
-			return 1;
-		default:
-			return 0;
-	}
-}
 
 int dup_str(char ** dest,char * src, int size)
 {
@@ -61,20 +47,12 @@ int estring_get_length (void * value,void * attr)
 	return retval;
 }
 
-int uuid_get_text_value(void * addr, void * data,void * elem_template)
+int _digest_to_uuid(BYTE * digest, char * uuid)
 {
-	int i,j,k,retval;
-	unsigned char char_value;
-	char * text=data;
-	struct elem_template * curr_elem=elem_template;
-	BYTE * digest;
-	if(_ispointerelem(curr_elem->elem_desc->type))
-		digest= *(BYTE **)addr;
-	else
-		digest=addr;	
-	retval=DIGEST_SIZE;
+	BYTE char_value;
+	int i,j,k;
 	k=0;
-	for(i=0;i<retval;i++)
+	for(i=0;i<DIGEST_SIZE;i++)
 	{
 		int tempdata;
 		char_value=digest[i];
@@ -83,9 +61,9 @@ int uuid_get_text_value(void * addr, void * data,void * elem_template)
 		{
 			tempdata=char_value>>4;
 			if(tempdata>9)
-				*(text+k)=tempdata-9+'a';
+				*(uuid+k)=tempdata-9+'a';
 			else
-				*(text+k)=tempdata+'0';
+				*(uuid+k)=tempdata+'0';
 			k++;
 			if(j!=1)
 				char_value<<=4;
@@ -94,20 +72,19 @@ int uuid_get_text_value(void * addr, void * data,void * elem_template)
 	}
 	return DIGEST_SIZE*2;
 }
-int uuid_set_text_value(void * addr, char * text,void * elem_template)
+
+int _uuid_to_digest(char * uuid,BYTE * digest)
 {
-	int i,j,k,retval;
-	unsigned char char_value;
-	BYTE * digest=addr;
-	retval=DIGEST_SIZE;
-	for(i=0;i<retval*2;i++)
+	int i;
+	BYTE char_value;
+	for(i=0;i<DIGEST_SIZE*2;i++)
 	{
-		if((text[i]>='0')&&(text[i]<='9'))
-			char_value=text[i]-'0';
-		else if((text[i]>='a')&&(text[i]<='f'))
-			char_value=text[i]-'a'+10;
-		else if((text[i]>='A')&&(text[i]<='F'))
-			char_value=text[i]-'A'+10;
+		if((uuid[i]>='0')&&(uuid[i]<='9'))
+			char_value=uuid[i]-'0';
+		else if((uuid[i]>='a')&&(uuid[i]<='f'))
+			char_value=uuid[i]-'a'+10;
+		else if((uuid[i]>='A')&&(uuid[i]<='F'))
+			char_value=uuid[i]-'A'+10;
 		else
 			return -EINVAL;
 		if(i%2==0)
@@ -117,26 +94,129 @@ int uuid_set_text_value(void * addr, char * text,void * elem_template)
 	}
 	return 0;
 }
+
+int uuid_get_text_value(void * addr, void * data,void * elem_template)
+{
+	return _digest_to_uuid(addr,data);
+}
+
+
+int uuid_set_text_value(void * addr, char * text,void * elem_template)
+{
+	return _uuid_to_digest(text,addr);
+}
+int uuidarray_get_text_value(void * addr, void * data,void * elem_template)
+{
+	int i,j,retval;
+	char * text=data;
+	struct elem_template * curr_elem=elem_template;
+	BYTE * digest=*(BYTE **)addr;
+	int offset=0;
+	int array_num=(int)curr_elem->elem_desc->ref;
+	
+	if((array_num<0)|| (array_num>DIGEST_SIZE*2))
+		return -EINVAL;
+	for(i=0;i<array_num;i++)
+	{
+		if(i!=0)
+			*(text+offset++)=',';
+		_digest_to_uuid(digest+i*DIGEST_SIZE,text+offset);
+		offset+=DIGEST_SIZE*2;
+	}	
+
+	*(text+offset)=0;
+	return offset+1;
+}
+
+int uuidarray_set_text_value(void * addr, char * text,void * elem_template)
+{
+	int i,j,retval;
+	struct elem_template * curr_elem=elem_template;
+	int offset=0;
+	int array_num=(int)curr_elem->elem_desc->ref;
+	
+	if((array_num<0)|| (array_num>DIGEST_SIZE*2))
+		return -EINVAL;
+	retval=Palloc0(addr,DIGEST_SIZE*array_num);
+	if(retval<0)
+		return retval;
+	BYTE * digest=*(BYTE **)addr;
+	for(i=0;i<array_num;i++)
+	{
+		while((*(text+offset)==',')||(*(text+offset)==' '))
+			offset++;
+		retval=_uuid_to_digest(text+offset,digest+i*DIGEST_SIZE);
+		if(retval<0)
+			return retval;
+		offset+=DIGEST_SIZE*2;
+	}	
+	return offset;
+}
+
+int defuuidarray_get_text_value(void * addr, void * data,void * elem_template)
+{
+	int i,j,retval;
+	char * text=data;
+	struct elem_template * curr_elem=elem_template;
+	BYTE * digest=*(BYTE **)addr;
+	int offset=0;
+	int array_num=_elem_get_defvalue(curr_elem);
+	if(array_num<=0)
+		return array_num;
+	if(array_num>DIGEST_SIZE*2)
+		return -EINVAL;
+	for(i=0;i<array_num;i++)
+	{
+		if(i!=0)
+			*(text+offset++)=',';
+		_digest_to_uuid(digest+i*DIGEST_SIZE,text+offset);
+		offset+=DIGEST_SIZE*2;
+	}	
+
+	*(text+offset)=0;
+	return offset+1;
+}
+
+int defuuidarray_set_text_value(void * addr, char * text,void * elem_template)
+{
+	int i,j,retval;
+	struct elem_template * curr_elem=elem_template;
+	int offset=0;
+	int array_num=_elem_get_defvalue(curr_elem);
+	if(array_num<=0)
+		return array_num;
+	if(array_num>DIGEST_SIZE*2)
+		return -EINVAL;
+
+	retval=Palloc0(addr,DIGEST_SIZE*array_num);
+	if(retval<0)
+		return retval;
+	BYTE * digest=*(BYTE **)addr;
+	for(i=0;i<array_num;i++)
+	{
+		while((*(text+offset)==',')||(*(text+offset)==' '))
+			offset++;
+		retval=_uuid_to_digest(text+offset,digest+i*DIGEST_SIZE);
+		if(retval<0)
+			return retval;
+		offset+=DIGEST_SIZE*2;
+	}	
+	return offset;
+}
+
 int define_get_text_value(void * addr,char * text,void * elem_template){
 	char * blob = *(char **)addr;
 	struct elem_template * curr_elem=elem_template;
-	struct struct_elem_attr * elem_desc = curr_elem->elem_desc;
-
-	struct elem_template * temp_elem;
-	int retval;
-	int def_offset;
 	int def_value;
-	ELEM_OPS * elem_ops;
-	temp_elem=curr_elem->ref;
-	if(temp_elem==NULL)
-		return -EINVAL;
-	def_value=(int)temp_elem->ref & 0x00000FFF;
-	
-	if(def_value==0)
-		return 0;
+
+	def_value=_elem_get_defvalue(curr_elem);
+	if(def_value<=0)
+		return def_value;
 	memcpy(text,blob,def_value);
 	return def_value;
 }
+
+
 static inline int _isdigit(char c)
 {
 	if((c>='0') && (c<='9'))
@@ -330,8 +410,13 @@ ELEM_OPS uuid_convert_ops =
 };
 ELEM_OPS uuidarray_convert_ops =
 {
-	.get_text_value = uuid_get_text_value,
-	.set_text_value = uuid_set_text_value,
+	.get_text_value = uuidarray_get_text_value,
+	.set_text_value = uuidarray_set_text_value,
+};
+ELEM_OPS defuuidarray_convert_ops =
+{
+	.get_text_value = defuuidarray_get_text_value,
+	.set_text_value = defuuidarray_set_text_value,
 };
 ELEM_OPS estring_convert_ops =
 {
