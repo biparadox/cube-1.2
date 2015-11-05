@@ -47,7 +47,7 @@ int main() {
 	memdb_init();
 
 	
-	fd=open("login.json",O_RDONLY);
+	fd=open("enumlist.json",O_RDONLY);
 	if(fd<0)
 		return fd;
 	
@@ -64,7 +64,16 @@ int main() {
 		return ret;
 	}
 
-	ret=read_struct_json_desc(root_node,uuid);
+
+	ret=read_json_desc(root_node,uuid);
+
+	void * findlist;
+	findlist=memdb_find(uuid,DB_NAMELIST,0);
+	void * memdb_template = memdb_gettemplate(DB_NAMELIST,0);
+	ret=struct_2_json(findlist,json_buffer,memdb_template);
+	if(ret<0)
+		return -EINVAL;
+	printf("%s\n",json_buffer);
 	
 	return 0;
 }

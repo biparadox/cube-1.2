@@ -53,6 +53,7 @@ enum os210_struct_elem_attr
 {
 	OS210_ELEM_FLAG_INDEX=0x01,
 	OS210_ELEM_FLAG_KEY=0x02,
+	OS210_ELEM_FLAG_INPUT=0x04,
 	OS210_ELEM_FLAG_DESC=0x10,
 	OS210_ELEM_FLAG_TEMP=0x1000,
 };
@@ -132,7 +133,7 @@ void * clone_struct(void * addr, void * struct_template);
 
 int struct_2_json(void * addr, char * json_str, void * template);
 int struct_2_part_json(void * addr, char * json_str, void * struct_template, int flag);
-int part_blob_2_strust(void * addr, void * blob, void * struct_template, char * name_list);
 int json_2_struct(void * root, void * addr, void * struct_template);
+int json_2_part_struct(void * root, void * addr, void * struct_template,int flag);
 
 #endif

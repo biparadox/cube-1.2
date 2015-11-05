@@ -1,0 +1,11 @@
+{
+	"type":"namelist",
+	"name":"dbtype",
+	"num":4,
+	"namelist":
+	[
+		"STRUCT=0x01",
+		"NAMELIST",
+		"DYNAMICDB=0x100"
+	]
+}

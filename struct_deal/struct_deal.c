@@ -1351,7 +1351,7 @@ int part_json_test(void * addr,void * data,void * elem,void *para)
 	return curr_elem->flag & my_para->flag;	
 }
 
-int json_2_part_struct(void * addr, void * root, void * struct_template,int flag)
+int json_2_part_struct(void * root, void * addr, void * struct_template,int flag)
 {
 	int ret;
 	struct struct_deal_ops json_2_part_struct_ops =

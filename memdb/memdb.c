@@ -11,8 +11,6 @@
 #include<stdio.h>
 #include<string.h>
 #include<errno.h>
-//#include "../include/kernel_comp.h"
-//#include "../include/list.h"
 
 #endif
 
@@ -28,7 +26,8 @@
 
 enum base_struct_type
 {
-	TYPE_STRUCT_DESC,
+	TYPE_STRUCT_DESC=0x01,
+	TYPE_STRUCT_NAMELIST=0x02,
 	TYPE_BASE_END=0x10,
 	TYPE_DB_LIST=0x100,
 };
@@ -42,15 +41,25 @@ struct elem_attr_octet
 	char ref_uuid[DIGEST_SIZE];
 };
 
+struct namelist_struct
+{
+	BYTE uuid[DIGEST_SIZE];
+	char name[DIGEST_SIZE];
+	int num;
+	void * namelist;
+};
+struct struct_elem_attr namelist_attr_desc[] =
+{
+	{"uuid",OS210_TYPE_UUID,DIGEST_SIZE,NULL},
+	{"name",OS210_TYPE_UUID,DIGEST_SIZE,NULL},
+	{"num",OS210_TYPE_INT,sizeof(int),NULL},
+	{"namelist",OS210_TYPE_DEFNAMELIST,sizeof(void *),"num"},
+	{NULL,OS210_TYPE_ENDDATA,0,NULL}
+};
+
 static void ** static_db_list;
 
 static void * dynamic_db_list;
-
-enum base_cube_db
-{
-	DB_STRUCT_DESC,
-	DB_NAMEVALUE_TABLE,
-};
 
 struct struct_elem_attr elem_attr_octet_desc[] =
 {
@@ -62,6 +71,7 @@ struct struct_elem_attr elem_attr_octet_desc[] =
 };
 
 static void * base_struct_template;
+static void * namelist_template;
 
 struct struct_desc_record
 {
@@ -213,21 +223,23 @@ int memdb_init()
 	if(ret<0)
 		return ret;
 	memset(static_db_list,0,sizeof(void *)*TYPE_BASE_END);
-	static_db_list[TYPE_STRUCT_DESC]=init_hash_list(8,TYPE_STRUCT_DESC,0);
+	static_db_list[DB_STRUCT_DESC]=init_hash_list(8,DB_STRUCT_DESC,0);
+	static_db_list[DB_NAMELIST]=init_hash_list(8,DB_NAMELIST,0);
 	if(static_db_list[TYPE_STRUCT_DESC]==NULL)
 	{
 		return -EINVAL;
 	}
 
 	base_struct_template=create_struct_template(&elem_attr_octet_desc);
+	namelist_template=create_struct_template(&namelist_attr_desc);
+	struct_set_flag(namelist_template,OS210_ELEM_FLAG_KEY,"name,num,namelist");
+
 	
-	hashlist_set_desc(static_db_list[TYPE_STRUCT_DESC],base_struct_template);
+	hashlist_set_desc(static_db_list[DB_STRUCT_DESC],base_struct_template);
+	hashlist_set_desc(static_db_list[DB_NAMELIST],namelist_template);
 	dynamic_db_list=init_hash_list(8,TYPE_DB_LIST,0);
 	return 0;
 }
-
-
-
 
 int  memdb_store(void * data,int type,int subtype)
 {
@@ -247,6 +259,16 @@ void * memdb_find(void * data,int type,int subtype)
 	if(db_list==NULL)
 		return NULL;
 	return hashlist_find_elem(db_list,data);
+}
+
+void * memdb_gettemplate(int type,int subtype)
+{
+	int ret;
+	void * db_list;
+	db_list=memdb_get_dblist(type,subtype);
+	if(db_list==NULL)
+		return NULL;
+	return hashlist_get_desc(db_list);
 }
 
 int _comp_struct_digest(BYTE * digest,void * record)
@@ -272,6 +294,36 @@ int _comp_struct_digest(BYTE * digest,void * record)
 	}
 	calculate_context_sm3(buf,offset,digest);
 	return 0;
+}
+
+
+int read_namelist_json_desc(void * root,BYTE * uuid)
+{
+	int ret;
+	struct namelist_struct * namelist;
+	int * temp_node;
+	char buf[1024];
+
+	ret=Galloc0(&namelist,sizeof(struct namelist_struct));
+	if(ret<0)
+		return ret;
+	temp_node=json_find_elem("namelist",root);
+	if(temp_node==NULL)
+		return -EINVAL;
+	ret=json_2_part_struct(root,namelist,namelist_template,OS210_ELEM_FLAG_KEY);
+	namelist->num=json_get_elemno(temp_node);
+	ret=struct_2_blob(namelist,buf,namelist_template);
+	if(ret<0)
+		return ret;
+	ret=calculate_context_sm3(buf,ret,namelist->uuid);
+	if(ret<0)
+		return ret;	
+	ret=memdb_store(namelist,DB_NAMELIST,0);
+	if(ret<0)
+		return ret;	
+	memcpy(uuid,namelist->uuid,DIGEST_SIZE);
+	
+	return ret;	
 }
 
 int read_struct_json_desc(void * root, BYTE * uuid)
@@ -455,4 +507,54 @@ int register_struct_template(int type, int subtype,void * struct_desc)
 {
 
 }
+
+int read_record_json_desc(void * root,BYTE * uuid)
+{
+
+}
+
+int read_memdb_json_desc(void * root,BYTE * uuid)
+{
+
+}
+
+int read_json_desc(void * root, BYTE * uuid)
+{
+	NAME2POINTER funclist[]=
+	{
+		{"namelist",&read_namelist_json_desc},
+		{"struct",&read_struct_json_desc},
+		{"record",&read_record_json_desc},
+		{"memdb",&read_memdb_json_desc},
+		{NULL,NULL},
+
+	};	
+
+	int (*read_json_func)(void * root, BYTE * uuid)=NULL;
+
+	void * temp_node;
+	int i;
+	char * typestr;
+	temp_node=json_find_elem("type",root);
+	if(temp_node==NULL)
+		return -EINVAL;
+	typestr = json_get_valuestr(temp_node);
+	if(typestr==NULL)
+		return -EINVAL;
+
+	while(funclist[i].name!=NULL)
+	{
+		if(strcmp(funclist[i].name,typestr)==0)
+		{
+			read_json_func=funclist[i].pointer;
+			break;
+		}
+		i++;
+	}		
+	if(read_json_func==NULL)
+		return -EINVAL;
+	return read_json_func(root,uuid);
+	
+}
+
 

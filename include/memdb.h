@@ -21,6 +21,14 @@ NAME2VALUE * elem_attr_flaglist;
 struct struct_elem_attr * elem_attr_desc; 
 
 int memdb_init();
+int read_json_desc(void * root, BYTE * uuid);
+int memdb_store(void * record, int type,int subtype);
+
+enum base_cube_db
+{
+	DB_STRUCT_DESC=0x01,
+	DB_NAMELIST,
+};
 
 /*
 typedef struct tagPolicyHead{
