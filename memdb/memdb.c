@@ -51,7 +51,7 @@ struct namelist_struct
 struct struct_elem_attr namelist_attr_desc[] =
 {
 	{"uuid",OS210_TYPE_UUID,DIGEST_SIZE,NULL},
-	{"name",OS210_TYPE_UUID,DIGEST_SIZE,NULL},
+	{"name",OS210_TYPE_STRING,DIGEST_SIZE,NULL},
 	{"num",OS210_TYPE_INT,sizeof(int),NULL},
 	{"namelist",OS210_TYPE_DEFNAMELIST,sizeof(void *),"num"},
 	{NULL,OS210_TYPE_ENDDATA,0,NULL}

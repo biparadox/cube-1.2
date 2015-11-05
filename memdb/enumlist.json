@@ -1,7 +1,7 @@
 {
 	"type":"namelist",
 	"name":"dbtype",
-	"num":4,
+	"num":3,
 	"namelist":
 	[
 		"STRUCT=0x01",
