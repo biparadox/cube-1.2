@@ -1310,8 +1310,10 @@ int _jsonto_proc_func(void * addr, void * data, void * elem,void * para)
 {
 	struct jsonto_para * my_para=para;
 	struct elem_template	* curr_elem=elem;
-	void * temp_json_node=json_find_elem(curr_elem->elem_desc->name,my_para->json_node);
 	int ret,text_len;
+	void * temp_json_node=json_find_elem(curr_elem->elem_desc->name,my_para->json_node);
+	if(temp_json_node==NULL)
+		return 0;
 
 	return _setvaluefromjson(addr,temp_json_node,curr_elem);
 }

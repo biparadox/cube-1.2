@@ -57,12 +57,6 @@ inline int get_hash_subindex(char * uuid)
 }
 #endif
 
-struct uuid_elem_desc
-{
-	char * name;
-	void * template;
-};
-
 typedef struct taguuid_hashlist
 {
 	int hash_num;

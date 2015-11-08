@@ -29,6 +29,9 @@ enum base_cube_db
 	DB_STRUCT_DESC=0x01,
 	DB_NAMELIST,
 };
+int memdb_set_template(int type, int subtype, void * struct_template);
+void * memdb_get_template(int type, int subtype);
+
 
 /*
 typedef struct tagPolicyHead{

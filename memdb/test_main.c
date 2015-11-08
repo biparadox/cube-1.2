@@ -46,10 +46,12 @@ int main() {
 	struct_deal_init();
 	memdb_init();
 
+// test namelist reading start
 	
 	fd=open("enumlist.json",O_RDONLY);
 	if(fd<0)
 		return fd;
+
 	
 	ret=read(fd,json_buffer,1024);
 	if(ret<0)
@@ -69,11 +71,45 @@ int main() {
 
 	void * findlist;
 	findlist=memdb_find(uuid,DB_NAMELIST,0);
-	void * memdb_template = memdb_gettemplate(DB_NAMELIST,0);
+	void * memdb_template = memdb_get_template(DB_NAMELIST,0);
 	ret=struct_2_json(findlist,json_buffer,memdb_template);
 	if(ret<0)
 		return -EINVAL;
 	printf("%s\n",json_buffer);
+//    test namelist reading finish
+
+//    test struct reading start
+	fd=open("msghead.json",O_RDONLY);
+	if(fd<0)
+		return fd;
+
 	
+	ret=read(fd,json_buffer,1024);
+	if(ret<0)
+		return -EIO;
+	printf("%s\n",json_buffer);
+	close(fd);
+
+	ret=json_solve_str(&root_node,json_buffer);
+	if(ret<0)
+	{
+		printf("solve json str error!\n");
+		return ret;
+	}
+
+
+	ret=read_json_desc(root_node,uuid);
+
+//	findlist=memdb_find(uuid,DB_STRUCT_DESC,0);
+//	memdb_template = memdb_gettemplate(DB_STRUCT_DESC,0);
+//	ret=struct_2_json(findlist,json_buffer,memdb_template);
+	if(ret<0)
+		return -EINVAL;
+//	printf("%s\n",json_buffer);
+
+//     test struct reading finish
+
+	
+
 	return 0;
 }
