@@ -36,7 +36,7 @@
 
 int main() {
 
-	char json_buffer[1024];
+	char json_buffer[4096];
 	int fd;
 	int ret;
 	void * root_node;
@@ -100,12 +100,15 @@ int main() {
 
 	ret=read_json_desc(root_node,uuid);
 
-//	findlist=memdb_find(uuid,DB_STRUCT_DESC,0);
+	findlist=memdb_find_byname("msg_head",DB_STRUCT_DESC,0);
+	if(findlist==NULL)
+		return -EINVAL;
+	ret=memdb_print_struct(findlist,json_buffer);
 //	memdb_template = memdb_gettemplate(DB_STRUCT_DESC,0);
 //	ret=struct_2_json(findlist,json_buffer,memdb_template);
 	if(ret<0)
 		return -EINVAL;
-//	printf("%s\n",json_buffer);
+	printf("%s\n",json_buffer);
 
 //     test struct reading finish
 

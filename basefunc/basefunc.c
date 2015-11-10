@@ -147,7 +147,32 @@ static __inline__ int comp_uuid(void * src,void * desc)
 	return 0;
 }
 
-Record_List * list_find_uuidelem(void * list,void * elem)
+static __inline__ int comp_name(void * src,void * desc)
+{
+	int i;
+	unsigned int * src_array=(int *)src;
+	unsigned int * desc_array = (int *)desc;
+	
+	return strncmp(src,desc,DIGEST_SIZE);
+}
+
+Record_List * list_find_nameelem(void * list,char  * name)
+{
+	Record_List * head = list;
+	Record_List * curr = head->list.next;
+	UUID_HEAD * record_head;
+	
+	while(curr!=head)
+	{
+		record_head=(UUID_HEAD *)curr->record;
+		if(comp_name(record_head->name,name)==0)
+			return curr;
+		curr= (Record_List *)curr->list.next;
+	}
+	return NULL;
+}
+
+Record_List * list_find_uuidelem(void * list,void * uuid)
 {
 	Record_List * head = list;
 	Record_List * curr = head->list.next;
@@ -155,7 +180,7 @@ Record_List * list_find_uuidelem(void * list,void * elem)
 	
 	while(curr!=head)
 	{
-		if(comp_uuid(curr->record,elem)==0)
+		if(comp_uuid(curr->record,uuid)==0)
 			return curr;
 		curr= (Record_List *)curr->list.next;
 	}
@@ -164,7 +189,6 @@ Record_List * list_find_uuidelem(void * list,void * elem)
 
 Record_List * _hashlist_find_elem(void * hashlist,void * elem)
 {
-	Record_List * new_record;
 	UUID_LIST * uuid_list= (UUID_LIST *)hashlist;
 	int hindex;
 
@@ -185,6 +209,23 @@ void * hashlist_find_elem(void * hashlist,void * elem)
 		return NULL;
 	return curr_elem->record;
 } 
+
+void * hashlist_find_elem_byname(void * hashlist,char * name)
+{
+	UUID_LIST * uuid_list= (UUID_LIST *)hashlist;
+	int i;
+	Record_List * curr_elem;
+
+	for(i=0;i<uuid_list->hash_num;i++)
+	{
+		curr_elem = list_find_nameelem(&uuid_list->hash_table[i],name);			if(curr_elem!=NULL)
+			break;
+	}
+	if(curr_elem==NULL)
+		return NULL;
+	return curr_elem->record;
+}
+
 
 Record_List  * _hashlist_remove_elem(void * hashlist,void * elem)
 {
@@ -251,6 +292,7 @@ void * hashlist_get_next(void * hashlist)
 	uuid_list->curr_head=NULL;
 	return NULL;
 }
+
 
 
 typedef struct tagpointer_stack
