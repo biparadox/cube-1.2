@@ -79,7 +79,7 @@ int main() {
 //    test namelist reading finish
 
 //    test struct reading start
-	fd=open("msghead.json",O_RDONLY);
+	fd=open("loginstruct.json",O_RDONLY);
 	if(fd<0)
 		return fd;
 
@@ -100,7 +100,7 @@ int main() {
 
 	ret=read_json_desc(root_node,uuid);
 
-	findlist=memdb_find_byname("msg_head",DB_STRUCT_DESC,0);
+	findlist=memdb_find_byname("login_verify",DB_STRUCT_DESC,0);
 	if(findlist==NULL)
 		return -EINVAL;
 	ret=memdb_print_struct(findlist,json_buffer);

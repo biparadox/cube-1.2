@@ -53,6 +53,22 @@ static inline int struct_register_ops(int value,void * pointer)
 	return 0; 
 }
 
+int iselemneeddef(int type)
+{
+	if(_isdefineelem(type))
+		return 1;
+	switch(type)
+	{
+		case OS210_TYPE_ENUM:
+		case OS210_TYPE_FLAG:
+		case OS210_TYPE_ORGCHAIN:
+			return 1;
+		default:
+			break;
+	}	
+	return 0;
+}
+
 
 int struct_deal_init()
 {
