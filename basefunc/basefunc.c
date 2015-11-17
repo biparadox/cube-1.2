@@ -86,7 +86,7 @@ void * init_hash_list(int order,int type,int subtype)
 	ret=Galloc(&hash_head->hash_table,sizeof(Record_List)*hash_head->hash_num);
 	if(ret<0)
 		return -ENOMEM;
-	for(i=0;i<hash_num;i++)
+	for(i=0;i<hash_head->hash_num;i++)
 	{
 		INIT_LIST_HEAD(&(hash_head->hash_table[i].list));
 		hash_head->hash_table[i].record=NULL;

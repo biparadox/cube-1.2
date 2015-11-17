@@ -179,6 +179,8 @@ void * _get_elem_by_name(void * start_node, char * name)
 		curr_elem=_get_elem_from_struct(node,buffer);
 		if(name==NULL)	
 			return curr_elem;
+		if(curr_elem==NULL)
+			return -EINVAL;
 		if(curr_elem->elem_desc->type != OS210_TYPE_ORGCHAIN)
 			return NULL;
 		node=curr_elem->ref;

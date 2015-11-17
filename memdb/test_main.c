@@ -78,6 +78,7 @@ int main() {
 	printf("%s\n",json_buffer);
 //    test namelist reading finish
 
+/*
 //    test struct reading start
 	fd=open("loginstruct.json",O_RDONLY);
 	if(fd<0)
@@ -112,7 +113,6 @@ int main() {
 
 //     test struct reading finish
 
-	
-
+*/
 	return 0;
 }

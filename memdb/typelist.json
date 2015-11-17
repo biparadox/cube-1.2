@@ -1,0 +1,25 @@
+{
+	"type":"typelist",
+	"name":"internal",
+	"num":4,
+	"namelist":
+	[
+		"MESSAGE=0x200",
+		"CHANNEL",
+		"ENTITY",
+		"ROUTER"
+	]
+}
+{
+	"type":"subtypelist",
+	"name":"message_struct",
+	"typevalue":"MESSAGE",
+	"num":4,
+	"namelist":
+	[
+		"HEAD=0x01",
+		"EXPAND",
+		"FLOW_TRACE",
+		"ASPECT_POINT"
+	]
+}

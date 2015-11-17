@@ -28,6 +28,8 @@ enum base_struct_type
 {
 	TYPE_STRUCT_DESC=0x01,
 	TYPE_STRUCT_NAMELIST=0x02,
+	TYPE_STRUCT_TYPELIST=0x03,
+	TYPE_STRUCT_SUBTYPELIST=0x04,
 	TYPE_BASE_END=0x10,
 	TYPE_DB_LIST=0x100,
 };
@@ -77,9 +79,9 @@ struct struct_elem_attr namelist_attr_desc[] =
 struct struct_elem_attr uuid_head_desc[] =
 {
 	{"uuid",OS210_TYPE_UUID,DIGEST_SIZE,NULL},
+	{"name",OS210_TYPE_STRING,DIGEST_SIZE,NULL},
 	{"type",OS210_TYPE_INT,sizeof(int),NULL},
 	{"subtype",OS210_TYPE_INT,sizeof(int),NULL},
-	{"name",OS210_TYPE_STRING,DIGEST_SIZE,NULL},
 	{NULL,OS210_TYPE_ENDDATA,0,NULL}
 };
 
@@ -112,6 +114,35 @@ struct struct_desc_record
 	int elem_no;
 	struct elem_attr_octet * elem_desc_list;
 }__attribute__((packed));
+
+struct struct_namelist
+{
+	UUID_HEAD head;
+	int elem_no;
+	NAME2VALUE * elemlist;
+}__attribute__((packed));
+
+struct struct_typelist
+{
+	UUID_HEAD head;
+	int elem_no;
+	NAME2VALUE * elemlist;
+}__attribute__((packed));
+
+struct struct_subtypelist
+{
+	UUID_HEAD head;
+	int elem_no;
+	NAME2VALUE * elemlist;
+}__attribute__((packed));
+
+struct struct_elem_attr struct_namelist_desc[] =
+{
+	{"head",OS210_TYPE_ORGCHAIN,sizeof(void *),&uuid_head_desc},
+	{"elem_no",OS210_TYPE_INT,sizeof(int),NULL},
+	{"elemlist",OS210_TYPE_DEFNAMELIST,sizeof(void *),"elem_no"},
+	{NULL,OS210_TYPE_ENDDATA,0,NULL}
+};
 
 typedef struct memdb_desc_record
 {
@@ -279,26 +310,39 @@ int memdb_init()
 	void * pointer=&static_db_list;
 	void * base_struct_template;
 	void * namelist_template;
+	void * typelist_template;
+	void * subtypelist_template;
 	ret=Galloc(pointer,sizeof(void *)*TYPE_BASE_END);
 	if(ret<0)
 		return ret;
 	memset(static_db_list,0,sizeof(void *)*TYPE_BASE_END);
 	static_db_list[DB_STRUCT_DESC]=init_hash_list(8,DB_STRUCT_DESC,0);
 	static_db_list[DB_NAMELIST]=init_hash_list(8,DB_NAMELIST,0);
-	if(static_db_list[TYPE_STRUCT_DESC]==NULL)
+	static_db_list[DB_TYPELIST]=init_hash_list(8,DB_TYPELIST,0);
+	static_db_list[DB_SUBTYPELIST]=init_hash_list(8,DB_SUBTYPELIST,0);
+	if(static_db_list[DB_STRUCT_DESC]==NULL)
 	{
 		return -EINVAL;
 	}
 
 	base_struct_template=create_struct_template(&elem_attr_octet_desc);
-	namelist_template=create_struct_template(&namelist_attr_desc);
-	struct_set_flag(namelist_template,OS210_ELEM_FLAG_KEY,"name,num,namelist");
+	namelist_template=create_struct_template(&struct_namelist_desc);
+	struct_set_flag(namelist_template,OS210_ELEM_FLAG_KEY,"head.name,elem_no,elemlist");
 
 	struct_set_flag(base_struct_template,OS210_ELEM_FLAG_TEMP,"name,type");
 	struct_set_flag(base_struct_template,OS210_ELEM_FLAG_TEMP<<1,"name,type,size");
 	
 	memdb_set_template(DB_STRUCT_DESC,0,base_struct_template);
 	memdb_set_template(DB_NAMELIST,0,namelist_template);
+
+	typelist_template=create_struct_template(&struct_namelist_desc);
+	subtypelist_template=create_struct_template(&struct_namelist_desc);
+	struct_set_flag(typelist_template,OS210_ELEM_FLAG_KEY,"head.name,elem_no,elemlist");
+	struct_set_flag(subtypelist_template,OS210_ELEM_FLAG_KEY,"head.type,elem_no,elemlist");
+
+	memdb_set_template(DB_TYPELIST,0,typelist_template);
+	memdb_set_template(DB_SUBTYPELIST,0,subtypelist_template);
+
 	dynamic_db_list=init_hash_list(8,TYPE_DB_LIST,0);
 	return 0;
 }
@@ -409,15 +453,16 @@ int _comp_struct_digest(BYTE * digest,void * record)
 int read_namelist_json_desc(void * root,BYTE * uuid)
 {
 	int ret;
-	struct namelist_struct * namelist;
+	struct struct_namelist * namelist;
+
 	int * temp_node;
 	char buf[1024];
 	void * namelist_template;
 
-	ret=Galloc0(&namelist,sizeof(struct namelist_struct));
+	ret=Galloc0(&namelist,sizeof(struct struct_namelist));
 	if(ret<0)
 		return ret;
-	temp_node=json_find_elem("namelist",root);
+	temp_node=json_find_elem("elemlist",root);
 	if(temp_node==NULL)
 		return -EINVAL;
 	namelist_template=memdb_get_template(DB_NAMELIST,0);
@@ -425,19 +470,19 @@ int read_namelist_json_desc(void * root,BYTE * uuid)
 		return -EINVAL;
 
 	ret=json_2_part_struct(root,namelist,namelist_template,OS210_ELEM_FLAG_KEY);
-	namelist->num=json_get_elemno(temp_node);
+	namelist->elem_no=json_get_elemno(temp_node);
 
 
 	ret=struct_2_blob(namelist,buf,namelist_template);
 	if(ret<0)
 		return ret;
-	ret=calculate_context_sm3(buf,ret,namelist->uuid);
+	ret=calculate_context_sm3(buf,ret,namelist->head.uuid);
 	if(ret<0)
 		return ret;	
 	ret=memdb_store(namelist,DB_NAMELIST,0);
 	if(ret<0)
 		return ret;	
-	memcpy(uuid,namelist->uuid,DIGEST_SIZE);
+	memcpy(uuid,namelist->head.uuid,DIGEST_SIZE);
 	
 	return ret;	
 }

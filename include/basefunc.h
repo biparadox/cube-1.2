@@ -15,9 +15,9 @@ int pointer_queue_get(void * pointer_queue,void **pointer);
 typedef struct uuid_head
 {
 	BYTE uuid[DIGEST_SIZE];
+	char name[DIGEST_SIZE];
 	int type;
 	int subtype;
-	char name[DIGEST_SIZE];
 }__attribute__((packed)) UUID_HEAD;
 
 void * init_hash_list(int order,int type,int subtype);

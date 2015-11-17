@@ -28,6 +28,9 @@ enum base_cube_db
 {
 	DB_STRUCT_DESC=0x01,
 	DB_NAMELIST,
+	DB_TYPELIST,
+	DB_SUBTYPELIST,
+	DB_CONVERTLIST,
 };
 int memdb_set_template(int type, int subtype, void * struct_template);
 void * memdb_get_template(int type, int subtype);

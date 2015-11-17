@@ -1,8 +1,11 @@
 {
 	"type":"namelist",
-	"name":"dbtype",
-	"num":3,
-	"namelist":
+	"head":
+	{
+		"name":"dbtype",
+	}
+	"elem_no":3,
+	"elemlist":
 	[
 		"STRUCT=0x01",
 		"NAMELIST",
