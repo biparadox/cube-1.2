@@ -48,7 +48,7 @@ int main() {
 
 // test namelist reading start
 	
-	fd=open("enumlist.json",O_RDONLY);
+	fd=open("typelist.json",O_RDONLY);
 	if(fd<0)
 		return fd;
 

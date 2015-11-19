@@ -76,6 +76,7 @@ struct struct_elem_attr namelist_attr_desc[] =
 	{"namelist",OS210_TYPE_DEFNAMELIST,sizeof(void *),"num"},
 	{NULL,OS210_TYPE_ENDDATA,0,NULL}
 };
+
 struct struct_elem_attr uuid_head_desc[] =
 {
 	{"uuid",OS210_TYPE_UUID,DIGEST_SIZE,NULL},
@@ -312,9 +313,13 @@ int memdb_init()
 	void * namelist_template;
 	void * typelist_template;
 	void * subtypelist_template;
+
+
 	ret=Galloc(pointer,sizeof(void *)*TYPE_BASE_END);
 	if(ret<0)
 		return ret;
+
+	// init the four start list
 	memset(static_db_list,0,sizeof(void *)*TYPE_BASE_END);
 	static_db_list[DB_STRUCT_DESC]=init_hash_list(8,DB_STRUCT_DESC,0);
 	static_db_list[DB_NAMELIST]=init_hash_list(8,DB_NAMELIST,0);
@@ -325,15 +330,29 @@ int memdb_init()
 		return -EINVAL;
 	}
 
+	// init and set base struct 
 	base_struct_template=create_struct_template(&elem_attr_octet_desc);
-	namelist_template=create_struct_template(&struct_namelist_desc);
-	struct_set_flag(namelist_template,OS210_ELEM_FLAG_KEY,"head.name,elem_no,elemlist");
-
 	struct_set_flag(base_struct_template,OS210_ELEM_FLAG_TEMP,"name,type");
 	struct_set_flag(base_struct_template,OS210_ELEM_FLAG_TEMP<<1,"name,type,size");
 	
 	memdb_set_template(DB_STRUCT_DESC,0,base_struct_template);
+
+	
+	// init and set namelist
+
+	namelist_template=create_struct_template(&struct_namelist_desc);
+	struct_set_flag(namelist_template,OS210_ELEM_FLAG_KEY,"head.name,elem_no,elemlist");
+
 	memdb_set_template(DB_NAMELIST,0,namelist_template);
+
+	// init and set typelist
+	// notice that the first typelist's name is main typelist, 
+	// and it stores the complete local typelist 
+  	// if new typelist add in the typelist db, 
+	// its name-value list will add in the main typelist
+	// if there is any conflict name-value pairs in new list and the main list
+	// the store action of new list will be failed
+	 
 
 	typelist_template=create_struct_template(&struct_namelist_desc);
 	subtypelist_template=create_struct_template(&struct_namelist_desc);
@@ -485,6 +504,48 @@ int read_namelist_json_desc(void * root,BYTE * uuid)
 	memcpy(uuid,namelist->head.uuid,DIGEST_SIZE);
 	
 	return ret;	
+}
+
+int read_typelist_json_desc(void * root,BYTE * uuid)
+{
+	int ret;
+	struct struct_namelist * namelist;
+
+	int * temp_node;
+	char buf[1024];
+	void * namelist_template;
+
+	ret=Galloc0(&namelist,sizeof(struct struct_namelist));
+	if(ret<0)
+		return ret;
+	temp_node=json_find_elem("elemlist",root);
+	if(temp_node==NULL)
+		return -EINVAL;
+	namelist_template=memdb_get_template(DB_TYPELIST,0);
+	if(namelist==NULL)
+		return -EINVAL;
+
+	ret=json_2_part_struct(root,namelist,namelist_template,OS210_ELEM_FLAG_KEY);
+	namelist->elem_no=json_get_elemno(temp_node);
+
+
+	ret=struct_2_blob(namelist,buf,namelist_template);
+	if(ret<0)
+		return ret;
+	ret=calculate_context_sm3(buf,ret,namelist->head.uuid);
+	if(ret<0)
+		return ret;	
+	ret=memdb_store(namelist,DB_NAMELIST,0);
+	if(ret<0)
+		return ret;	
+	memcpy(uuid,namelist->head.uuid,DIGEST_SIZE);
+	
+	return ret;	
+}
+
+int read_subtypelist_json_desc(void * root,BYTE * uuid)
+{
+
 }
 
 int _read_struct_json(void * root,void ** record)
@@ -855,6 +916,8 @@ int read_json_desc(void * root, BYTE * uuid)
 	NAME2POINTER funclist[]=
 	{
 		{"namelist",&read_namelist_json_desc},
+		{"typelist",&read_typelist_json_desc},
+		{"subtypelist",&read_subtypelist_json_desc},
 		{"struct",&read_struct_json_desc},
 		{"record",&read_record_json_desc},
 		{"memdb",&read_memdb_json_desc},

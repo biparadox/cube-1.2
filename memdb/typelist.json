@@ -1,8 +1,11 @@
 {
 	"type":"typelist",
-	"name":"internal",
-	"num":4,
-	"namelist":
+	"head":
+	{
+		"name":"internal",
+	}
+	"elem_no":4,
+	"elemlist":
 	[
 		"MESSAGE=0x200",
 		"CHANNEL",
@@ -12,10 +15,13 @@
 }
 {
 	"type":"subtypelist",
-	"name":"message_struct",
-	"typevalue":"MESSAGE",
-	"num":4,
-	"namelist":
+	"head":
+	{
+		"name":"message_struct",
+		"type":"MESSAGE",
+	}
+	"elem_no":4,
+	"elemlist":
 	[
 		"HEAD=0x01",
 		"EXPAND",
