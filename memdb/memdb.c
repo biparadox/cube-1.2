@@ -24,6 +24,8 @@
 #include "../include/basefunc.h"
 #include "../include/memdb.h"
 
+#include "memdb_internal.h"
+/*
 enum base_struct_type
 {
 	TYPE_STRUCT_DESC=0x01,
@@ -106,7 +108,6 @@ struct struct_elem_attr elem_attr_octet_desc[] =
 	{NULL,OS210_TYPE_ENDDATA,0,NULL}
 };
 
-//static void * base_struct_template;
 static void * elem_template;
 
 struct struct_desc_record
@@ -150,23 +151,10 @@ typedef struct memdb_desc_record
 	UUID_HEAD head;
 	void * struct_template;	
 }DB_DESC;
-
+*/
 int _comp_struct_digest(BYTE * digest,void * record);
 int _comp_db_digest(BYTE * digest,void * record);
-int _comp_namelist_digest(BYTE * digest,int type,void * namelist);
-
-static inline int _is_type_namelist(int type)
-{
-	switch(type)
-	{
-		case DB_NAMELIST:
-		case DB_TYPELIST:
-		case DB_SUBTYPELIST:
-			return 1;
-		default:
-			return 0;
-	}
-}
+int _comp_namelist_digest(BYTE * digest,void * namelist);
 
 void *  _get_dynamic_db_bytype(int type,int subtype)
 {
@@ -321,6 +309,7 @@ int memdb_register_db(BYTE * uuid,int type,int subtype,char * name)
 int memdb_init()
 {
 	int ret;
+	int i;
 	void * struct_template; 
 	void * pointer=&static_db_list;
 	void * base_struct_template;
@@ -367,13 +356,34 @@ int memdb_init()
 	// if there is any conflict name-value pairs in new list and the main list
 	// the store action of new list will be failed
 	 
+	
+
 
 	typelist_template=create_struct_template(&struct_namelist_desc);
-	subtypelist_template=create_struct_template(&struct_namelist_desc);
 	struct_set_flag(typelist_template,OS210_ELEM_FLAG_KEY,"head.name,elem_no,elemlist");
+	memdb_set_template(DB_TYPELIST,0,typelist_template);
+	struct struct_namelist * baselist;
+	ret=Galloc0(&baselist,sizeof(struct struct_namelist));
+	if(ret<0)
+		return ret;
+	strncpy(baselist->head.name,"baselist",DIGEST_SIZE);
+	baselist->head.type=DB_TYPELIST;
+	for(i=0;struct_type_baselist[i].name!=NULL;i++);
+	baselist->elem_no=i;
+	ret=Galloc0(&baselist->elemlist,sizeof(NAME2VALUE)*baselist->elem_no);
+	for(i=0;i<baselist->elem_no;i++)
+	{	
+		baselist->elemlist[i].name=struct_type_baselist[i].name;	
+		baselist->elemlist[i].value=struct_type_baselist[i].value;	
+	}
+	_comp_namelist_digest(baselist->head.uuid,baselist);
+	ret=memdb_store(baselist,DB_TYPELIST,0);
+	if(ret<0)
+		return ret;
+
+	subtypelist_template=create_struct_template(&struct_namelist_desc);
 	struct_set_flag(subtypelist_template,OS210_ELEM_FLAG_KEY,"head.type,elem_no,elemlist");
 
-	memdb_set_template(DB_TYPELIST,0,typelist_template);
 	memdb_set_template(DB_SUBTYPELIST,0,subtypelist_template);
 
 	dynamic_db_list=init_hash_list(8,TYPE_DB_LIST,0);
@@ -475,9 +485,11 @@ int memdb_print_struct(void * data,char * json_str)
 }
 
 
-int _comp_namelist_digest(BYTE * digest,int type,void * namelist)
+int _comp_namelist_digest(BYTE * digest,void * namelist)
 {
 	int ret;
+	struct struct_namelist * list=namelist;
+	int type = list->head.type;
 	BYTE buffer[4096];
 	if( ! _is_type_namelist(type))
 		return -EINVAL;
@@ -536,7 +548,7 @@ int _merge_namelist(void * list1, void * list2)
 
 	elem_no = namelist1->elem_no+namelist2->elem_no;
 
-	ret = Galloc0(&namelist1->elemlist,sizeof(NAME2VALUE)*elem_no);
+	ret = Galloc0(&buf,sizeof(NAME2VALUE)*elem_no);
 	if(ret<0)
 		return ret;
 	j=0;
@@ -560,27 +572,24 @@ int _merge_namelist(void * list1, void * list2)
 		{
 			buf[i].value=namelist1->elemlist[j].value;
 			buf[i].name=namelist1->elemlist[j++].name;
-			j++;
 		}
 		else if(namelist1->elemlist[j].value>namelist2->elemlist[k].value)
 		{
 			buf[i].value=namelist2->elemlist[k].value;
 			buf[i].name=namelist2->elemlist[k++].name;
-			j++;
 		}
 		else
 		{
 			buf[i].value=namelist1->elemlist[j].value;
 			buf[i].name=namelist1->elemlist[j++].name;
 			elem_no--;
-			j++;
 			k++;
 		}
 	}
 	Free0(namelist1->elemlist);
 	namelist1->elem_no=elem_no;
 	namelist1->elemlist=buf;
-	_comp_namelist_digest(namelist1->head.uuid,namelist1->head.type,namelist1);
+	_comp_namelist_digest(namelist1->head.uuid,namelist1);
 	return elem_no;
 }
 
@@ -596,6 +605,8 @@ int read_namelist_json_desc(void * root,BYTE * uuid)
 	ret=Galloc0(&namelist,sizeof(struct struct_namelist));
 	if(ret<0)
 		return ret;
+	namelist->head.type=DB_NAMELIST;
+
 	temp_node=json_find_elem("elemlist",root);
 	if(temp_node==NULL)
 		return -EINVAL;
@@ -606,7 +617,7 @@ int read_namelist_json_desc(void * root,BYTE * uuid)
 	ret=json_2_part_struct(root,namelist,namelist_template,OS210_ELEM_FLAG_KEY);
 	namelist->elem_no=json_get_elemno(temp_node);
 
-	ret=_comp_namelist_digest(uuid,DB_NAMELIST,namelist);
+	ret=_comp_namelist_digest(uuid,namelist);
 	if(ret<0)
 		return ret;	
 	memcpy(namelist->head.uuid,uuid,DIGEST_SIZE);
@@ -631,6 +642,8 @@ int read_typelist_json_desc(void * root,BYTE * uuid)
 	ret=Galloc0(&namelist,sizeof(struct struct_namelist));
 	if(ret<0)
 		return ret;
+	
+	namelist->head.type=DB_TYPELIST;
 	temp_node=json_find_elem("elemlist",root);
 	if(temp_node==NULL)
 		return -EINVAL;
@@ -641,16 +654,16 @@ int read_typelist_json_desc(void * root,BYTE * uuid)
 	ret=json_2_part_struct(root,namelist,namelist_template,OS210_ELEM_FLAG_KEY);
 	namelist->elem_no=json_get_elemno(temp_node);
 
-	ret=_comp_namelist_digest(uuid,DB_NAMELIST,namelist);
+	ret=_comp_namelist_digest(uuid,namelist);
 	if(ret<0)
 		return ret;	
 
 	memcpy(namelist->head.uuid,uuid,DIGEST_SIZE);
-	ret=memdb_store(namelist,DB_NAMELIST,0);
+	ret=memdb_store(namelist,DB_TYPELIST,0);
 	if(ret<0)
 		return ret;	
 
-	baselist=memdb_get_first(DB_TYPELIST,0);
+	baselist=memdb_find_byname("baselist",DB_TYPELIST,0);
 	if(baselist==NULL)
 		return -EINVAL;
 	ret=_merge_namelist(baselist,namelist);

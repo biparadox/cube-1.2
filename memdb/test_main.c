@@ -40,6 +40,8 @@ int main() {
 	int fd;
 	int ret;
 	void * root_node;
+	void * findlist;
+	void * memdb_template ;
 	BYTE uuid[DIGEST_SIZE];
 
 	mem_init();
@@ -47,6 +49,13 @@ int main() {
 	memdb_init();
 
 // test namelist reading start
+	memdb_template = memdb_get_template(DB_TYPELIST,0);
+
+	findlist=memdb_get_first(DB_TYPELIST,0);
+	ret=struct_2_json(findlist,json_buffer,memdb_template);
+	if(ret<0)
+		return -EINVAL;
+	printf("%s\n",json_buffer);
 	
 	fd=open("typelist.json",O_RDONLY);
 	if(fd<0)
@@ -69,16 +78,17 @@ int main() {
 
 	ret=read_json_desc(root_node,uuid);
 
-	void * findlist;
-	findlist=memdb_find(uuid,DB_NAMELIST,0);
-	void * memdb_template = memdb_get_template(DB_NAMELIST,0);
-	ret=struct_2_json(findlist,json_buffer,memdb_template);
-	if(ret<0)
-		return -EINVAL;
-	printf("%s\n",json_buffer);
+	findlist=memdb_find(uuid,DB_TYPELIST,0);
+	if(findlist!=NULL)
+	{
 
-	findlist=memdb_get_first(DB_NAMELIST,0);
-	memdb_template = memdb_get_template(DB_NAMELIST,0);
+		ret=struct_2_json(findlist,json_buffer,memdb_template);
+		if(ret<0)
+			return -EINVAL;
+		printf("%s\n",json_buffer);
+	}
+
+	findlist=memdb_find_byname("baselist",DB_TYPELIST,0);
 	ret=struct_2_json(findlist,json_buffer,memdb_template);
 	if(ret<0)
 		return -EINVAL;

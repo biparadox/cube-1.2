@@ -11,7 +11,7 @@ test_main: test_main.c ../lib/libstruct.a
 ../lib/libmemdb.a: $(STRUCTOBJ)
 	ar rs libmemdb.a $(STRUCTOBJ)
 	mv    libmemdb.a ../lib
-memdb.o:  memdb.c ../include/memdb.h
+memdb.o:  memdb.c ../include/memdb.h memdb_internal.h
 	$(CC) $(CFLAGS) memdb.c
 clean:
 	rm -f *~ *.a *.o test_main

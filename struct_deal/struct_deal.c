@@ -755,7 +755,18 @@ int    _elem_set_text_value(void * addr,char * text,void * elem)
 			Memcpy(*(char **)(addr+curr_elem->offset),text,ret);
 		}
 		else
-			Memcpy(addr+curr_elem->offset,text,ret);
+		{
+			int str_len=strlen(text);
+			if(str_len>=ret)
+			{
+				Memcpy(addr+curr_elem->offset,text,ret);
+			}
+			else
+			{
+				Memcpy(addr+curr_elem->offset,text,str_len);
+				Memset(addr+curr_elem->offset+str_len,0,ret-str_len);	
+			}
+		}
 	}
 	else
 	{
