@@ -37,8 +37,11 @@
 int main() {
 
 	char json_buffer[4096];
+	char print_buffer[4096];
 	int fd;
 	int ret;
+	int readlen;
+	int json_offset;
 	void * root_node;
 	void * findlist;
 	void * memdb_template ;
@@ -52,28 +55,30 @@ int main() {
 	memdb_template = memdb_get_template(DB_TYPELIST,0);
 
 	findlist=memdb_get_first(DB_TYPELIST,0);
-	ret=struct_2_json(findlist,json_buffer,memdb_template);
+	ret=struct_2_json(findlist,print_buffer,memdb_template);
 	if(ret<0)
 		return -EINVAL;
-	printf("%s\n",json_buffer);
+	printf("%s\n",print_buffer);
 	
 	fd=open("typelist.json",O_RDONLY);
 	if(fd<0)
 		return fd;
 
 	
-	ret=read(fd,json_buffer,1024);
-	if(ret<0)
+	readlen=read(fd,json_buffer,1024);
+	if(readlen<0)
 		return -EIO;
 	printf("%s\n",json_buffer);
 	close(fd);
 
+	json_offset=0;
 	ret=json_solve_str(&root_node,json_buffer);
 	if(ret<0)
 	{
 		printf("solve json str error!\n");
 		return ret;
 	}
+	json_offset+=ret;
 
 
 	ret=read_json_desc(root_node,uuid);
@@ -82,54 +87,25 @@ int main() {
 	if(findlist!=NULL)
 	{
 
-		ret=struct_2_json(findlist,json_buffer,memdb_template);
+		ret=struct_2_json(findlist,print_buffer,memdb_template);
 		if(ret<0)
 			return -EINVAL;
-		printf("%s\n",json_buffer);
+		printf("%s\n",print_buffer);
 	}
 
 	findlist=memdb_find_byname("baselist",DB_TYPELIST,0);
-	ret=struct_2_json(findlist,json_buffer,memdb_template);
+	ret=struct_2_json(findlist,print_buffer,memdb_template);
 	if(ret<0)
 		return -EINVAL;
-	printf("%s\n",json_buffer);
-//    test namelist reading finish
+	printf("%s\n",print_buffer);
 
-/*
-//    test struct reading start
-	fd=open("loginstruct.json",O_RDONLY);
-	if(fd<0)
-		return fd;
-
-	
-	ret=read(fd,json_buffer,1024);
-	if(ret<0)
-		return -EIO;
-	printf("%s\n",json_buffer);
-	close(fd);
-
-	ret=json_solve_str(&root_node,json_buffer);
+	ret=json_solve_str(&root_node,json_buffer+json_offset);
 	if(ret<0)
 	{
 		printf("solve json str error!\n");
 		return ret;
 	}
-
-
-	ret=read_json_desc(root_node,uuid);
-
-	findlist=memdb_find_byname("login_verify",DB_STRUCT_DESC,0);
-	if(findlist==NULL)
-		return -EINVAL;
-	ret=memdb_print_struct(findlist,json_buffer);
-//	memdb_template = memdb_gettemplate(DB_STRUCT_DESC,0);
-//	ret=struct_2_json(findlist,json_buffer,memdb_template);
-	if(ret<0)
-		return -EINVAL;
-	printf("%s\n",json_buffer);
-
-//     test struct reading finish
-
-*/
+	json_offset+=ret;
+		
 	return 0;
 }
