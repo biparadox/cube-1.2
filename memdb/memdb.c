@@ -153,6 +153,20 @@ typedef struct memdb_desc_record
 
 int _comp_struct_digest(BYTE * digest,void * record);
 int _comp_db_digest(BYTE * digest,void * record);
+int _comp_namelist_digest(BYTE * digest,int type,void * namelist);
+
+static inline int _is_type_namelist(int type)
+{
+	switch(type)
+	{
+		case DB_NAMELIST:
+		case DB_TYPELIST:
+		case DB_SUBTYPELIST:
+			return 1;
+		default:
+			return 0;
+	}
+}
 
 void *  _get_dynamic_db_bytype(int type,int subtype)
 {
@@ -394,6 +408,25 @@ void * memdb_find_byname(char * name,int type,int subtype)
 		return NULL;
 	return hashlist_find_elem_byname(db_list,name);
 }
+void * memdb_get_first(int type,int subtype)
+{
+	int ret;
+	void * db_list;
+	db_list=memdb_get_dblist(type,subtype);
+	if(db_list==NULL)
+		return NULL;
+	return hashlist_get_first(db_list);
+}
+
+void * memdb_get_next(int type,int subtype)
+{
+	int ret;
+	void * db_list;
+	db_list=memdb_get_dblist(type,subtype);
+	if(db_list==NULL)
+		return NULL;
+	return hashlist_get_next(db_list);
+}
 
 int memdb_print_struct(void * data,char * json_str)
 {
@@ -442,6 +475,30 @@ int memdb_print_struct(void * data,char * json_str)
 }
 
 
+int _comp_namelist_digest(BYTE * digest,int type,void * namelist)
+{
+	int ret;
+	BYTE buffer[4096];
+	if( ! _is_type_namelist(type))
+		return -EINVAL;
+
+	void * namelist_template;
+
+	namelist_template=memdb_get_template(type,0);
+	if(namelist_template==NULL)
+		return -EINVAL;
+
+	ret=struct_2_part_blob(namelist,buffer,namelist_template,OS210_ELEM_FLAG_KEY);
+
+	if(ret<0)
+		return ret;	
+
+	ret=calculate_context_sm3(buffer,ret,digest);
+	if(ret<0)
+		return ret;	
+	return 0;
+}
+
 int _comp_struct_digest(BYTE * digest,void * record)
 {
 	BYTE buf[4096];	
@@ -468,6 +525,64 @@ int _comp_struct_digest(BYTE * digest,void * record)
 	return 0;
 }
 
+int _merge_namelist(void * list1, void * list2)
+{
+	struct struct_namelist * namelist1 = list1;
+	struct struct_namelist * namelist2 = list2;
+	int ret;
+	int elem_no;
+	int i,j,k;
+	NAME2VALUE  * buf;
+
+	elem_no = namelist1->elem_no+namelist2->elem_no;
+
+	ret = Galloc0(&namelist1->elemlist,sizeof(NAME2VALUE)*elem_no);
+	if(ret<0)
+		return ret;
+	j=0;
+	k=0;
+	for(i=0;i<elem_no;i++)
+	{
+		if(j==namelist1->elem_no)
+		{
+			buf[i].value=namelist2->elemlist[k].value;
+			buf[i].name=namelist2->elemlist[k++].name;
+			continue;
+		}
+		if(k==namelist2->elem_no)
+		{
+			buf[i].value=namelist1->elemlist[j].value;
+			buf[i].name=namelist1->elemlist[j++].name;
+			continue;
+		}
+
+		if(namelist1->elemlist[j].value<namelist2->elemlist[k].value)
+		{
+			buf[i].value=namelist1->elemlist[j].value;
+			buf[i].name=namelist1->elemlist[j++].name;
+			j++;
+		}
+		else if(namelist1->elemlist[j].value>namelist2->elemlist[k].value)
+		{
+			buf[i].value=namelist2->elemlist[k].value;
+			buf[i].name=namelist2->elemlist[k++].name;
+			j++;
+		}
+		else
+		{
+			buf[i].value=namelist1->elemlist[j].value;
+			buf[i].name=namelist1->elemlist[j++].name;
+			elem_no--;
+			j++;
+			k++;
+		}
+	}
+	Free0(namelist1->elemlist);
+	namelist1->elem_no=elem_no;
+	namelist1->elemlist=buf;
+	_comp_namelist_digest(namelist1->head.uuid,namelist1->head.type,namelist1);
+	return elem_no;
+}
 
 int read_namelist_json_desc(void * root,BYTE * uuid)
 {
@@ -491,17 +606,14 @@ int read_namelist_json_desc(void * root,BYTE * uuid)
 	ret=json_2_part_struct(root,namelist,namelist_template,OS210_ELEM_FLAG_KEY);
 	namelist->elem_no=json_get_elemno(temp_node);
 
-
-	ret=struct_2_blob(namelist,buf,namelist_template);
-	if(ret<0)
-		return ret;
-	ret=calculate_context_sm3(buf,ret,namelist->head.uuid);
+	ret=_comp_namelist_digest(uuid,DB_NAMELIST,namelist);
 	if(ret<0)
 		return ret;	
+	memcpy(namelist->head.uuid,uuid,DIGEST_SIZE);
+
 	ret=memdb_store(namelist,DB_NAMELIST,0);
 	if(ret<0)
 		return ret;	
-	memcpy(uuid,namelist->head.uuid,DIGEST_SIZE);
 	
 	return ret;	
 }
@@ -510,6 +622,7 @@ int read_typelist_json_desc(void * root,BYTE * uuid)
 {
 	int ret;
 	struct struct_namelist * namelist;
+	struct struct_namelist * baselist;
 
 	int * temp_node;
 	char buf[1024];
@@ -521,24 +634,26 @@ int read_typelist_json_desc(void * root,BYTE * uuid)
 	temp_node=json_find_elem("elemlist",root);
 	if(temp_node==NULL)
 		return -EINVAL;
-	namelist_template=memdb_get_template(DB_TYPELIST,0);
-	if(namelist==NULL)
-		return -EINVAL;
 
+	namelist_template=memdb_get_template(DB_TYPELIST,0);
+	if(namelist_template==NULL)
+		return -EINVAL;
 	ret=json_2_part_struct(root,namelist,namelist_template,OS210_ELEM_FLAG_KEY);
 	namelist->elem_no=json_get_elemno(temp_node);
 
-
-	ret=struct_2_blob(namelist,buf,namelist_template);
-	if(ret<0)
-		return ret;
-	ret=calculate_context_sm3(buf,ret,namelist->head.uuid);
+	ret=_comp_namelist_digest(uuid,DB_NAMELIST,namelist);
 	if(ret<0)
 		return ret;	
+
+	memcpy(namelist->head.uuid,uuid,DIGEST_SIZE);
 	ret=memdb_store(namelist,DB_NAMELIST,0);
 	if(ret<0)
 		return ret;	
-	memcpy(uuid,namelist->head.uuid,DIGEST_SIZE);
+
+	baselist=memdb_get_first(DB_TYPELIST,0);
+	if(baselist==NULL)
+		return -EINVAL;
+	ret=_merge_namelist(baselist,namelist);
 	
 	return ret;	
 }

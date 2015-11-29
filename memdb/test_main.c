@@ -76,6 +76,13 @@ int main() {
 	if(ret<0)
 		return -EINVAL;
 	printf("%s\n",json_buffer);
+
+	findlist=memdb_get_first(DB_NAMELIST,0);
+	memdb_template = memdb_get_template(DB_NAMELIST,0);
+	ret=struct_2_json(findlist,json_buffer,memdb_template);
+	if(ret<0)
+		return -EINVAL;
+	printf("%s\n",json_buffer);
 //    test namelist reading finish
 
 /*
