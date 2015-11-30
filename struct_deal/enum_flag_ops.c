@@ -17,13 +17,20 @@ int enum_get_text_value(void * addr,char * text,void * elem_template){
 	int len;
 	int offset=0;
 	int i;
+
 	enum_list=elem_attr->ref;
 	if(enum_list==NULL)
 		enum_list=elem_desc->ref;
-	if(enum_list==NULL)
-		return -EINVAL;
-	
+
 	enum_value=*(int *)addr;
+	if(enum_value<0)
+		return -EINVAL;
+
+	if(enum_list==NULL)
+	{
+		len=Itoa(enum_value,text);
+		return len;
+	}
 	
 	for(i=0;enum_list[i].name!=NULL;i++)
 	{
@@ -57,14 +64,21 @@ int enum_set_text_value(void * addr,void * text,void * elem_template){
 	enum_list=elem_attr->ref;
 	if(enum_list==NULL)
 		enum_list=elem_desc->ref;
-	if(enum_list==NULL)
-		return -EINVAL;
 	
 	if(!strcmp(nulstring,text))
 	{
 		enum_value=0;
 		*(int *)addr=enum_value;
 		return 0;
+	}
+	else if(enum_list==NULL)
+	{
+		enum_value=Atoi(text,DIGEST_SIZE);
+		if(enum_value<0)
+			return enum_value;
+		*(int *)addr=enum_value;
+		return enum_value;
+		
 	}
 	else
 	{

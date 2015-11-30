@@ -290,6 +290,39 @@ static inline int _getelemjsontype(int type)
 	return -EINVAL;
 }
 
+static inline void * _elem_get_ref(void * elem)
+{
+	struct elem_template *  curr_elem=elem;
+	if(curr_elem==NULL)	
+		return NULL;
+	if(curr_elem->ref!=NULL)
+		return curr_elem->ref;
+	return curr_elem->elem_desc->ref;
+}
+
+static inline int _elem_set_ref(void * elem,void * ref)
+{
+	struct elem_template *  curr_elem=elem;
+	if(curr_elem==NULL)	
+		return -EINVAL;
+	curr_elem->ref=ref;
+	return 0;
+}
+
+void * struct_get_ref(void * struct_template,char * name)
+{
+	struct elem_template *  curr_elem;
+	curr_elem=_get_elem_by_name(struct_template,name);
+	return _elem_get_ref(curr_elem);
+}
+
+int struct_set_ref(void * struct_template,char * name,void * ref)
+{
+	struct elem_template *  curr_elem;
+	curr_elem=_get_elem_by_name(struct_template,name);
+	return _elem_set_ref(curr_elem,ref);
+}
+
 void * create_struct_template(struct struct_elem_attr * struct_desc)
 {
 	STRUCT_NODE * root_node;

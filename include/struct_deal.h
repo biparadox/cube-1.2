@@ -103,6 +103,10 @@ int get_fixed_elemsize(int type);
 int iselemneeddef(int type);
 void * create_struct_template(struct struct_elem_attr * struct_desc);
 void free_struct_template(void * struct_template);
+void * struct_get_ref(void * struct_template, char * name);
+
+int struct_set_ref(void * struct_template, char * name,void * ref);
+
 int struct_free(void * addr, void * struct_template);
 int struct_free_alloc(void * addr, void * struct_template);
 int struct_size(void * struct_template);

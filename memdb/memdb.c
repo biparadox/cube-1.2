@@ -25,133 +25,7 @@
 #include "../include/memdb.h"
 
 #include "memdb_internal.h"
-/*
-enum base_struct_type
-{
-	TYPE_STRUCT_DESC=0x01,
-	TYPE_STRUCT_NAMELIST=0x02,
-	TYPE_STRUCT_TYPELIST=0x03,
-	TYPE_STRUCT_SUBTYPELIST=0x04,
-	TYPE_BASE_END=0x10,
-	TYPE_DB_LIST=0x100,
-};
 
-
-struct elem_attr_octet
-{
-	char * name;
-	enum os210_struct_elem_type type;
-	int size;     	
-	char ref_uuid[DIGEST_SIZE];
-};
-
-struct namelist_struct
-{
-	BYTE uuid[DIGEST_SIZE];
-	char name[DIGEST_SIZE];
-	int num;
-	void * namelist;
-};
-
-typedef struct index_elem
-{
-	BYTE uuid[DIGEST_SIZE];
-	int type;
-	int subtype;
-	int flag;
-	void * elem;
-}INDEX_ELEM;
-
-struct memdb_desc
-{
-	BYTE UUID[DIGEST_SIZE];
-	int type;
-	int subtype;
-	void * struct_template;
-};
-
-struct struct_elem_attr namelist_attr_desc[] =
-{
-	{"uuid",OS210_TYPE_UUID,DIGEST_SIZE,NULL},
-	{"name",OS210_TYPE_STRING,DIGEST_SIZE,NULL},
-	{"num",OS210_TYPE_INT,sizeof(int),NULL},
-	{"namelist",OS210_TYPE_DEFNAMELIST,sizeof(void *),"num"},
-	{NULL,OS210_TYPE_ENDDATA,0,NULL}
-};
-
-struct struct_elem_attr uuid_head_desc[] =
-{
-	{"uuid",OS210_TYPE_UUID,DIGEST_SIZE,NULL},
-	{"name",OS210_TYPE_STRING,DIGEST_SIZE,NULL},
-	{"type",OS210_TYPE_INT,sizeof(int),NULL},
-	{"subtype",OS210_TYPE_INT,sizeof(int),NULL},
-	{NULL,OS210_TYPE_ENDDATA,0,NULL}
-};
-
-struct struct_elem_attr struct_record_head_desc[] = 
-{
-	{"head",OS210_TYPE_ORGCHAIN,0,&uuid_head_desc},
-	{"elem_no",OS210_TYPE_INT,sizeof(int),NULL},
-	{NULL,OS210_TYPE_ENDDATA,0,NULL}
-};
-
-static void ** static_db_list;
-
-static void * dynamic_db_list;
-
-struct struct_elem_attr elem_attr_octet_desc[] =
-{
-	{"name",OS210_TYPE_ESTRING,sizeof(char *),NULL},
-	{"type",OS210_TYPE_ENUM,sizeof(int),&elem_type_valuelist_array},
-	{"size",OS210_TYPE_INT,sizeof(int),NULL},
-	{"ref",OS210_TYPE_UUID,DIGEST_SIZE,NULL},
-	{NULL,OS210_TYPE_ENDDATA,0,NULL}
-};
-
-static void * elem_template;
-
-struct struct_desc_record
-{
-	UUID_HEAD head;
-	int elem_no;
-	struct elem_attr_octet * elem_desc_list;
-}__attribute__((packed));
-
-struct struct_namelist
-{
-	UUID_HEAD head;
-	int elem_no;
-	NAME2VALUE * elemlist;
-}__attribute__((packed));
-
-struct struct_typelist
-{
-	UUID_HEAD head;
-	int elem_no;
-	NAME2VALUE * elemlist;
-}__attribute__((packed));
-
-struct struct_subtypelist
-{
-	UUID_HEAD head;
-	int elem_no;
-	NAME2VALUE * elemlist;
-}__attribute__((packed));
-
-struct struct_elem_attr struct_namelist_desc[] =
-{
-	{"head",OS210_TYPE_ORGCHAIN,sizeof(void *),&uuid_head_desc},
-	{"elem_no",OS210_TYPE_INT,sizeof(int),NULL},
-	{"elemlist",OS210_TYPE_DEFNAMELIST,sizeof(void *),"elem_no"},
-	{NULL,OS210_TYPE_ENDDATA,0,NULL}
-};
-
-typedef struct memdb_desc_record
-{
-	UUID_HEAD head;
-	void * struct_template;	
-}DB_DESC;
-*/
 int _comp_struct_digest(BYTE * digest,void * record);
 int _comp_db_digest(BYTE * digest,void * record);
 int _comp_namelist_digest(BYTE * digest,void * namelist);
@@ -349,11 +223,11 @@ int memdb_init()
 	memdb_set_template(DB_NAMELIST,0,namelist_template);
 
 	// init and set typelist
-	// notice that the first typelist's name is main typelist, 
+	// notice that the first typelist's name is baselist, 
 	// and it stores the complete local typelist 
   	// if new typelist add in the typelist db, 
 	// its name-value list will add in the main typelist
-	// if there is any conflict name-value pairs in new list and the main list
+	// if there is any conflict in new list and the baselist
 	// the store action of new list will be failed
 	 
 	
@@ -381,8 +255,12 @@ int memdb_init()
 	if(ret<0)
 		return ret;
 
+	//  build the subtypelist database
+
 	subtypelist_template=create_struct_template(&struct_namelist_desc);
+	struct_set_ref(subtypelist_template,"head.type",baselist);
 	struct_set_flag(subtypelist_template,OS210_ELEM_FLAG_KEY,"head.type,elem_no,elemlist");
+	
 
 	memdb_set_template(DB_SUBTYPELIST,0,subtypelist_template);
 
@@ -436,6 +314,16 @@ void * memdb_get_next(int type,int subtype)
 	if(db_list==NULL)
 		return NULL;
 	return hashlist_get_next(db_list);
+}
+
+void * memdb_remove(void * baselist,int type,int subtype)
+{
+	int ret;
+	void * db_list;
+	db_list=memdb_get_dblist(type,subtype);
+	if(db_list==NULL)
+		return NULL;
+	return hashlist_remove_elem(db_list,baselist);
 }
 
 int memdb_print_struct(void * data,char * json_str)
@@ -659,21 +547,79 @@ int read_typelist_json_desc(void * root,BYTE * uuid)
 		return ret;	
 
 	memcpy(namelist->head.uuid,uuid,DIGEST_SIZE);
-	ret=memdb_store(namelist,DB_TYPELIST,0);
-	if(ret<0)
-		return ret;	
 
 	baselist=memdb_find_byname("baselist",DB_TYPELIST,0);
 	if(baselist==NULL)
 		return -EINVAL;
+	baselist=memdb_remove(baselist,DB_TYPELIST,0);
+	if(baselist==NULL)
+		return -EINVAL;
 	ret=_merge_namelist(baselist,namelist);
-	
+	if(ret<0)
+		return ret;
+	ret=memdb_store(namelist,DB_TYPELIST,0);
+	if(ret<0)
+		return ret;
+
+	ret=memdb_store(baselist,DB_TYPELIST,0);
+	if(ret<0)
+		return ret;
+
 	return ret;	
 }
 
 int read_subtypelist_json_desc(void * root,BYTE * uuid)
 {
+	int ret;
+	struct struct_namelist * namelist;
+	struct struct_namelist * baselist;
 
+	int * temp_node;
+	char buf[1024];
+	void * namelist_template;
+	int  type;
+
+	ret=Galloc0(&namelist,sizeof(struct struct_namelist));
+	if(ret<0)
+		return ret;
+	
+	namelist->head.type=DB_SUBTYPELIST;
+	temp_node=json_find_elem("elemlist",root);
+	if(temp_node==NULL)
+		return -EINVAL;
+
+	namelist_template=memdb_get_template(DB_SUBTYPELIST,0);
+	if(namelist_template==NULL)
+		return -EINVAL;
+	ret=json_2_part_struct(root,namelist,namelist_template,OS210_ELEM_FLAG_KEY);
+	namelist->elem_no=json_get_elemno(temp_node);
+
+	ret=_comp_namelist_digest(uuid,namelist);
+	if(ret<0)
+		return ret;	
+
+	memcpy(namelist->head.uuid,uuid,DIGEST_SIZE);
+
+/*
+	baselist=memdb_find_byname("baselist",DB_TYPELIST,0);
+	if(baselist==NULL)
+		return -EINVAL;
+	baselist=memdb_remove(baselist,DB_TYPELIST,0);
+	if(baselist==NULL)
+		return -EINVAL;
+	ret=_merge_namelist(baselist,namelist);
+	if(ret<0)
+		return ret;
+*/
+	ret=memdb_store(namelist,DB_TYPELIST,0);
+/*	if(ret<0)
+		return ret;
+
+	ret=memdb_store(baselist,DB_TYPELIST,0);
+	if(ret<0)
+		return ret;
+*/
+	return ret;	
 }
 
 int _read_struct_json(void * root,void ** record)

@@ -52,13 +52,8 @@ int main() {
 	memdb_init();
 
 // test namelist reading start
-	memdb_template = memdb_get_template(DB_TYPELIST,0);
 
-	findlist=memdb_get_first(DB_TYPELIST,0);
-	ret=struct_2_json(findlist,print_buffer,memdb_template);
-	if(ret<0)
-		return -EINVAL;
-	printf("%s\n",print_buffer);
+	memdb_template = memdb_get_template(DB_TYPELIST,0);
 	
 	fd=open("typelist.json",O_RDONLY);
 	if(fd<0)
@@ -106,6 +101,17 @@ int main() {
 		return ret;
 	}
 	json_offset+=ret;
-		
+	ret=read_json_desc(root_node,uuid);
+
+	memdb_template = memdb_get_template(DB_SUBTYPELIST,0);
+	findlist=memdb_find(uuid,DB_SUBTYPELIST,0);
+	if(findlist!=NULL)
+	{
+
+		ret=struct_2_json(findlist,print_buffer,memdb_template);
+		if(ret<0)
+			return -EINVAL;
+		printf("%s\n",print_buffer);
+	}
 	return 0;
 }
