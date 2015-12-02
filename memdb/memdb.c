@@ -127,8 +127,8 @@ int memdb_register_struct(void ** elem_attr,char * name,BYTE * uuid)
 	memcpy(uuid,record->head.uuid,DIGEST_SIZE);
 	ret=memdb_store(record,TYPE_STRUCT_DESC,0);
 	return ret;
-	
 }
+
 /*
 int memdb_register_db(BYTE * uuid,int type,int subtype,char * name)
 {
@@ -257,9 +257,9 @@ int memdb_init()
 
 	//  build the subtypelist database
 
-	subtypelist_template=create_struct_template(&struct_namelist_desc);
-	struct_set_ref(subtypelist_template,"head.type",baselist);
-	struct_set_flag(subtypelist_template,OS210_ELEM_FLAG_KEY,"head.type,elem_no,elemlist");
+	subtypelist_template=create_struct_template(&struct_subtypelist_desc);
+	struct_set_ref(subtypelist_template,"type",baselist->elemlist);
+	struct_set_flag(subtypelist_template,OS210_ELEM_FLAG_KEY,"head.name,type,elem_no,elemlist");
 	
 
 	memdb_set_template(DB_SUBTYPELIST,0,subtypelist_template);
@@ -314,6 +314,20 @@ void * memdb_get_next(int type,int subtype)
 	if(db_list==NULL)
 		return NULL;
 	return hashlist_get_next(db_list);
+}
+
+int memdb_reset_baselist()
+{
+	void * subtypelist_template=memdb_get_template(DB_SUBTYPELIST,0);
+	if(subtypelist_template==NULL)
+		return -EINVAL;
+	struct struct_namelist * baselist=memdb_find_byname("baselist",DB_TYPELIST,0);
+	if(baselist==NULL)
+		return -EINVAL;
+	if(baselist->elemlist==NULL)
+		return -EINVAL;
+	struct_set_ref(subtypelist_template,"type",baselist->elemlist);
+	return 0;
 }
 
 void * memdb_remove(void * baselist,int type,int subtype)
@@ -564,6 +578,9 @@ int read_typelist_json_desc(void * root,BYTE * uuid)
 	ret=memdb_store(baselist,DB_TYPELIST,0);
 	if(ret<0)
 		return ret;
+	ret= memdb_reset_baselist();
+	if(ret<0)
+		return ret;
 
 	return ret;	
 }
@@ -571,7 +588,7 @@ int read_typelist_json_desc(void * root,BYTE * uuid)
 int read_subtypelist_json_desc(void * root,BYTE * uuid)
 {
 	int ret;
-	struct struct_namelist * namelist;
+	struct struct_subtypelist * namelist;
 	struct struct_namelist * baselist;
 
 	int * temp_node;
@@ -579,7 +596,7 @@ int read_subtypelist_json_desc(void * root,BYTE * uuid)
 	void * namelist_template;
 	int  type;
 
-	ret=Galloc0(&namelist,sizeof(struct struct_namelist));
+	ret=Galloc0(&namelist,sizeof(struct struct_subtypelist));
 	if(ret<0)
 		return ret;
 	
@@ -611,7 +628,7 @@ int read_subtypelist_json_desc(void * root,BYTE * uuid)
 	if(ret<0)
 		return ret;
 */
-	ret=memdb_store(namelist,DB_TYPELIST,0);
+	ret=memdb_store(namelist,DB_SUBTYPELIST,0);
 /*	if(ret<0)
 		return ret;
 
@@ -1004,7 +1021,7 @@ int read_json_desc(void * root, BYTE * uuid)
 	void * temp_node;
 	int i;
 	char * typestr;
-	temp_node=json_find_elem("type",root);
+	temp_node=json_find_elem("info-type",root);
 	if(temp_node==NULL)
 		return -EINVAL;
 	typestr = json_get_valuestr(temp_node);

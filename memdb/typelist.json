@@ -1,5 +1,5 @@
 {
-	"type":"typelist",
+	"info-type":"typelist",
 	"head":
 	{
 		"name":"internal",
@@ -14,12 +14,12 @@
 	]
 }
 {
-	"type":"subtypelist",
+	"info-type":"subtypelist",
 	"head":
 	{
 		"name":"message_struct",
-		"type":"MESSAGE",
 	}
+	"type":"MESSAGE",
 	"elem_no":4,
 	"elemlist":
 	[
