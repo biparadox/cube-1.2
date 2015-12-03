@@ -318,6 +318,16 @@ void * memdb_get_next(int type,int subtype)
 	return hashlist_get_next(db_list);
 }
 
+void * memdb_remove(void * baselist,int type,int subtype)
+{
+	int ret;
+	void * db_list;
+	db_list=memdb_get_dblist(type,subtype);
+	if(db_list==NULL)
+		return NULL;
+	return hashlist_remove_elem(db_list,baselist);
+}
+
 int memdb_reset_baselist()
 {
 	struct struct_namelist * baselist=memdb_find_byname("baselist",DB_TYPELIST,0);
@@ -339,14 +349,29 @@ int memdb_reset_baselist()
 	return 0;
 }
 
-void * memdb_remove(void * baselist,int type,int subtype)
+void * memdb_get_subtypelist(int type)
 {
-	int ret;
-	void * db_list;
-	db_list=memdb_get_dblist(type,subtype);
-	if(db_list==NULL)
-		return NULL;
-	return hashlist_remove_elem(db_list,baselist);
+	struct struct_namelist * subtypelist;	
+	subtypelist=memdb_get_first(DB_SUBTYPELIST,0);
+
+	while(subtypelist!=NULL)
+	{
+		if(subtypelist->head.subtype==type)
+			return subtypelist;
+		subtypelist=memdb_get_next(DB_SUBTYPELIST,0);
+	}
+	return NULL;
+}
+
+int memdb_get_typeno(char * typestr)
+{
+	struct struct_namelist * baselist=memdb_find_byname("baselist",DB_TYPELIST,0);
+	if(baselist==NULL)
+		return -EINVAL;
+	if(baselist->elemlist==NULL)
+		return -EINVAL;
+	return _get_value_namelist(typestr,baselist);
+
 }
 
 int memdb_print_struct(void * data,char * json_str)
@@ -626,25 +651,7 @@ int read_subtypelist_json_desc(void * root,BYTE * uuid)
 
 	memcpy(namelist->head.uuid,uuid,DIGEST_SIZE);
 
-/*
-	baselist=memdb_find_byname("baselist",DB_TYPELIST,0);
-	if(baselist==NULL)
-		return -EINVAL;
-	baselist=memdb_remove(baselist,DB_TYPELIST,0);
-	if(baselist==NULL)
-		return -EINVAL;
-	ret=_merge_namelist(baselist,namelist);
-	if(ret<0)
-		return ret;
-*/
 	ret=memdb_store(namelist,DB_SUBTYPELIST,0);
-/*	if(ret<0)
-		return ret;
-
-	ret=memdb_store(baselist,DB_TYPELIST,0);
-	if(ret<0)
-		return ret;
-*/
 	return ret;	
 }
 

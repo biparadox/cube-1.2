@@ -102,12 +102,14 @@ int main() {
 	}
 	json_offset+=ret;
 	ret=read_json_desc(root_node,uuid);
+	int msg_type = memdb_get_typeno("MESSAGE");
+	if(msg_type<=0)
+		return -EINVAL;
+	findlist=memdb_get_subtypelist(msg_type);
 
-	memdb_template = memdb_get_template(DB_SUBTYPELIST,0);
-	findlist=memdb_find(uuid,DB_SUBTYPELIST,0);
 	if(findlist!=NULL)
 	{
-
+		memdb_template = memdb_get_template(DB_SUBTYPELIST,0);
 		ret=struct_2_json(findlist,print_buffer,memdb_template);
 		if(ret<0)
 			return -EINVAL;
