@@ -18,8 +18,8 @@
 	"head":
 	{
 		"name":"message_struct",
+		"subtype":"MESSAGE",
 	}
-	"type":"MESSAGE",
 	"elem_no":4,
 	"elemlist":
 	[

@@ -218,7 +218,7 @@ int memdb_init()
 	// init and set namelist
 
 	namelist_template=create_struct_template(&struct_namelist_desc);
-	struct_set_flag(namelist_template,OS210_ELEM_FLAG_KEY,"head.name,elem_no,elemlist");
+	struct_set_flag(namelist_template,OS210_ELEM_FLAG_KEY,"head.name,head.type,elem_no,elemlist");
 
 	memdb_set_template(DB_NAMELIST,0,namelist_template);
 
@@ -234,7 +234,7 @@ int memdb_init()
 
 
 	typelist_template=create_struct_template(&struct_namelist_desc);
-	struct_set_flag(typelist_template,OS210_ELEM_FLAG_KEY,"head.name,elem_no,elemlist");
+	struct_set_flag(typelist_template,OS210_ELEM_FLAG_KEY,"head.name,head.type,elem_no,elemlist");
 	memdb_set_template(DB_TYPELIST,0,typelist_template);
 	struct struct_namelist * baselist;
 	ret=Galloc0(&baselist,sizeof(struct struct_namelist));
@@ -254,12 +254,14 @@ int memdb_init()
 	ret=memdb_store(baselist,DB_TYPELIST,0);
 	if(ret<0)
 		return ret;
+	struct_set_ref(typelist_template,"head.type",baselist->elemlist);
 
 	//  build the subtypelist database
 
 	subtypelist_template=create_struct_template(&struct_subtypelist_desc);
-	struct_set_ref(subtypelist_template,"type",baselist->elemlist);
-	struct_set_flag(subtypelist_template,OS210_ELEM_FLAG_KEY,"head.name,type,elem_no,elemlist");
+	struct_set_ref(subtypelist_template,"head.type",baselist->elemlist);
+	struct_set_ref(subtypelist_template,"head.subtype",baselist->elemlist);
+	struct_set_flag(subtypelist_template,OS210_ELEM_FLAG_KEY,"head.name,head.type,head.subtype,elem_no,elemlist");
 	
 
 	memdb_set_template(DB_SUBTYPELIST,0,subtypelist_template);
@@ -318,15 +320,22 @@ void * memdb_get_next(int type,int subtype)
 
 int memdb_reset_baselist()
 {
-	void * subtypelist_template=memdb_get_template(DB_SUBTYPELIST,0);
-	if(subtypelist_template==NULL)
-		return -EINVAL;
 	struct struct_namelist * baselist=memdb_find_byname("baselist",DB_TYPELIST,0);
 	if(baselist==NULL)
 		return -EINVAL;
 	if(baselist->elemlist==NULL)
 		return -EINVAL;
-	struct_set_ref(subtypelist_template,"type",baselist->elemlist);
+
+	void * typelist_template=memdb_get_template(DB_TYPELIST,0);
+	if(typelist_template==NULL)
+		return -EINVAL;
+	struct_set_ref(typelist_template,"head.type",baselist->elemlist);
+
+	void * subtypelist_template=memdb_get_template(DB_SUBTYPELIST,0);
+	if(subtypelist_template==NULL)
+		return -EINVAL;
+	struct_set_ref(subtypelist_template,"head.type",baselist->elemlist);
+	struct_set_ref(subtypelist_template,"head.subtype",baselist->elemlist);
 	return 0;
 }
 
