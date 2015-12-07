@@ -29,6 +29,7 @@
 #include "../include/errno.h"
 #include "../include/data_type.h"
 #include "../include/alloc.h"
+#include "../include/basefunc.h"
 #include "../include/struct_deal.h"
 #include "../include/memdb.h"
 
@@ -115,5 +116,25 @@ int main() {
 			return -EINVAL;
 		printf("%s\n",print_buffer);
 	}
+	INDEX_ELEM * index;
+	index=memdb_get_first(DB_INDEX,0);
+	while(index!=NULL)
+	{
+		digest_to_uuid(index->uuid,print_buffer);
+		printf("\n\nindex uuid:%.64s \n",print_buffer);
+		findlist=memdb_find(index->uuid,index->head.type,index->head.subtype);
+		index=memdb_get_next(DB_INDEX,0);
+		if(findlist==NULL)
+			continue;
+		if(memdb_is_elem_namelist(findlist))
+		{
+			ret=memdb_print_namelist(findlist,print_buffer);	
+			if(ret<0)
+				return -EINVAL;
+			
+			printf("%s\n",print_buffer);
+		}
+	}
+
 	return 0;
 }

@@ -26,14 +26,28 @@ int memdb_store(void * record, int type,int subtype);
 
 enum base_cube_db
 {
-	DB_STRUCT_DESC=0x01,
+	DB_INDEX=0x01,
+	DB_STRUCT_DESC,
 	DB_NAMELIST,
 	DB_TYPELIST,
 	DB_SUBTYPELIST,
 	DB_CONVERTLIST,
 };
+
+typedef struct index_elem
+{
+	UUID_HEAD head;
+	int flag;
+	BYTE uuid[DIGEST_SIZE];
+}INDEX_ELEM;
+
 int memdb_set_template(int type, int subtype, void * struct_template);
 void * memdb_get_template(int type, int subtype);
+int  memdb_set_index(int type,int subtype,int flag,char * elem_list);
+int memdb_store_index(void * record,char * name,int flag);
+int memdb_get_elem_type(void * elem);
+int memdb_get_elem_subtype(void * elem);
+int memdb_is_elem_namelist(void * elem);
 
 
 /*
