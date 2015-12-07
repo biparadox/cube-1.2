@@ -50,6 +50,9 @@ int memdb_get_elem_subtype(void * elem);
 int memdb_is_elem_namelist(void * elem);
 
 
+int memdb_get_typeno(char * typestr);
+int memdb_get_subtypeno(int typeno,char * subtypestr);
+
 /*
 typedef struct tagPolicyHead{
    	 BYTE NodeSequence[20];      

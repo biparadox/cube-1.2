@@ -1,19 +1,18 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <errno.h>
 
-#include  "../include/kernel_comp.h"
-#include "../include/list.h"
 #include "../include/data_type.h"
+#include "../include/list.h"
+#include "../include/string.h"
+#include "../include/alloc.h"
+#include "../include/json.h"
 #include "../include/struct_deal.h"
-#include "../include/message_struct.h"
-#include "../include/valuename.h"
-#include "../include/message_struct_desc.h" 
+#include "../include/valuelist.h"
+#include "../include/basefunc.h"
+#include "../include/memdb.h"
+#include "../include/message.h"
 
 #include "message_box.h"
 
@@ -21,6 +20,37 @@ BYTE Blob[4096];
 char text[4096];
 
 // message generate function
+
+static  struct tag_msg_kits * msg_kits;
+
+void * _msg_load_template(char * subtypename)
+{
+	int subtype;
+
+	// load head template
+	subtype=memdb_get_subtypeno(msg_kits->type,subtypename);
+	if(subtype<0)
+		return NULL;
+	return memdb_get_template(msg_kits->type,subtype);	
+}
+
+int msgfunc_init()
+{
+	int ret;
+	msg_kits=Gmalloc(sizeof(struct tag_msg_kits));
+	if(msg_kits==NULL)
+		return -ENOMEM;
+	msg_kits->type=memdb_get_typeno("MESSAGE");	
+	if(msg_kits->type<0)
+		return msg_kits->type;
+	msg_kits->head_template =_msg_load_template("HEAD");
+	if(msg_kits->head_template == NULL)
+		return -EINVAL;
+	msg_kits->expand_head_template =_msg_load_template("EXPAND");
+	if(msg_kits->expand_head_template ==NULL)
+		return -EINVAL;
+	return 0;	
+}
 
 void * message_init(char * tag, int version)
 {
@@ -33,16 +63,12 @@ void * message_init(char * tag, int version)
 	if(version!=0x00010001)
 		return -EINVAL;
 	memset(msg_box,0,sizeof(struct message_box));
-	msg_box->head_template=create_struct_template(message_head_desc);
-	if((msg_box->head_template==NULL) || IS_ERR(msg_box->head_template))
-		return msg_box->head_template;
-	struct_write_elem("tag",&(msg_box->head),tag,msg_box->head_template);
-	struct_write_elem("version",&(msg_box->head),&version,msg_box->head_template);
+	struct_write_elem("tag",&(msg_box->head),tag,msg_kits->head_template);
+	struct_write_elem("version",&(msg_box->head),&version,msg_kits->head_template);
 	msg_box->box_state=MSG_BOX_INIT;
-	msg_box->box_mode=MSG_MODE_INTERNAL;
 	return msg_box;
 }
-
+/*
 void message_free(void * message)
 {
 	struct message_box * msg_box;
@@ -1117,5 +1143,5 @@ int message_output_text(void * message, char * text)
 	free(buffer);
 	return offset;
 }
-
+*/
 

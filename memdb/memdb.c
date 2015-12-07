@@ -459,6 +459,17 @@ int memdb_get_typeno(char * typestr)
 
 }
 
+int memdb_get_subtypeno(int typeno,char * typestr)
+{
+	struct struct_namelist * namelist=memdb_get_subtypelist(typeno);
+	if(namelist==NULL)
+		return -EINVAL;
+	if(namelist->elemlist==NULL)
+		return -EINVAL;
+	return _get_value_namelist(typestr,namelist);
+
+}
+
 int memdb_print_struct(void * data,char * json_str)
 {
 	struct struct_desc_record * struct_record=data;
