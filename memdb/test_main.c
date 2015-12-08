@@ -77,7 +77,7 @@ int main() {
 	json_offset+=ret;
 
 
-	ret=read_json_desc(root_node,uuid);
+	ret=memdb_read_desc(root_node,uuid);
 
 	findlist=memdb_find(uuid,DB_TYPELIST,0);
 	if(findlist!=NULL)
@@ -102,7 +102,7 @@ int main() {
 		return ret;
 	}
 	json_offset+=ret;
-	ret=read_json_desc(root_node,uuid);
+	ret=memdb_read_desc(root_node,uuid);
 	int msg_type = memdb_get_typeno("MESSAGE");
 	if(msg_type<=0)
 		return -EINVAL;
@@ -116,16 +116,54 @@ int main() {
 			return -EINVAL;
 		printf("%s\n",print_buffer);
 	}
+// test struct desc reading start
+
+	fd=open("msghead.json",O_RDONLY);
+	if(fd<0)
+		return fd;
+
+	
+	readlen=read(fd,json_buffer,1024);
+	if(readlen<0)
+		return -EIO;
+	printf("%s\n",json_buffer);
+	close(fd);
+
+	json_offset=0;
+	ret=json_solve_str(&root_node,json_buffer);
+	if(ret<0)
+	{
+		printf("solve json str error!\n");
+		return ret;
+	}
+	json_offset+=ret;
+
+
+	ret=memdb_read_desc(root_node,uuid);
+
+
+	// test index elem's  store
+
 	INDEX_ELEM * index;
 	index=memdb_get_first(DB_INDEX,0);
 	while(index!=NULL)
 	{
-		digest_to_uuid(index->uuid,print_buffer);
-		printf("\n\nindex uuid:%.64s \n",print_buffer);
+		memdb_print_index(index,print_buffer);
+		printf("\n\n%s\n",print_buffer);
 		findlist=memdb_find(index->uuid,index->head.type,index->head.subtype);
-		index=memdb_get_next(DB_INDEX,0);
 		if(findlist==NULL)
+		{
+			index=memdb_get_next(DB_INDEX,0);
 			continue;
+		}
+		if(index->head.type==DB_STRUCT_DESC)
+		{
+			ret=memdb_print_struct(findlist,print_buffer);
+			if(ret<0)
+				return -EINVAL;
+			
+			printf("%s\n",print_buffer);
+		}
 		if(memdb_is_elem_namelist(findlist))
 		{
 			ret=memdb_print_namelist(findlist,print_buffer);	
@@ -134,6 +172,7 @@ int main() {
 			
 			printf("%s\n",print_buffer);
 		}
+		index=memdb_get_next(DB_INDEX,0);
 	}
 
 	return 0;

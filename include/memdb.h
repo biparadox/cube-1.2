@@ -41,17 +41,37 @@ typedef struct index_elem
 	BYTE uuid[DIGEST_SIZE];
 }INDEX_ELEM;
 
+void * memdb_get_dblist(int type,int subtype);
+int  memdb_init();
+
+int  memdb_store(void * data,int type,int subtype);
+void * memdb_get_first(int type,int subtype);
+void * memdb_get_next(int type,int subtype);
+void * memdb_remove(void * elem,int type,int subtype);
+void * memdb_find(void * data,int type,int subtype);
+void * memdb_find_byname(char * name,int type,int subtype);
+
+
 int memdb_set_template(int type, int subtype, void * struct_template);
 void * memdb_get_template(int type, int subtype);
 int  memdb_set_index(int type,int subtype,int flag,char * elem_list);
 int memdb_store_index(void * record,char * name,int flag);
+INDEX_ELEM * memdb_find_index_byuuid(BYTE* uuid);
 int memdb_get_elem_type(void * elem);
 int memdb_get_elem_subtype(void * elem);
 int memdb_is_elem_namelist(void * elem);
 
+int memdb_reset_baselist();
+void * memdb_get_subtypelist(int type);
+int  memdb_get_typeno(char * typestr);
+int  memdb_get_subtypeno(int typeno,char * typestr);
 
-int memdb_get_typeno(char * typestr);
-int memdb_get_subtypeno(int typeno,char * subtypestr);
+int memdb_print_namelist(void * namelist, char * json_str);
+int memdb_print_index(void * index, char * json_str);
+int memdb_print_struct(void * struct_elem, char * json_str);
+int memdb_print_elem(void * elem, char * json_str);
+
+int memdb_read_desc(void * root,BYTE * uuid);
 
 /*
 typedef struct tagPolicyHead{

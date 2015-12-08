@@ -27,7 +27,7 @@ int digest_to_uuid(BYTE *digest,char *uuid)
 		{
 			tempdata=char_value>>4;
 			if(tempdata>9)
-				*(uuid+k)=tempdata-9+'a';
+				*(uuid+k)=tempdata-10+'a';
 			else
 				*(uuid+k)=tempdata+'0';
 			k++;

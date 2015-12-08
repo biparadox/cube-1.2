@@ -120,6 +120,7 @@ int memdb_store_index(void * record, char * name,int flag)
 		return NULL;
 	
 	INDEX_ELEM * index;
+	INDEX_ELEM * findindex;
 
 	ret=Galloc(&index,sizeof(INDEX_ELEM));
 	if(ret<0)
@@ -140,7 +141,6 @@ int memdb_store_index(void * record, char * name,int flag)
 	if(flag==0)
 	{
 		Memcpy(index->head.uuid,head->uuid,DIGEST_SIZE);
-		hashlist_add_elem(db_list,index);
 	}
 	else
 	{
@@ -159,8 +159,32 @@ int memdb_store_index(void * record, char * name,int flag)
 		if(ret<0)
 			return ret;	
 	}
+	findindex=hashlist_find_elem(db_list,index);
+	if(findindex!=NULL)
+	{
+		if(!memcmp(findindex->head.uuid,index->head.uuid,DIGEST_SIZE))
+			return -EINVAL;
+		Free(findindex);	
+	}
 	return hashlist_add_elem(db_list,index);
 }
+
+INDEX_ELEM * memdb_find_index_byuuid(BYTE * uuid)
+{
+	INDEX_ELEM * index;
+	index=memdb_get_first(DB_INDEX,0);
+	while(index!=NULL)
+	{
+		if(!memcmp(uuid,index->uuid,DIGEST_SIZE))
+		{
+			return index;	
+		}
+		index=memdb_get_next(DB_INDEX,0);
+	}
+	return NULL;	
+	
+}
+
 
 void * _build_struct_desc(void ** elem_attr,int type,int subtype,char * name)
 {
@@ -529,6 +553,22 @@ int memdb_print_namelist(void * namelist,char * json_str)
 	if(namelist_template == NULL)
 		return -EINVAL;
 	ret=struct_2_json(namelist,json_str,namelist_template);
+	return ret;	
+}
+
+int memdb_print_index(void * index,char * json_str)
+{
+	int ret;
+	UUID_HEAD * head=index;
+	void * index_template;
+	if(head==NULL)
+		return -EINVAL;
+	if(json_str==NULL)
+		return -EINVAL;
+	index_template = memdb_get_template(DB_INDEX,0);
+	if(index_template == NULL)
+		return -EINVAL;
+	ret=struct_2_json(index,json_str,index_template);
 	return ret;	
 }
 
@@ -950,6 +990,8 @@ int read_struct_json_desc(void * root, BYTE * uuid)
 	temp_node=json_find_elem("name",root);
 	if(temp_node!=NULL)
 		strncpy(struct_desc_record->head.name,json_get_valuestr(temp_node),DIGEST_SIZE);
+	memdb_store(struct_desc_record,DB_STRUCT_DESC,0);
+	memdb_store_index(struct_desc_record,NULL,0);
 	return 0;
 }
 
@@ -1140,7 +1182,7 @@ int read_memdb_json_desc(void * root,BYTE * uuid)
 
 }
 
-int read_json_desc(void * root, BYTE * uuid)
+int memdb_read_desc(void * root, BYTE * uuid)
 {
 	NAME2POINTER funclist[]=
 	{
@@ -1180,5 +1222,3 @@ int read_json_desc(void * root, BYTE * uuid)
 	return read_json_func(root,uuid);
 	
 }
-
-
