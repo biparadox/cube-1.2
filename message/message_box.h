@@ -5,7 +5,7 @@
 
 struct message_box
 {
-	MESSAGE_HEAD head;	 // a fixed size structure to store the message's head
+	MSG_HEAD head;	 // a fixed size structure to store the message's head
 	void * head_template;    // this is the struct template of the head
 	void * record_template;  // this is the struct template of the record in this message
 	int box_state;           // it show what process_state this message_box  in

@@ -34,12 +34,56 @@
 #include "../include/memdb.h"
 
 
+int read_json_file(char * file_name)
+{
+	int ret;
+
+	int fd;
+	int readlen;
+	int json_offset;
+
+	int struct_no=0;
+	void * root_node;
+	void * findlist;
+	void * memdb_template ;
+	BYTE uuid[DIGEST_SIZE];
+	char json_buffer[4096];
+
+	fd=open(file_name,O_RDONLY);
+	if(fd<0)
+		return fd;
+
+	readlen=read(fd,json_buffer,1024);
+	if(readlen<0)
+		return -EIO;
+	printf("%s\n",json_buffer);
+	close(fd);
+
+	json_offset=0;
+	while(json_offset<readlen)
+	{
+		ret=json_solve_str(&root_node,json_buffer+json_offset);
+		if(ret<0)
+		{
+			printf("solve json str error!\n");
+			return ret;
+		}
+		json_offset+=ret;
+
+		ret=memdb_read_desc(root_node,uuid);
+		if(ret<0)
+			break;
+		struct_no++;
+	}
+
+	return struct_no;
+}
+
 
 int main() {
 
 	char json_buffer[4096];
 	char print_buffer[4096];
-	int fd;
 	int ret;
 	int readlen;
 	int json_offset;
@@ -54,55 +98,12 @@ int main() {
 
 // test namelist reading start
 
-	memdb_template = memdb_get_template(DB_TYPELIST,0);
-	
-	fd=open("typelist.json",O_RDONLY);
-	if(fd<0)
-		return fd;
-
-	
-	readlen=read(fd,json_buffer,1024);
-	if(readlen<0)
-		return -EIO;
-	printf("%s\n",json_buffer);
-	close(fd);
-
-	json_offset=0;
-	ret=json_solve_str(&root_node,json_buffer);
+	ret=read_json_file("typelist.json");
 	if(ret<0)
-	{
-		printf("solve json str error!\n");
 		return ret;
-	}
-	json_offset+=ret;
+	printf("read %d elem from file!\n",ret);
 
-
-	ret=memdb_read_desc(root_node,uuid);
-
-	findlist=memdb_find(uuid,DB_TYPELIST,0);
-	if(findlist!=NULL)
-	{
-
-		ret=struct_2_json(findlist,print_buffer,memdb_template);
-		if(ret<0)
-			return -EINVAL;
-		printf("%s\n",print_buffer);
-	}
-
-	findlist=memdb_find_byname("baselist",DB_TYPELIST,0);
-	ret=struct_2_json(findlist,print_buffer,memdb_template);
-	if(ret<0)
-		return -EINVAL;
-	printf("%s\n",print_buffer);
-
-	ret=json_solve_str(&root_node,json_buffer+json_offset);
-	if(ret<0)
-	{
-		printf("solve json str error!\n");
-		return ret;
-	}
-	json_offset+=ret;
-	ret=memdb_read_desc(root_node,uuid);
+	
 	int msg_type = memdb_get_typeno("MESSAGE");
 	if(msg_type<=0)
 		return -EINVAL;
@@ -110,37 +111,17 @@ int main() {
 
 	if(findlist!=NULL)
 	{
-		memdb_template = memdb_get_template(DB_SUBTYPELIST,0);
-		ret=struct_2_json(findlist,print_buffer,memdb_template);
+		ret=memdb_print_namelist(findlist,print_buffer);
 		if(ret<0)
 			return -EINVAL;
 		printf("%s\n",print_buffer);
 	}
 // test struct desc reading start
 
-	fd=open("msghead.json",O_RDONLY);
-	if(fd<0)
-		return fd;
-
-	
-	readlen=read(fd,json_buffer,1024);
-	if(readlen<0)
-		return -EIO;
-	printf("%s\n",json_buffer);
-	close(fd);
-
-	json_offset=0;
-	ret=json_solve_str(&root_node,json_buffer);
+	ret=read_json_file("msghead.json");
 	if(ret<0)
-	{
-		printf("solve json str error!\n");
 		return ret;
-	}
-	json_offset+=ret;
-
-
-	ret=memdb_read_desc(root_node,uuid);
-
+	printf("read %d elem from file!\n");
 
 	// test index elem's  store
 

@@ -9,7 +9,7 @@
 #include "../include/alloc.h"
 #include "../include/json.h"
 #include "../include/struct_deal.h"
-#include "../include/valuelist.h"
+//#include "../include/valuelist.h"
 #include "../include/basefunc.h"
 #include "../include/memdb.h"
 #include "../include/message.h"
@@ -37,7 +37,7 @@ void * _msg_load_template(char * subtypename)
 int msgfunc_init()
 {
 	int ret;
-	msg_kits=Gmalloc(sizeof(struct tag_msg_kits));
+	msg_kits=Calloc(sizeof(struct tag_msg_kits));
 	if(msg_kits==NULL)
 		return -ENOMEM;
 	msg_kits->type=memdb_get_typeno("MESSAGE");	
@@ -55,7 +55,7 @@ int msgfunc_init()
 void * message_init(char * tag, int version)
 {
 	struct message_box * msg_box;
-	msg_box= kmalloc(sizeof(struct message_box),GFP_KERNEL);
+	msg_box= Calloc(sizeof(struct message_box));
 	if(msg_box==NULL)
 		return NULL;
 	if(strncmp(tag,"MESG",4)!=0)
@@ -378,7 +378,7 @@ int message_get_flag(void * message)
 	return msg_box->head.flag;
 }
 
-MESSAGE_HEAD * get_message_head(void * message)
+MSG_HEAD * get_message_head(void * message)
 {
 	struct message_box * msg_box;
 	int ret;
@@ -393,7 +393,7 @@ MESSAGE_HEAD * get_message_head(void * message)
 void * message_create(char * type,void * active_msg)
 {
 	struct message_box * msg_box;
-	MESSAGE_HEAD * message_head;
+	MSG_HEAD * message_head;
 	void * template;
 	int record_size;
 	int ret;
@@ -427,7 +427,7 @@ void * message_clone(void * message)
 {
 	struct message_box * src_msg;
 	struct message_box * new_msg;
-	MESSAGE_HEAD * message_head;
+	MSG_HEAD * message_head;
 	void * template;
 	void * clone;
 	int record_size;
@@ -444,7 +444,7 @@ void * message_clone(void * message)
 	if((src_msg==NULL) || IS_ERR(src_msg))
 		return -EINVAL;
 
-	memcpy(&(new_msg->head),&(src_msg->head),sizeof(MESSAGE_HEAD));
+	memcpy(&(new_msg->head),&(src_msg->head),sizeof(MSG_HEAD));
 
    	new_msg->box_state=MSG_BOX_INIT;
 	new_msg->head.record_num=0;
@@ -522,7 +522,7 @@ int __message_alloc_record_site(void * message)
 {
 	struct message_box * msg_box;
 	int ret;
-	MESSAGE_HEAD * msg_head;
+	MSG_HEAD * msg_head;
 
 	msg_box=(struct message_box *)message;
 
@@ -543,7 +543,7 @@ int __message_alloc_record_site(void * message)
 int message_record_init(void * message)
 {
         struct message_box * msg_box=message;
-        MESSAGE_HEAD * message_head;
+        MSG_HEAD * message_head;
         void * template;
         int record_size;
         int readbuf[1024];
@@ -566,7 +566,7 @@ int __message_add_record_site(void * message,int increment)
 {
 	struct message_box * msg_box;
 	int ret;
-	MESSAGE_HEAD * msg_head;
+	MSG_HEAD * msg_head;
 	BYTE * data;
 	void * old_recordarray;
 	void * old_precordarray;
@@ -611,7 +611,7 @@ int message_add_record_blob(void * message,int record_size, BYTE * record)
 {
 	struct message_box * msg_box;
 	int ret;
-	MESSAGE_HEAD * msg_head;
+	MSG_HEAD * msg_head;
 	BYTE * data;
     int curr_site;
 	
@@ -656,7 +656,7 @@ int message_add_record(void * message,void * record)
 {
 	struct message_box * msg_box;
 	int ret;
-	MESSAGE_HEAD * msg_head;
+	MSG_HEAD * msg_head;
         int curr_site;
 
 	msg_box=(struct message_box *)message;
@@ -690,7 +690,7 @@ int message_add_expand(void * message,void * expand)
 {
 	struct message_box * msg_box;
 	int ret;
-	MESSAGE_HEAD * msg_head;
+	MSG_HEAD * msg_head;
 
 	msg_box=(struct message_box *)message;
 
@@ -708,7 +708,7 @@ int message_add_expand_blob(void * message,void * expand)
 {
 	struct message_box * msg_box;
 	int ret;
-	MESSAGE_HEAD * msg_head;
+	MSG_HEAD * msg_head;
 	MESSAGE_EXPAND * expand_head;
 
 	msg_box=(struct message_box *)message;
@@ -735,7 +735,7 @@ int message_record_blob2struct(void * message)
 	struct message_box * msg_box;
 	int ret;
 	int i;
-	MESSAGE_HEAD * msg_head;
+	MSG_HEAD * msg_head;
 
 	msg_box=(struct message_box *)message;
 
@@ -766,7 +766,7 @@ int message_record_struct2blob(void * message)
 	int i;
 	BYTE * buffer;
 	const int bufsize=65536;
-	MESSAGE_HEAD * msg_head;
+	MSG_HEAD * msg_head;
 
 	int record_size;
 	msg_box=(struct message_box *)message;
@@ -815,7 +815,7 @@ int message_expand_struct2blob(void * message)
 	int i;
 	BYTE * buffer;
 	const int bufsize=65536;
-	MESSAGE_HEAD * msg_head;
+	MSG_HEAD * msg_head;
 	int expand_size;
 
 	msg_box=(struct message_box *)message;
@@ -874,7 +874,7 @@ int message_output_blob(void * message, BYTE ** blob)
 {
 	struct message_box * msg_box;
 	int ret;
-	MESSAGE_HEAD * msg_head;
+	MSG_HEAD * msg_head;
 	BYTE * data;
 	BYTE * buffer;
 	int i,j;
@@ -915,7 +915,7 @@ int message_output_blob(void * message, BYTE ** blob)
 	if(msg_box->head.expand_num>MAX_EXPAND_NUM)
 		return -EINVAL;
 
-	offset=sizeof(MESSAGE_HEAD);
+	offset=sizeof(MSG_HEAD);
 
 	// duplicate record blob
 	if(msg_box->blob != NULL)
@@ -952,7 +952,7 @@ int message_output_blob(void * message, BYTE ** blob)
 	}
 
 	head_size=struct_2_blob(&(msg_box->head),buffer,msg_box->head_template);
-	if(head_size!=sizeof(MESSAGE_HEAD))
+	if(head_size!=sizeof(MSG_HEAD))
 	{
 		free(buffer);
 		return -EINVAL;
@@ -967,7 +967,7 @@ int message_output_record_blob(void * message, BYTE ** blob)
 {
 	struct message_box * msg_box;
 	int ret;
-	MESSAGE_HEAD * msg_head;
+	MSG_HEAD * msg_head;
 	BYTE * data;
 	BYTE * buffer;
 	int i,j;
@@ -1035,7 +1035,7 @@ int message_output_record_blob(void * message, BYTE ** blob)
 int message_get_record(void * message,void ** msg_record, int record_no)
 {
 	struct message_box * msg_box;
-	MESSAGE_HEAD * msg_head;
+	MSG_HEAD * msg_head;
 	void * struct_template;
 	int ret;
 
@@ -1079,7 +1079,7 @@ int message_output_text(void * message, char * text)
 {
 	struct message_box * msg_box;
 	int ret;
-	MESSAGE_HEAD * msg_head;
+	MSG_HEAD * msg_head;
 	BYTE * data;
 	BYTE * buffer;
 	int i,j;
