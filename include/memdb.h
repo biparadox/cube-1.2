@@ -32,6 +32,7 @@ enum base_cube_db
 	DB_TYPELIST,
 	DB_SUBTYPELIST,
 	DB_CONVERTLIST,
+	DB_RECORDTYPE,
 };
 
 typedef struct index_elem

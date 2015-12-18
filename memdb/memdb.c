@@ -289,6 +289,7 @@ int memdb_init()
 	void * namelist_template;
 	void * typelist_template;
 	void * subtypelist_template;
+	void * recordtype_template;
 	void * index_template;
 
 
@@ -303,6 +304,8 @@ int memdb_init()
 	static_db_list[DB_NAMELIST]=init_hash_list(8,DB_NAMELIST,0);
 	static_db_list[DB_TYPELIST]=init_hash_list(8,DB_TYPELIST,0);
 	static_db_list[DB_SUBTYPELIST]=init_hash_list(8,DB_SUBTYPELIST,0);
+	static_db_list[DB_RECORDTYPE]=init_hash_list(8,DB_RECORDTYPE,0);
+
 	if(static_db_list[DB_STRUCT_DESC]==NULL)
 	{
 		return -EINVAL;
@@ -375,7 +378,18 @@ int memdb_init()
 	
 	memdb_set_template(DB_SUBTYPELIST,0,subtypelist_template);
 
+	//  build the recordtype database
+
+	recordtype_template=create_struct_template(&struct_recordtype_desc);
+	struct_set_ref(recordtype_template,"head.type",baselist->elemlist);
+	struct_set_ref(recordtype_template,"head.subtype",baselist->elemlist);
+	struct_set_flag(recordtype_template,OS210_ELEM_FLAG_KEY,"head.name,head.type,head.subtype,flag_no,flaglist");
+
+	memdb_set_template(DB_RECORDTYPE,0,recordtype_template);
+
 	dynamic_db_list=init_hash_list(8,TYPE_DB_LIST,0);
+
+
 	return 0;
 }
 
@@ -503,14 +517,13 @@ int memdb_print_struct(void * data,char * json_str)
 	struct elem_attr_octet * struct_desc; 	
 	struct elem_attr_octet * elem_desc; 
 
-	void * head_template = create_struct_template(&struct_record_head_desc);
+	head_template = create_struct_template(&struct_record_head_desc);
 	if(head_template==NULL)
 		return -EINVAL;
 
 	ret=struct_2_json(data,json_str,head_template);
 	if(ret<0)
 		return ret;
-	free_struct_template(head_template);
 	stroffset+=ret;
 
 	json_str[stroffset-1]=',';
@@ -1012,8 +1025,106 @@ int register_struct_template(int type, int subtype,void * struct_desc)
 
 int read_record_json_desc(void * root,BYTE * uuid)
 {
+	int ret;
+	// get the struct desc db
+	void * temp_node ;
+	struct struct_desc_record * struct_desc_record;
+	struct struct_recordtype * record_type;
+	UUID_HEAD head;
+	BYTE buffer[DIGEST_SIZE*2];
+	BYTE uuidbuf[DIGEST_SIZE];
 
+	if(json_get_type(root)!= JSON_ELEM_MAP)
+		return -EINVAL;
+
+	temp_node=json_find_elem("struct_uuid",root);
+	if(temp_node!=NULL)
+	{
+		ret= json_node_getvalue(temp_node,buffer,DIGEST_SIZE*2);
+		if(ret<0)
+			return ret;
+		ret=uuid_to_digest(buffer,uuidbuf);
+		if(ret<0)
+			return ret;	
+		struct_desc_record = memdb_find(uuidbuf,DB_STRUCT_DESC,0);
+		if(struct_desc_record==NULL)
+			return -EINVAL;
+	}
+	else
+	{
+		temp_node=json_find_elem("struct_name",root);
+		if(temp_node!=NULL)
+		{
+			ret= json_node_getvalue(temp_node,buffer,DIGEST_SIZE);
+			if(ret<0)
+				return ret;
+			struct_desc_record = memdb_find_byname(buffer,0,
+				struct_desc_record);
+			if(struct_desc_record==NULL)
+				return -EINVAL;
+		}
+		else
+		{
+			temp_node=json_find_elem("desc",root);
+			if(temp_node==NULL)
+				return -EINVAL;
+			if(json_get_type(temp_node)!=JSON_ELEM_ARRAY)
+			ret = _read_struct_json(temp_node,&struct_desc_record);
+			if(ret<0)
+				return ret;
+			memcpy(uuidbuf,struct_desc_record->head.uuid,DIGEST_SIZE);
+			memdb_store(struct_desc_record,DB_STRUCT_DESC,0);
+			memdb_store_index(struct_desc_record,NULL,0);
+		}
+	}  
+
+	// build the record_type's head
+	temp_node=json_find_elem("head",root);
+	if(temp_node==NULL)
+		return -EINVAL;
+	ret=Galloc0(&record_type,sizeof(struct struct_recordtype));
+	if(ret<0)
+		return ret;
+	ret=json_2_struct(temp_node,&(record_type->head),head_template);
+	if(ret<0)
+		return ret;
+	memcpy(record_type->uuid,struct_desc_record->uuid,DIGEST_SIZE);
+	
+	// load the flag list
+
+	void * index_node=json_find_elem("index",root);
+	if(index_node==NULL)
+		return -EINVAL;
+	int index_no=json_get_elemno(index_node);
+	if(index_no<0)
+		return -EINVAL;
+
+
+
+	void * temp_child = json_get_first_child(index_node);
+	if(temp_child==NULL)
+		return -EINVAL;	
+	record_type->flag_no=index_no;
+	
+	record_type->flaglist=
+
+	for(i=0;i<index_no;i++)
+	{
+		temp_node = json_find_elem("flag",temp_child);		
+
+	}
+	
+
+	//compose the record template
+	
+
+	//store the struct
+
+	// make the record database
+	
+	return 0;
 }
+
 
 int read_memdb_json_desc(void * root,BYTE * uuid)
 {
@@ -1190,7 +1301,7 @@ int memdb_read_desc(void * root, BYTE * uuid)
 		{"typelist",&read_typelist_json_desc},
 		{"subtypelist",&read_subtypelist_json_desc},
 		{"struct",&read_struct_json_desc},
-		{"record",&read_record_json_desc},
+		{"record_define",&read_record_json_desc},
 		{"memdb",&read_memdb_json_desc},
 		{NULL,NULL},
 

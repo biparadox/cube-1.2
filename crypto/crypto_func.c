@@ -38,6 +38,28 @@ int digest_to_uuid(BYTE *digest,char *uuid)
 	}
 	return 0;
 }
+
+int uuid_to_digest(char * uuid,BYTE * digest)
+{
+	int i;
+	BYTE char_value;
+	for(i=0;i<DIGEST_SIZE*2;i++)
+	{
+		if((uuid[i]>='0')&&(uuid[i]<='9'))
+			char_value=uuid[i]-'0';
+		else if((uuid[i]>='a')&&(uuid[i]<='f'))
+			char_value=uuid[i]-'a'+10;
+		else if((uuid[i]>='A')&&(uuid[i]<='F'))
+			char_value=uuid[i]-'A'+10;
+		else
+			return -EINVAL;
+		if(i%2==0)
+			digest[i/2]=char_value<<4;
+		else
+			digest[i/2]+=char_value;
+	}
+	return 0;
+}
 #define PCR_SIZE 20
 int extend_pcr_sm3digest(BYTE * pcr_value,BYTE * sm3digest)
 {

@@ -1,21 +1,7 @@
-#ifdef KERNEL_MODE
-
-#include <linux/string.h>
-#include <linux/list.h>
-#include <linux/slab.h>
-#include <linux/errno.h>
-
-#else
-
 #include<stdlib.h>
 #include<stdio.h>
 #include<string.h>
 #include<errno.h>
-#include<time.h>
-//#include "../include/kernel_comp.h"
-//#include "../include/list.h"
-
-#endif
 
 #include "../include/data_type.h"
 #include "../include/alloc.h"
