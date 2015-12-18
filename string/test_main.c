@@ -27,12 +27,51 @@ int main() {
 
 
 //	struct connect_login test_login={"HuJun","openstack"};
-	char * src=" hello,  world!";
+	char * src=" hello,world!";
+	char * src1=" hello,World!";
 	int i;
+	int ret;
 	char buffer[20];
+	char buffer1[20];
 	Memset(buffer,0,20);
 	Memcpy(buffer,src,9);
 	printf("\n%s\n",buffer);
+	ret = Memcmp(src,src1,9);
+	printf ("Memcmp result is %d!\n",ret);
+
+	Strcpy(buffer1,src);
+	printf("\n%s\n",buffer1);
+
+	Strncpy(buffer1,src,20);
+	printf("\n%s\n",buffer1);
+
+	Memset(buffer1,'A',15);
+	Strncpy(buffer1,src,9);
+	printf("\n%s\n",buffer1);
+
+	ret=Strcmp(src,src1);
+	printf ("Strcmp result is %d!\n",ret);
+
+	ret=Strncmp(src1,src,9);
+	printf ("Strncmp result is %d!\n",ret);
+
+	Memset(buffer,0,20);
+	Memset(buffer1,0,20);
+
+	Strncpy(buffer,src,9);
+	Strncpy(buffer1,src1+3,9);
+
+	Strncat(buffer,buffer1,20);
+	printf("\n%s\n",buffer);
+
+	ret=Strlen(buffer);
+	printf ("Strlen result is %d!\n",ret);
+
+	ret=Strnlen(buffer,10);
+	printf ("Strnlen result is %d!\n",ret);
+
+
+
 	i=Getfiledfromstr(buffer,src,',',0);
 	printf("\n%s\n %c",buffer,src[i]);
 	i=Getfiledfromstr(buffer,src+i+1,',',0);

@@ -65,6 +65,7 @@ struct struct_elem_attr
 	enum os210_struct_elem_type type;
 	int size;     //长度值,对变长变量,则为最大长度值	
 	void * ref;
+	void * def;
 };
 
 

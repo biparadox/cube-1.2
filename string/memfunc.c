@@ -35,6 +35,19 @@ void * Memcpy(void * dest,void * src, unsigned int count)
 	return dest;
 }
 
+int    Memcmp(const void *s1,const void *s2,int n)
+{
+	char * buf1=s1;
+	char * buf2 =s2;
+	
+	while(--n && *buf1 == *buf2)
+	{
+		buf1++;
+		buf2++;
+	}
+	return *buf1-*buf2;
+}
+
 void * Memset(void * s,int c, int n)
 {
 	const unsigned char uc=c;
@@ -42,6 +55,93 @@ void * Memset(void * s,int c, int n)
 	for(su=s;n>0;++su,--n)
 		*su=uc;
 	return s;
+}
+
+char * Strcpy(char *dest,const char *src)
+{
+	if(dest == src)
+		return src;
+	char * d=(char *)dest;
+	char * s=(char *)src;
+	while(*s!=0)
+		*d++=*s++;
+        *d=0;
+	return dest;
+}
+
+char * Strncpy(char *dest,const char *src,int n)
+{
+	if(dest == src)
+		return src;
+	char * d=(char *)dest;
+	char * s=(char *)src;
+	while((*s!=0)&&(n--)) 
+		*d++=*s++;
+	
+	if(n>=0)
+        	*d=0;
+	return dest;
+
+}
+int    Strcmp(const char *s1,const char *s2)
+{
+	int ret = 0;
+	
+	while( !(ret = *(unsigned char *)s1 - *(unsigned char *)s2) && *s1)
+	{
+		s1++;
+		s2++;
+	}
+	return ret;
+}
+
+int    Strncmp(const char *s1,const char *s2,int n)
+{
+	if(n<=0)
+		return 0;
+	while(--n && *s1 && *s1==*s2)
+	{
+		s1++;
+		s2++;
+	}
+	return *(unsigned char *)s1 - *(unsigned char *)s2;
+}
+
+char * Strcat(char * dest,const char *src)
+{
+	char * cp=dest;
+	while(*cp)
+		cp++;
+	while(*cp++=*src++);
+	
+	return dest;
+}
+
+char * Strncat(char * dest,const char *src,int n)
+{
+	char * cp=dest;
+	while(n-- && *cp)
+		cp++;
+	if(n<0)
+		return dest;
+
+	while(n-- && (*cp++=*src++));
+	
+	return dest;
+}
+
+int    Strlen(char * str)
+{
+	int i;
+	for(i=0;str[i];i++);
+	return i;
+}
+
+int    Strnlen(char * str,int n)
+{
+	int i;
+	for(i=0;i<n && str[i];i++);
+	return i;
 }
 
 int Getfiledfromstr(char * name,char * str,char IFS,int maxsize)
