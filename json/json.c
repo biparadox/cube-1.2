@@ -1,17 +1,4 @@
-#ifdef KERNEL_MODE
-
-#include <linux/string.h>
-#include <linux/list.h>
-#include <linux/slab.h>
-#include <linux/errno.h>
-
-#else
-
-#include<string.h>
-#include<errno.h>
-//#include "../include/kernel_comp.h"
 #include "../include/list.h"
-#endif
 
 #include "../include/data_type.h"
 #include "../include/errno.h"
@@ -202,7 +189,7 @@ static inline int json_get_boolvalue(void * value_addr,char * json_str)
    switch(json_str[0])
    {
 	case 't':
-		if(memcmp(json_str,"true",4)==0)
+		if(Memcmp(json_str,"true",4)==0)
 		{
 			*(int *)value_addr=1;
 			i=4;
@@ -211,13 +198,13 @@ static inline int json_get_boolvalue(void * value_addr,char * json_str)
 		else
 			return -EINVAL;
 	case 'T':
-		if(memcmp(json_str,"True",4)==0)
+		if(Memcmp(json_str,"True",4)==0)
 		{
 			*(int *)value_addr=1;
 			i=4;
 			break;
 		}
-		else if(memcmp(json_str,"TRUE",4)==0)
+		else if(Memcmp(json_str,"TRUE",4)==0)
 		{
 			*(int *)value_addr=1;
 			i=4;
@@ -226,7 +213,7 @@ static inline int json_get_boolvalue(void * value_addr,char * json_str)
 		else
 			return -EINVAL;
 	case 'f':
-		if(memcmp(json_str,"false",5)==0)
+		if(Memcmp(json_str,"false",5)==0)
 		{
 			*(int *)value_addr=1;
 			i=5;
@@ -235,13 +222,13 @@ static inline int json_get_boolvalue(void * value_addr,char * json_str)
 		else
 			return -EINVAL;
 	case 'F':
-		if(memcmp(json_str,"False",5)==0)
+		if(Memcmp(json_str,"False",5)==0)
 		{
 			*(int *)value_addr=1;
 			i=5;
 			break;
 		}
-		else if(memcmp(json_str,"FALSE",5)==0)
+		else if(Memcmp(json_str,"FALSE",5)==0)
 		{
 			*(int *)value_addr=1;
 			i=5;
@@ -440,9 +427,9 @@ int json_solve_str(void ** root, char *str)
 		{
 		    int len=strlen(value_buffer);
 		    if(len<=DIGEST_SIZE)
-               	        memcpy(child_node->name,value_buffer,len+1);
+               	        Memcpy(child_node->name,value_buffer,len+1);
 		    else
-               	        memcpy(child_node->name,value_buffer,DIGEST_SIZE);
+               	        Memcpy(child_node->name,value_buffer,DIGEST_SIZE);
 		}
 		while(str[offset]!='\0')
 		{
@@ -493,7 +480,7 @@ int json_solve_str(void ** root, char *str)
                     		return -EINVAL;
 			json_set_type(child_node,JSON_ELEM_STRING,0);
 			Palloc(&(child_node->value_str),ret);
-			memcpy(child_node->value_str,value_buffer,ret);
+			Memcpy(child_node->value_str,value_buffer,ret);
 		}
 		// if this value is a num
 		else if((str[offset] >='0') && (str[offset]<='9'))
@@ -504,7 +491,7 @@ int json_solve_str(void ** root, char *str)
                 	if(ret>=DIGEST_SIZE*2)
                     		return ret;
 			json_set_type(child_node,JSON_ELEM_NUM,0);
-			memcpy(&(child_node->value),value_buffer,sizeof(int));
+			Memcpy(&(child_node->value),value_buffer,sizeof(int));
 		}
 		// if this value is a bool
 		else 
@@ -515,7 +502,7 @@ int json_solve_str(void ** root, char *str)
                 	if(ret>=DIGEST_SIZE*2)
                     		return ret;
 			json_set_type(child_node,JSON_ELEM_BOOL,0);
-			memcpy(&(child_node->value),value_buffer,sizeof(int));
+			Memcpy(&(child_node->value),value_buffer,sizeof(int));
 
 		}
 		offset+=ret;
@@ -568,7 +555,7 @@ int json_solve_str(void ** root, char *str)
                     		return -EINVAL;
 			json_set_type(child_node,JSON_ELEM_STRING,1);
 			Palloc(&(child_node->value_str),ret);
-			memcpy(child_node->value_str,value_buffer,ret);
+			Memcpy(child_node->value_str,value_buffer,ret);
 		}
 		// if this value is a num
 		else if((str[offset] >='0') && (str[offset]<='9'))
@@ -579,7 +566,7 @@ int json_solve_str(void ** root, char *str)
                 	if(ret>=DIGEST_SIZE*2)
                     		return ret;
 			json_set_type(child_node,JSON_ELEM_NUM,1);
-			memcpy(&(child_node->value),value_buffer,sizeof(int));
+			Memcpy(&(child_node->value),value_buffer,sizeof(int));
 		}
 		// if this value is a bool
 		else 
@@ -590,7 +577,7 @@ int json_solve_str(void ** root, char *str)
                 	if(ret>=DIGEST_SIZE*2)
                     		return ret;
 			json_set_type(child_node,JSON_ELEM_BOOL,1);
-			memcpy(&(child_node->value),value_buffer,sizeof(int));
+			Memcpy(&(child_node->value),value_buffer,sizeof(int));
 
 		}
 		offset+=ret;
@@ -657,7 +644,7 @@ int json_print_str(void * root,char * str)
 
 			str[offset++]='"';
 			len=strnlen(child_node->name,DIGEST_SIZE);
-			memcpy(str+offset,child_node->name,len);
+			Memcpy(str+offset,child_node->name,len);
 			offset+=len;
 			str[offset++]='"';
 			str[offset++]=':';
@@ -672,7 +659,7 @@ int json_print_str(void * root,char * str)
 				case JSON_ELEM_STRING:
 					str[offset++]='"';
 					len=strnlen(child_node->value_str,DIGEST_SIZE*16);
-					memcpy(str+offset,child_node->value_str,len);
+					Memcpy(str+offset,child_node->value_str,len);
 					offset+=len;
 					str[offset++]='"';
 					break;
@@ -685,12 +672,12 @@ int json_print_str(void * root,char * str)
 				case JSON_ELEM_BOOL:
 					if(child_node->value)
 					{
-						memcpy(str+offset,'true',4);
+						Memcpy(str+offset,'true',4);
 						offset+=4;
 					}	
 					else
 					{
-						memcpy(str+offset,'false',5);
+						Memcpy(str+offset,'false',5);
 						offset+=5;
 					}
 					break;
@@ -744,7 +731,7 @@ int json_print_str(void * root,char * str)
 				case JSON_ELEM_STRING:
 					str[offset++]='"';
 					len=strnlen(child_node->value_str,DIGEST_SIZE*16);
-					memcpy(str+offset,child_node->value_str,len);
+					Memcpy(str+offset,child_node->value_str,len);
 					offset+=len;
 					str[offset++]='"';
 					break;
@@ -757,12 +744,12 @@ int json_print_str(void * root,char * str)
 				case JSON_ELEM_BOOL:
 					if(child_node->value)
 					{
-						memcpy(str+offset,'true',4);
+						Memcpy(str+offset,'true',4);
 						offset+=4;
 					}	
 					else
 					{
-						memcpy(str+offset,'false',5);
+						Memcpy(str+offset,'false',5);
 						offset+=5;
 					}
 					break;
@@ -824,7 +811,7 @@ int json_node_getvalue(void * node,void * value, int max_len)
 		memset(value,0,max_len);
 		return 0;
 	}
-	memcpy(value,&json_node->value,max_len);
+	Memcpy(value,&json_node->value,max_len);
 	return 0;
 }
 
@@ -837,7 +824,7 @@ int json_node_getname(void * node,char * name)
 	if(json_node->name==NULL)
 		return 0;
 	len=strnlen(json_node->name,DIGEST_SIZE);
-	memcpy(name,json_node->name,len);
+	Memcpy(name,json_node->name,len);
 	if(len<DIGEST_SIZE)
 		name[len]=0;
 	return len;
