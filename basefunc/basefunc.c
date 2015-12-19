@@ -155,7 +155,7 @@ static __inline__ int comp_name(void * src,void * desc)
 	unsigned int * src_array=(int *)src;
 	unsigned int * desc_array = (int *)desc;
 	
-	return strncmp(src,desc,DIGEST_SIZE);
+	return Strncmp(src,desc,DIGEST_SIZE);
 }
 
 Record_List * list_find_nameelem(void * list,char  * name)

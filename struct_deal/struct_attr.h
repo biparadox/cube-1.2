@@ -79,10 +79,10 @@ static inline int _ispointerelem(int type)
 static inline int _elem_get_defvalue(void * elem)
 {
 	struct elem_template * curr_elem=elem;
-	struct elem_template * temp_elem=curr_elem->ref;
+	struct elem_template * temp_elem=curr_elem->def;
 	if(temp_elem==NULL)
 		return -EINVAL;
-	return (int)temp_elem->ref & 0x00000FFF;
+	return (int)temp_elem->def & 0x00000FFF;
 }
 
 #endif

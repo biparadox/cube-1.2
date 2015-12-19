@@ -48,21 +48,21 @@ struct verify_login
 
 static struct struct_elem_attr connect_login_desc[]=
 {
-    {"user",OS210_TYPE_STRING,DIGEST_SIZE,NULL},
-    {"passwd",OS210_TYPE_ESTRING,sizeof(char *),NULL},
+    {"user",OS210_TYPE_STRING,DIGEST_SIZE,NULL,NULL},
+    {"passwd",OS210_TYPE_ESTRING,sizeof(char *),NULL,NULL},
     {NULL,OS210_TYPE_ENDDATA,0,NULL}
 };
 
 static struct struct_elem_attr verify_login_desc[]=
 {
-    {"login_info",OS210_TYPE_ORGCHAIN,0,&connect_login_desc},
+    {"login_info",OS210_TYPE_ORGCHAIN,0,&connect_login_desc,NULL},
     {"nonce_len",OS210_TYPE_STRING,4,NULL},
-    {"nonce",OS210_TYPE_DEFINE,sizeof(char *),"nonce_len"},
-    {"uuid",OS210_TYPE_UUID,DIGEST_SIZE,NULL},
-    {"listnum",OS210_TYPE_INT,DIGEST_SIZE,NULL},
-    {"uuidlist",OS210_TYPE_DEFUUIDARRAY,DIGEST_SIZE,"listnum"},
-    {"namelist",OS210_TYPE_DEFNAMELIST,DIGEST_SIZE,"listnum"},
-    {NULL,OS210_TYPE_ENDDATA,0,NULL}
+    {"nonce",OS210_TYPE_DEFINE,sizeof(char *),NULL,"nonce_len"},
+    {"uuid",OS210_TYPE_UUID,DIGEST_SIZE,NULL,NULL},
+    {"listnum",OS210_TYPE_INT,DIGEST_SIZE,NULL,NULL},
+    {"uuidlist",OS210_TYPE_DEFUUIDARRAY,DIGEST_SIZE,NULL,"listnum"},
+    {"namelist",OS210_TYPE_DEFNAMELIST,DIGEST_SIZE,NULL,"listnum"},
+    {NULL,OS210_TYPE_ENDDATA,0,NULL,NULL}
 };
 
 int main() {

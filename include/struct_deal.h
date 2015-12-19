@@ -61,11 +61,11 @@ enum os210_struct_elem_attr
 // pointer stack function
 struct struct_elem_attr
 {
-	char * name;
-	enum os210_struct_elem_type type;
-	int size;     //长度值,对变长变量,则为最大长度值	
-	void * ref;
-	void * def;
+	char * name;  // this element's name
+	enum os210_struct_elem_type type;  // this element's type
+	int size;     // the size of this elem(only in fixed state	
+	void * ref;   // a pointer to the reference of this elem
+	void * def;   
 };
 
 

@@ -388,16 +388,16 @@ void * create_struct_template(struct struct_elem_attr * struct_desc)
 		if(_isdefineelem(elem_desc->type))
 		{
 			struct elem_template * temp_elem;
-			temp_elem  = _get_elem_by_name(curr_node,elem_desc->ref);
+			temp_elem  = _get_elem_by_name(curr_node,elem_desc->def);
 			if(temp_elem==NULL)
 				return NULL;
 			if(temp_elem->elem_desc==NULL)
 				return NULL;
 			if(!_isvalidvalue(temp_elem->elem_desc->type))
 				return NULL;
-			temp_elem->ref = (void *)DEFINE_TAG;
+			temp_elem->def = (void *)DEFINE_TAG;
 
-			curr_elem->ref=temp_elem;
+			curr_elem->def=temp_elem;
 			elem_ops=struct_deal_ops[elem_desc->type];
 			if(elem_ops==NULL)
 				return NULL;
@@ -622,7 +622,7 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 			return ret;
 		// pre_fretch the define value
 		if(_isvalidvalue(curr_elem->elem_desc->type) &&
-			((int)curr_elem->ref & DEFINE_TAG))
+			((int)curr_elem->def & DEFINE_TAG))
 		{
 			if(elem_ops->get_int_value == NULL)
 				return -EINVAL;
@@ -630,7 +630,7 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 			define_value = elem_ops->get_int_value(addr+curr_elem->offset,curr_elem);
 			if((define_value<0)||define_value>=1024)
 				return -EINVAL;
-			curr_elem->ref=((int)curr_elem->ref&DEFINE_TAG)+define_value;			
+			curr_elem->def=((int)curr_elem->def&DEFINE_TAG)+define_value;			
 		}
 		curr_node->temp_var++;
 	}while(1);
@@ -647,8 +647,8 @@ int _elem_get_bin_length(void * value,void * elem)
 	{
 		if(_isdefineelem(curr_elem->elem_desc->type))
 		{
-			struct elem_template * temp_elem=curr_elem->ref;
-			ret = (int)temp_elem->ref & 0x00000FFF;
+			struct elem_template * temp_elem=curr_elem->def;
+			ret = (int)temp_elem->def & 0x00000FFF;
 			if(_isarrayelem(curr_elem->elem_desc->type))
 				ret*=curr_elem->elem_desc->size;
 		}
