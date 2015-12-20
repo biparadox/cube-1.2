@@ -13,26 +13,26 @@
 
 static VALUE2POINTER InitFuncList [] =
 {
-	{OS210_TYPE_STRING,&string_convert_ops},
-	{OS210_TYPE_ESTRING,&estring_convert_ops},
-	{OS210_TYPE_BINDATA,&bindata_convert_ops},
-	{OS210_TYPE_DEFINE,&define_convert_ops},
-	{OS210_TYPE_UUID,&uuid_convert_ops},
-	{OS210_TYPE_UUIDARRAY,&uuidarray_convert_ops},
-	{OS210_TYPE_DEFUUIDARRAY,&defuuidarray_convert_ops},
-	{OS210_TYPE_DEFNAMELIST,&defnamelist_convert_ops},
-	{OS210_TYPE_INT,&int_convert_ops},
-	{OS210_TYPE_ENUM,&enum_convert_ops},
-	{OS210_TYPE_FLAG,&flag_convert_ops},
-	{OS210_TYPE_ENDDATA,NULL},
+	{CUBE_TYPE_STRING,&string_convert_ops},
+	{CUBE_TYPE_ESTRING,&estring_convert_ops},
+	{CUBE_TYPE_BINDATA,&bindata_convert_ops},
+	{CUBE_TYPE_DEFINE,&define_convert_ops},
+	{CUBE_TYPE_UUID,&uuid_convert_ops},
+	{CUBE_TYPE_UUIDARRAY,&uuidarray_convert_ops},
+	{CUBE_TYPE_DEFUUIDARRAY,&defuuidarray_convert_ops},
+	{CUBE_TYPE_DEFNAMELIST,&defnamelist_convert_ops},
+	{CUBE_TYPE_INT,&int_convert_ops},
+	{CUBE_TYPE_ENUM,&enum_convert_ops},
+	{CUBE_TYPE_FLAG,&flag_convert_ops},
+	{CUBE_TYPE_ENDDATA,NULL},
 };
 
 void ** struct_deal_ops;
-static void * ops_list[OS210_TYPE_ENDDATA];
+static void * ops_list[CUBE_TYPE_ENDDATA];
 
 static inline int struct_register_ops(int value,void * pointer)
 {
-	if((value<0) || (value>=OS210_TYPE_ENDDATA))
+	if((value<0) || (value>=CUBE_TYPE_ENDDATA))
 		return -EINVAL;
 	struct_deal_ops=&ops_list;
 	struct_deal_ops[value]=pointer;
@@ -45,9 +45,9 @@ int iselemneeddef(int type)
 		return 1;
 	switch(type)
 	{
-		case OS210_TYPE_ENUM:
-		case OS210_TYPE_FLAG:
-		case OS210_TYPE_ORGCHAIN:
+		case CUBE_TYPE_ENUM:
+		case CUBE_TYPE_FLAG:
+		case CUBE_TYPE_SUBSTRUCT:
 			return 1;
 		default:
 			break;
@@ -62,12 +62,12 @@ int struct_deal_init()
 	int ret;
 	int i;
 	struct_deal_ops=&ops_list;
-	for(i=0;i<OS210_TYPE_ENDDATA;i++)
+	for(i=0;i<CUBE_TYPE_ENDDATA;i++)
 	{
 		struct_deal_ops[i]=NULL;
 	}
 	
-	for(i=0;InitFuncList[i].value!=OS210_TYPE_ENDDATA;i++)
+	for(i=0;InitFuncList[i].value!=CUBE_TYPE_ENDDATA;i++)
 	{
 		ret=struct_register_ops(InitFuncList[i].value,
 			InitFuncList[i].pointer);
@@ -95,7 +95,7 @@ static inline int _count_struct_num(struct struct_elem_attr * struct_desc)
 	int i=0;
 	while(struct_desc[i].name!=NULL)
 	{
-		if(struct_desc[i].type==OS210_TYPE_ENDDATA)
+		if(struct_desc[i].type==CUBE_TYPE_ENDDATA)
 			break;
 		i++;
 	}
@@ -167,7 +167,7 @@ void * _get_elem_by_name(void * start_node, char * name)
 			return curr_elem;
 		if(curr_elem==NULL)
 			return -EINVAL;
-		if(curr_elem->elem_desc->type != OS210_TYPE_ORGCHAIN)
+		if(curr_elem->elem_desc->type != CUBE_TYPE_SUBSTRUCT)
 			return NULL;
 		node=curr_elem->ref;
 	}while(node != NULL);
@@ -180,49 +180,49 @@ int get_fixed_elemsize(int type)
 
 	switch(type)
 	{
-		case OS210_TYPE_STRING:
+		case CUBE_TYPE_STRING:
 			return -1;
-		case OS210_TYPE_UUID:
+		case CUBE_TYPE_UUID:
 			return DIGEST_SIZE;
-		case OS210_TYPE_ENUM:
-		case OS210_TYPE_FLAG:
-		case OS210_TYPE_TIME:
-		case OS210_TYPE_BOOL:
+		case CUBE_TYPE_ENUM:
+		case CUBE_TYPE_FLAG:
+		case CUBE_TYPE_TIME:
+		case CUBE_TYPE_BOOL:
 			return sizeof(int);
-		case OS210_TYPE_BINDATA: 
-		case OS210_TYPE_HEXDATA:	 
+		case CUBE_TYPE_BINDATA: 
+		case CUBE_TYPE_HEXDATA:	 
 			return -1;
-		case OS210_TYPE_ESTRING:
-		case OS210_TYPE_JSONSTRING:
-		case OS210_TYPE_DEFINE:
-		case OS210_TYPE_DEFSTR:	
-		case OS210_TYPE_DEFSTRARRAY:
-		case OS210_TYPE_UUIDARRAY:
-		case OS210_TYPE_DEFUUIDARRAY:
-		case OS210_TYPE_DEFNAMELIST:
+		case CUBE_TYPE_ESTRING:
+		case CUBE_TYPE_JSONSTRING:
+		case CUBE_TYPE_DEFINE:
+		case CUBE_TYPE_DEFSTR:	
+		case CUBE_TYPE_DEFSTRARRAY:
+		case CUBE_TYPE_UUIDARRAY:
+		case CUBE_TYPE_DEFUUIDARRAY:
+		case CUBE_TYPE_DEFNAMELIST:
 			return sizeof(char *);
-		case OS210_TYPE_BINARRAY:
-		case OS210_TYPE_BITMAP:	 
+		case CUBE_TYPE_BINARRAY:
+		case CUBE_TYPE_BITMAP:	 
 			return -1;
-		case OS210_TYPE_INT:
+		case CUBE_TYPE_INT:
 			return sizeof(int);
-		case OS210_TYPE_UCHAR:    
+		case CUBE_TYPE_UCHAR:    
 			return sizeof(char);
-		case OS210_TYPE_USHORT:   
+		case CUBE_TYPE_USHORT:   
 			return sizeof(short);
-		case OS210_TYPE_LONGLONG: 
+		case CUBE_TYPE_LONGLONG: 
 		case TPM_TYPE_UINT64:
 			return sizeof(long long);
 		case TPM_TYPE_UINT32:
 			return sizeof(int);
 		case TPM_TYPE_UINT16:
 			return 2;
-		case OS210_TYPE_NODATA:
+		case CUBE_TYPE_NODATA:
 			return 0;
-        	case OS210_TYPE_CHOICE:
-		case OS210_TYPE_ENDDATA:
+        	case CUBE_TYPE_CHOICE:
+		case CUBE_TYPE_ENDDATA:
 			return 0;
-		case OS210_TYPE_ORGCHAIN:
+		case CUBE_TYPE_SUBSTRUCT:
 			return -1;
 		default:
 			break;
@@ -234,40 +234,40 @@ static inline int _getelemjsontype(int type)
 {
 	switch(type)
 	{
-		case OS210_TYPE_STRING:
-		case OS210_TYPE_UUID:
-		case OS210_TYPE_ENUM:
-		case OS210_TYPE_FLAG:
-		case OS210_TYPE_TIME:
-		case OS210_TYPE_BINDATA: 
-		case OS210_TYPE_HEXDATA:	 
-		case OS210_TYPE_ESTRING:
-		case OS210_TYPE_JSONSTRING:
-		case OS210_TYPE_DEFINE:
-		case OS210_TYPE_DEFSTR:	
+		case CUBE_TYPE_STRING:
+		case CUBE_TYPE_UUID:
+		case CUBE_TYPE_ENUM:
+		case CUBE_TYPE_FLAG:
+		case CUBE_TYPE_TIME:
+		case CUBE_TYPE_BINDATA: 
+		case CUBE_TYPE_HEXDATA:	 
+		case CUBE_TYPE_ESTRING:
+		case CUBE_TYPE_JSONSTRING:
+		case CUBE_TYPE_DEFINE:
+		case CUBE_TYPE_DEFSTR:	
 			return JSON_ELEM_STRING;
-		case OS210_TYPE_DEFSTRARRAY:
-		case OS210_TYPE_BINARRAY:
-		case OS210_TYPE_UUIDARRAY:
-		case OS210_TYPE_DEFUUIDARRAY:
-		case OS210_TYPE_DEFNAMELIST:
-		case OS210_TYPE_BITMAP:	 
+		case CUBE_TYPE_DEFSTRARRAY:
+		case CUBE_TYPE_BINARRAY:
+		case CUBE_TYPE_UUIDARRAY:
+		case CUBE_TYPE_DEFUUIDARRAY:
+		case CUBE_TYPE_DEFNAMELIST:
+		case CUBE_TYPE_BITMAP:	 
 			return JSON_ELEM_ARRAY;
-		case OS210_TYPE_INT:
-		case OS210_TYPE_UCHAR:    
-		case OS210_TYPE_USHORT:   
-		case OS210_TYPE_LONGLONG: 
+		case CUBE_TYPE_INT:
+		case CUBE_TYPE_UCHAR:    
+		case CUBE_TYPE_USHORT:   
+		case CUBE_TYPE_LONGLONG: 
 		case TPM_TYPE_UINT64:
 		case TPM_TYPE_UINT32:
 		case TPM_TYPE_UINT16:
 			return JSON_ELEM_NUM;
-		case OS210_TYPE_BOOL:
+		case CUBE_TYPE_BOOL:
 			return JSON_ELEM_BOOL;
-		case OS210_TYPE_NODATA:
-        	case OS210_TYPE_CHOICE:
-		case OS210_TYPE_ENDDATA:
+		case CUBE_TYPE_NODATA:
+        	case CUBE_TYPE_CHOICE:
+		case CUBE_TYPE_ENDDATA:
 			return 0;
-		case OS210_TYPE_ORGCHAIN:
+		case CUBE_TYPE_SUBSTRUCT:
 			return JSON_ELEM_MAP;
 		
 		default:
@@ -347,7 +347,7 @@ void * create_struct_template(struct struct_elem_attr * struct_desc)
 		curr_elem=&curr_node->elem_list[curr_node->temp_var];
 		elem_desc=&curr_desc[curr_node->temp_var];
 			
-		if((elem_desc->type<0)||(elem_desc->type>OS210_TYPE_ENDDATA))
+		if((elem_desc->type<0)||(elem_desc->type>CUBE_TYPE_ENDDATA))
 			return NULL;
 				
 		if(elem_desc->name==NULL)
@@ -360,7 +360,7 @@ void * create_struct_template(struct struct_elem_attr * struct_desc)
 			continue;
 		}
 			// process the child struct
-		if(elem_desc->type==OS210_TYPE_ORGCHAIN)
+		if(elem_desc->type==CUBE_TYPE_SUBSTRUCT)
 		{
 			ret=Palloc0(&(curr_elem->ref),sizeof(STRUCT_NODE));
 			if(ret<0)
@@ -375,7 +375,7 @@ void * create_struct_template(struct struct_elem_attr * struct_desc)
 			curr_node->offset=offset;
 			continue;	
 		}
-		if(elem_desc->type==OS210_TYPE_ENDDATA)
+		if(elem_desc->type==CUBE_TYPE_ENDDATA)
 		{
 			curr_node->size=offset-curr_node->offset;
 			curr_node=curr_node->parent;
@@ -456,7 +456,7 @@ void free_struct_template(void * struct_template)
 			continue;
 		}
 		curr_elem=&curr_node->elem_list[curr_node->temp_var];
-		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+		if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
 		{
 			curr_node->temp_var++;
 			curr_node=curr_elem->ref;
@@ -475,7 +475,7 @@ struct elem_template * _get_last_elem(void * struct_template)
 	STRUCT_NODE * temp_node;
 
 	last_elem=&root_node->elem_list[root_node->elem_no-1];
-	while(last_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+	while(last_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
 	{
 		last_elem=&root_node->elem_list[root_node->elem_no-1];
 	}
@@ -514,7 +514,7 @@ int struct_free_alloc(void * addr,void * struct_template)
 		}
 		curr_elem=&curr_node->elem_list[curr_node->temp_var];
 		// throughout the node tree: into the sub_struct
-		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+		if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
 		{
 			curr_node->temp_var++;
 			curr_node=curr_elem->ref;
@@ -598,7 +598,7 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 			}
 		}
 			// throughout the node tree: into the sub_struct
-		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+		if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
 		{
 			curr_node->temp_var++;
 			curr_node=curr_elem->ref;
@@ -620,18 +620,6 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 		ret=funcs->proc_func(addr,data,curr_elem,para);
 		if(ret<0)
 			return ret;
-		// pre_fretch the define value
-		if(_isvalidvalue(curr_elem->elem_desc->type) &&
-			((int)curr_elem->def & DEFINE_TAG))
-		{
-			if(elem_ops->get_int_value == NULL)
-				return -EINVAL;
-			int define_value;
-			define_value = elem_ops->get_int_value(addr+curr_elem->offset,curr_elem);
-			if((define_value<0)||define_value>=1024)
-				return -EINVAL;
-			curr_elem->def=((int)curr_elem->def&DEFINE_TAG)+define_value;			
-		}
 		curr_node->temp_var++;
 	}while(1);
 	if(funcs->finish==NULL)
@@ -639,7 +627,7 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 	return funcs->finish(addr,data,struct_template,para);
 }
 
-int _elem_get_bin_length(void * value,void * elem)
+int _elem_get_bin_length(void * value,void * elem,void * addr)
 {
 	int ret;
 	struct elem_template * curr_elem=elem;
@@ -647,8 +635,11 @@ int _elem_get_bin_length(void * value,void * elem)
 	{
 		if(_isdefineelem(curr_elem->elem_desc->type))
 		{
-			struct elem_template * temp_elem=curr_elem->def;
-			ret = (int)temp_elem->def & 0x00000FFF;
+			if(addr==NULL)
+				return -EINVAL;
+			ret=_elem_get_defvalue(curr_elem,addr);
+			if(ret<0)
+				return ret;
 			if(_isarrayelem(curr_elem->elem_desc->type))
 				ret*=curr_elem->elem_desc->size;
 		}
@@ -684,7 +675,7 @@ int    _elem_get_bin_value(void * addr,void * data,void * elem)
 	
 	if(elem_ops->get_bin_value==NULL)
 	{
-		if((ret=_elem_get_bin_length(*(char **)(addr+curr_elem->offset),			elem))<0)
+		if((ret=_elem_get_bin_length(*(char **)(addr+curr_elem->offset),			elem,addr))<0)
 			return ret;
 		if(_ispointerelem(curr_elem->elem_desc->type))
 			Memcpy(data,*(char **)(addr+curr_elem->offset),ret);
@@ -709,7 +700,7 @@ int    _elem_set_bin_value(void * addr,void * data,void * elem)
 	
 	if(elem_ops->set_bin_value==NULL)
 	{
-		if((ret=_elem_get_bin_length(data,elem))<0)
+		if((ret=_elem_get_bin_length(data,elem,addr))<0)
 			return ret;
 		if(_ispointerelem(curr_elem->elem_desc->type))
 		{
@@ -739,7 +730,7 @@ int    _elem_get_text_value(void * addr,char * text,void * elem)
 	
 	if(elem_ops->get_text_value==NULL)
 	{
-		if((ret=_elem_get_bin_length(*(char **)(addr+curr_elem->offset),			elem))<0)
+		if((ret=_elem_get_bin_length(*(char **)(addr+curr_elem->offset),			elem,addr))<0)
 			return ret;
 		if(_ispointerelem(curr_elem->elem_desc->type))
 			Memcpy(text,*(char **)(addr+curr_elem->offset),ret);
@@ -764,7 +755,7 @@ int    _elem_set_text_value(void * addr,char * text,void * elem)
 	
 	if(elem_ops->set_text_value==NULL)
 	{
-		if((ret=_elem_get_bin_length(text,elem))<0)
+		if((ret=_elem_get_bin_length(text,elem,addr))<0)
 			return ret;
 		if(_ispointerelem(curr_elem->elem_desc->type))
 		{
@@ -835,7 +826,7 @@ int part_deal_test(void * addr,void * data,void * elem,void *para)
 {
 	struct part_deal_para * my_para=para;
 	struct elem_template * curr_elem=elem;
-	if(curr_elem->elem_desc->type == OS210_TYPE_ORGCHAIN)
+	if(curr_elem->elem_desc->type == CUBE_TYPE_SUBSTRUCT)
 	{
 		STRUCT_NODE * temp_node=curr_elem->ref;
 		return temp_node->flag & my_para->flag;
@@ -1393,7 +1384,7 @@ int part_json_test(void * addr,void * data,void * elem,void *para)
 {
 	struct part_jsonto_para * my_para=para;
 	struct elem_template * curr_elem=elem;
-	if(curr_elem->elem_desc->type == OS210_TYPE_ORGCHAIN)
+	if(curr_elem->elem_desc->type == CUBE_TYPE_SUBSTRUCT)
 	{
 		STRUCT_NODE * temp_node=curr_elem->ref;
 		return temp_node->flag & my_para->flag;
@@ -1439,7 +1430,7 @@ int struct_set_allflag(void * struct_template,int flag)
 			continue;
 		}
 		curr_elem=&curr_node->elem_list[curr_node->temp_var];
-		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+		if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
 		{
 			curr_node->temp_var++;
 			curr_node=curr_elem->ref;
@@ -1476,7 +1467,7 @@ int struct_clear_allflag(void * struct_template,int flag)
 			continue;
 		}
 		curr_elem=&curr_node->elem_list[curr_node->temp_var];
-		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+		if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
 		{
 			curr_node->temp_var++;
 			curr_node=curr_elem->ref;
@@ -1512,7 +1503,7 @@ int struct_set_flag(void * struct_template,int flag, char * namelist)
 		curr_elem = _get_elem_by_name(root_node,name);
 		if(curr_elem==NULL)
 			return -EINVAL;
-		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+		if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
 		{
 			ret=struct_set_allflag(curr_elem->ref,flag);
 		}
@@ -1554,7 +1545,7 @@ int struct_clear_flag(void * struct_template,int flag, char * namelist)
 		curr_elem = _get_elem_by_name(root_node,name);
 		if(curr_elem==NULL)
 			return -EINVAL;
-		if(curr_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+		if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
 		{
 			ret=struct_set_allflag(curr_elem->ref,flag);
 		}
@@ -1570,7 +1561,7 @@ int struct_clear_flag(void * struct_template,int flag, char * namelist)
 			for(i=0;i<father_node->elem_no;i++)
 			{	
 				temp_elem=&father_node->elem_list[i];
-				if(temp_elem->elem_desc->type==OS210_TYPE_ORGCHAIN)
+				if(temp_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
 				{
 					temp_node=temp_elem->ref;
 					if(temp_node->flag &flag)

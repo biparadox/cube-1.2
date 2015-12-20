@@ -32,11 +32,12 @@ extern void ** struct_deal_ops;
 struct elem_template
 {
 	struct struct_elem_attr * elem_desc;
-	int offset;
-	int size;
-	void * ref;	
+	int offset;    // the offset of this elem compare to the father
+	int size;      // this elem's size in the struct
+	void * ref;    	
 	void * def;	
 	int flag;
-	void  * father;
+	int index;
+	struct elem_template * father;
 };
 #endif

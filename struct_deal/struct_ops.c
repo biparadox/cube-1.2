@@ -160,7 +160,7 @@ int defuuidarray_get_text_value(void * addr, void * data,void * elem_template)
 	struct elem_template * curr_elem=elem_template;
 	BYTE * digest=*(BYTE **)addr;
 	int offset=0;
-	int array_num=_elem_get_defvalue(curr_elem);
+	int array_num=_elem_get_defvalue(curr_elem,addr);
 	if(array_num<=0)
 		return array_num;
 	if(array_num>DIGEST_SIZE*2)
@@ -182,7 +182,7 @@ int defuuidarray_set_text_value(void * addr, char * text,void * elem_template)
 	int i,j,retval;
 	struct elem_template * curr_elem=elem_template;
 	int offset=0;
-	int array_num=_elem_get_defvalue(curr_elem);
+	int array_num=_elem_get_defvalue(curr_elem,addr);
 	if(array_num<=0)
 		return array_num;
 	if(array_num>DIGEST_SIZE*2)
@@ -213,7 +213,7 @@ int namelist_get_bin_value(void * addr, void * data,void * elem_template)
 //	char * text=data;
 	struct elem_template * curr_elem=elem_template;
 	int textlen=0;
-	int array_num=_elem_get_defvalue(curr_elem);
+	int array_num=_elem_get_defvalue(curr_elem,addr);
 	if(array_num<=0)
 		return array_num;
 	
@@ -242,7 +242,7 @@ int namelist_set_bin_value(void * addr, void * data,void * elem_template)
 	int offset=0;
 	int addroffset=0;
 	int textlen=0;
-	int array_num=_elem_get_defvalue(curr_elem);
+	int array_num=_elem_get_defvalue(curr_elem,addr);
 	if(array_num<=0)
 		return array_num;
 	if(array_num>DIGEST_SIZE*2)
@@ -282,7 +282,7 @@ int namelist_get_text_value(void * addr, void * data,void * elem_template)
 	int  base=0;
 	struct elem_template * curr_elem=elem_template;
 	int textlen=0;
-	int array_num=_elem_get_defvalue(curr_elem);
+	int array_num=_elem_get_defvalue(curr_elem,addr);
 	if(array_num<=0)
 		return array_num;
 	
@@ -329,7 +329,7 @@ int namelist_set_text_value(void * addr, char * text,void * elem_template)
 	char * name;
 	int  value;
 	int  base=0;
-	int array_num=_elem_get_defvalue(curr_elem);
+	int array_num=_elem_get_defvalue(curr_elem,addr);
 	if(array_num<=0)
 		return array_num;
 	if(array_num>DIGEST_SIZE*2)
@@ -374,7 +374,7 @@ int define_get_text_value(void * addr,char * text,void * elem_template){
 	struct elem_template * curr_elem=elem_template;
 	int def_value;
 
-	def_value=_elem_get_defvalue(curr_elem);
+	def_value=_elem_get_defvalue(curr_elem,addr);
 	if(def_value<=0)
 		return def_value;
 	memcpy(text,blob,def_value);
@@ -409,7 +409,7 @@ int get_string_value(void * addr,void * elem_attr)
 	int base=10;
 	int temp_value;
 	int str_len;
-	if(curr_elem->elem_desc->type == OS210_TYPE_STRING)
+	if(curr_elem->elem_desc->type == CUBE_TYPE_STRING)
 	{
 		str_len=strnlen(string,curr_elem->size);
 	}

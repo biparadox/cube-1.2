@@ -8,61 +8,62 @@
 *************************************************/
 #ifndef  _CUBE_STRUCT_DEAL_H
 #define  _CUBE_STRUCT_DEAL_H
-enum os210_struct_elem_type   // describe types could be used in the struct
+enum cube_struct_elem_type   // describe types could be used in the struct
 {
-	OS210_TYPE_STRING,   // an string with fixed size
-	OS210_TYPE_UUID,     // an string with fixed size
-	OS210_TYPE_INT,      // an 32-bit int
-	OS210_TYPE_ENUM,      // an 32-bit enum
-	OS210_TYPE_FLAG,      // an 32-bit flag
-	OS210_TYPE_TIME,     // an struct of time_t
-	OS210_TYPE_UCHAR,    // a unsigned octet
-	OS210_TYPE_USHORT,   // a 16-bit unsigned word
-	OS210_TYPE_LONGLONG, // a 64-bit longlong integer
-	OS210_TYPE_BINDATA,  // a sequence of octets with fixed size
-	OS210_TYPE_BITMAP,   // a sequence of octets with fixed size(just like BINDATA),but we use eight bin string (like 01001010) to show them	 
-	OS210_TYPE_HEXDATA,   // a sequence of octets with fixed size(just like BINDATA),but we use 2 hex string (like ce) to show them	 
-	OS210_TYPE_BINARRAY,   // an array of sequence of octets with fixed size, attr is the sequence's size, size is array's length	 
-	OS210_TYPE_UUIDARRAY,   // an array of sequence of octets with fixed size, attr is the sequence's size, size is array's length	 
-	OS210_TYPE_DEFUUIDARRAY,   // an array of sequence of octets with fixed size, attr is the sequence's size, size is array's length	 
-	OS210_TYPE_DEFNAMELIST,   // an array of sequence of octets with fixed size, attr is the sequence's size, size is array's length	 
-	OS210_TYPE_BOOL,  
-	OS210_TYPE_ESTRING,  // a variable length string ended with '\0'
-	OS210_TYPE_JSONSTRING,  // a variable length string encluded in "{}", "[]" or "\"\"" or "\'\'", it is only special in struct_json, other times,
+	CUBE_TYPE_STRING,   // an string with fixed size
+	CUBE_TYPE_UUID,     // an string with fixed size
+	CUBE_TYPE_INT,      // an 32-bit int
+	CUBE_TYPE_ENUM,      // an 32-bit enum
+	CUBE_TYPE_FLAG,      // an 32-bit flag
+	CUBE_TYPE_TIME,     // an struct of time_t
+	CUBE_TYPE_UCHAR,    // a unsigned octet
+	CUBE_TYPE_USHORT,   // a 16-bit unsigned word
+	CUBE_TYPE_LONGLONG, // a 64-bit longlong integer
+	CUBE_TYPE_BINDATA,  // a sequence of octets with fixed size
+	CUBE_TYPE_BITMAP,   // a sequence of octets with fixed size(just like BINDATA),but we use eight bin string (like 01001010) to show them	 
+	CUBE_TYPE_HEXDATA,   // a sequence of octets with fixed size(just like BINDATA),but we use 2 hex string (like ce) to show them	 
+	CUBE_TYPE_BINARRAY,   // an array of sequence of octets with fixed size, attr is the sequence's size, size is array's length	 
+	CUBE_TYPE_UUIDARRAY,   // an array of sequence of octets with fixed size, attr is the sequence's size, size is array's length	 
+	CUBE_TYPE_DEFUUIDARRAY,   // an array of sequence of octets with fixed size, attr is the sequence's size, size is array's length	 
+	CUBE_TYPE_DEFNAMELIST,   // an array of sequence of octets with fixed size, attr is the sequence's size, size is array's length	 
+	CUBE_TYPE_BOOL,  
+	CUBE_TYPE_ESTRING,  // a variable length string ended with '\0'
+	CUBE_TYPE_JSONSTRING,  // a variable length string encluded in "{}", "[]" or "\"\"" or "\'\'", it is only special in struct_json, other times,
        			        // it is same as ESTRING	
-	OS210_TYPE_NODATA,   // this element has no data
-	OS210_TYPE_DEFINE,	//an octets sequence whose length defined by a forhead element (an uchar, an ushort or a int element), the attr parameter 
+	CUBE_TYPE_NODATA,   // this element has no data
+	CUBE_TYPE_ARRAY,   // this element has no data
+	CUBE_TYPE_DEFINE,	//an octets sequence whose length defined by a forhead element (an uchar, an ushort or a int element), the attr parameter 
 				//show the element's name, 
-	OS210_TYPE_DEFSTR,	//a string whose length defined by a forhead element (an uchar, an ushort or a int element), the attr parameter 
+	CUBE_TYPE_DEFSTR,	//a string whose length defined by a forhead element (an uchar, an ushort or a int element), the attr parameter 
 				//show the element's name, 
-	OS210_TYPE_DEFSTRARRAY,	//a fixed string' s array whose elem number defined by a forhead element (an uchar, an ushort,a int element or 
+	CUBE_TYPE_DEFSTRARRAY,	//a fixed string' s array whose elem number defined by a forhead element (an uchar, an ushort,a int element or 
 				//a string like "72", the attr parameter show the forhead element's name, the elem_attr->size show how
 			 	// the string's fixed length.
 				// NOTE: there should not be any ' ' in the string.
 				//
-	OS210_TYPE_ORGCHAIN,    // this element describes a new struct in this site, attr points to the description of the new struct
-        OS210_TYPE_CHOICE,
+	CUBE_TYPE_SUBSTRUCT,    // this element describes a new struct in this site, attr points to the description of the new struct
+        CUBE_TYPE_CHOICE,
 		
 	TPM_TYPE_UINT64,
 	TPM_TYPE_UINT32,
 	TPM_TYPE_UINT16,
-	OS210_TYPE_ENDDATA,
+	CUBE_TYPE_ENDDATA,
 };
 
-enum os210_struct_elem_attr
+enum cube_struct_elem_attr
 {
-	OS210_ELEM_FLAG_INDEX=0x01,
-	OS210_ELEM_FLAG_KEY=0x02,
-	OS210_ELEM_FLAG_INPUT=0x04,
-	OS210_ELEM_FLAG_DESC=0x10,
-	OS210_ELEM_FLAG_TEMP=0x1000,
+	CUBE_ELEM_FLAG_INDEX=0x01,
+	CUBE_ELEM_FLAG_KEY=0x02,
+	CUBE_ELEM_FLAG_INPUT=0x04,
+	CUBE_ELEM_FLAG_DESC=0x10,
+	CUBE_ELEM_FLAG_TEMP=0x1000,
 };
 
 // pointer stack function
 struct struct_elem_attr
 {
 	char * name;  // this element's name
-	enum os210_struct_elem_type type;  // this element's type
+	enum cube_struct_elem_type type;  // this element's type
 	int size;     // the size of this elem(only in fixed state	
 	void * ref;   // a pointer to the reference of this elem
 	void * def;   

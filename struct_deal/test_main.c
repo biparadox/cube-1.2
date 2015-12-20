@@ -48,21 +48,21 @@ struct verify_login
 
 static struct struct_elem_attr connect_login_desc[]=
 {
-    {"user",OS210_TYPE_STRING,DIGEST_SIZE,NULL,NULL},
-    {"passwd",OS210_TYPE_ESTRING,sizeof(char *),NULL,NULL},
-    {NULL,OS210_TYPE_ENDDATA,0,NULL}
+    {"user",CUBE_TYPE_STRING,DIGEST_SIZE,NULL,NULL},
+    {"passwd",CUBE_TYPE_ESTRING,sizeof(char *),NULL,NULL},
+    {NULL,CUBE_TYPE_ENDDATA,0,NULL}
 };
 
 static struct struct_elem_attr verify_login_desc[]=
 {
-    {"login_info",OS210_TYPE_ORGCHAIN,0,&connect_login_desc,NULL},
-    {"nonce_len",OS210_TYPE_STRING,4,NULL},
-    {"nonce",OS210_TYPE_DEFINE,sizeof(char *),NULL,"nonce_len"},
-    {"uuid",OS210_TYPE_UUID,DIGEST_SIZE,NULL,NULL},
-    {"listnum",OS210_TYPE_INT,DIGEST_SIZE,NULL,NULL},
-    {"uuidlist",OS210_TYPE_DEFUUIDARRAY,DIGEST_SIZE,NULL,"listnum"},
-    {"namelist",OS210_TYPE_DEFNAMELIST,DIGEST_SIZE,NULL,"listnum"},
-    {NULL,OS210_TYPE_ENDDATA,0,NULL,NULL}
+    {"login_info",CUBE_TYPE_SUBSTRUCT,0,&connect_login_desc,NULL},
+    {"nonce_len",CUBE_TYPE_STRING,4,NULL},
+    {"nonce",CUBE_TYPE_DEFINE,sizeof(char *),NULL,"nonce_len"},
+    {"uuid",CUBE_TYPE_UUID,DIGEST_SIZE,NULL,NULL},
+    {"listnum",CUBE_TYPE_INT,DIGEST_SIZE,NULL,NULL},
+    {"uuidlist",CUBE_TYPE_DEFUUIDARRAY,DIGEST_SIZE,NULL,"listnum"},
+    {"namelist",CUBE_TYPE_DEFNAMELIST,DIGEST_SIZE,NULL,"listnum"},
+    {NULL,CUBE_TYPE_ENDDATA,0,NULL,NULL}
 };
 
 int main() {
@@ -115,20 +115,20 @@ int main() {
 	printf("get %d size blob!\n",ret);
 
 /*
-	ret=struct_set_flag(struct_template,OS210_ELEM_FLAG_TEMP,namelist);
-	ret=struct_2_part_blob(&test_login,buffer1,struct_template,OS210_ELEM_FLAG_TEMP);
+	ret=struct_set_flag(struct_template,CUBE_ELEM_FLAG_TEMP,namelist);
+	ret=struct_2_part_blob(&test_login,buffer1,struct_template,CUBE_ELEM_FLAG_TEMP);
 	printf("get %d size blob!\n",ret);
 */
 	ret=blob_2_struct(buffer,recover_struct,struct_template);
 	printf("read %d size blob!\n",ret);
 /*
-	ret=blob_2_part_struct(buffer,recover_struct1,struct_template,OS210_ELEM_FLAG_TEMP);
+	ret=blob_2_part_struct(buffer,recover_struct1,struct_template,CUBE_ELEM_FLAG_TEMP);
 	printf("read %d size blob!\n",ret);
 */
 	ret=struct_2_json(recover_struct,text,struct_template);
 	printf("read %d size to json %s!\n",ret,text);
 /*
-	ret=struct_2_part_json(&test_login,text1,struct_template,OS210_ELEM_FLAG_TEMP);
+	ret=struct_2_part_json(&test_login,text1,struct_template,CUBE_ELEM_FLAG_TEMP);
 	printf("read %d size to json %s!\n",ret,text1);
 */
 	ret=json_solve_str(&root,text);
@@ -141,12 +141,12 @@ int main() {
 //	ret=struct_read_elem_text("login_info.passwd",&test_login,text,struct_template);
 //	printf("read passwd %s from struct!\n",text);
 /*	
-	ret=struct_set_flag(struct_template,OS210_ELEM_FLAG_TEMP,namelist);
+	ret=struct_set_flag(struct_template,CUBE_ELEM_FLAG_TEMP,namelist);
 	flag=struct_get_flag(struct_template,"login_info.passwd");
 	
 	memset(buffer,0,500);
-	ret=struct_2_part_blob(&test_login,buffer,struct_template,OS210_ELEM_FLAG_TEMP);
-	ret=struct_2_part_json(&test_login,text,struct_template,OS210_ELEM_FLAG_TEMP);
+	ret=struct_2_part_blob(&test_login,buffer,struct_template,CUBE_ELEM_FLAG_TEMP);
+	ret=struct_2_part_json(&test_login,text,struct_template,CUBE_ELEM_FLAG_TEMP);
 	printf("%s\n",text);
 
 	ret=blob_2_struct(buffer,&test_login,struct_template);	
