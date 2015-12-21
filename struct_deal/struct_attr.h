@@ -113,7 +113,7 @@ static inline int _elem_get_offset(void * elem)
 	int offset=0;
 	struct elem_template * curr_elem=elem;
 
-	while(curr_elem->elem_desc!=NULL)
+	while(curr_elem!=NULL)
 	{
 		if(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY)
 			offset+=curr_elem->offset +
@@ -147,7 +147,7 @@ static inline int _elem_get_defvalue(void * elem,void * addr)
 	// now compute the define elem's offset
 
 	// if define elem is the first layer child
-	if(temp_elem->father->elem_desc!=NULL)
+	if(temp_elem->father!=NULL)
 	{
 		if(!_is_elem_in_subset(curr_elem,temp_elem->father))
 			return -EINVAL;	

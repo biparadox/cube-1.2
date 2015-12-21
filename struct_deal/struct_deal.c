@@ -84,7 +84,7 @@ typedef struct struct_template_node
 	int size;
 	int elem_no;
 	int flag;
-	void * struct_desc;
+	struct struct_elem_attr * struct_desc;
 	struct elem_template * elem_list;
 	int temp_var;
 	
@@ -309,6 +309,230 @@ int struct_set_ref(void * struct_template,char * name,void * ref)
 	return _elem_set_ref(curr_elem,ref);
 }
 
+struct struct_deal_ops
+{
+	int (*start)(void * addr, void * data,void *elem,void * para);
+	int (*testelem)(void * addr, void * data,void *elem,void * para);
+	int (*enterstruct)(void * addr,void * data, void * elem,void * para);
+	int (*exitstruct)(void * addr,void * data,void * elem,void * para);
+	int (*proc_func)(void * addr, void * data, void * elem,void * para);
+	int (*finish)(void * addr, void * data,void *elem,void * para);
+};
+
+int  _convert_frame_func (void *addr, void * data, void * struct_template,
+	struct struct_deal_ops * funcs,void * para)
+{
+	STRUCT_NODE * root_node=struct_template;
+	STRUCT_NODE * curr_node=root_node;
+	STRUCT_NODE * temp_node;
+	curr_node->temp_var=0;
+	struct elem_template * curr_elem;
+
+
+	int offset=0;
+//	struct struct_elem_attr * curr_desc;
+	ELEM_OPS * elem_ops;
+	int def_value;
+	int ret;
+	if(funcs->start!=NULL)
+	{
+		ret=funcs->start(addr,data,struct_template,para);
+		if(ret<0)
+			return ret;
+	}
+
+//	curr_desc=root_node->struct_desc;
+
+	do{
+		// throughout the node tree: back
+		if(curr_node->temp_var == curr_node->elem_no)
+		{
+			if(curr_node==root_node)
+				break;
+			temp_node=curr_node;
+			curr_node=curr_node->parent;
+			if(funcs->exitstruct!=NULL)
+			{
+				ret=funcs->exitstruct(addr,data,curr_node,
+					para);
+				if(ret<0)
+					return ret;
+			}
+			continue;
+		}
+
+		curr_elem=&curr_node->elem_list[curr_node->temp_var];
+		if(funcs->testelem!=NULL)
+		{
+			if(!funcs->testelem(addr,data,curr_elem,para))
+			{
+				curr_node->temp_var++;
+				continue;
+			}
+		}
+			// throughout the node tree: into the sub_struct
+		if((curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
+			||(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY))
+		{
+			curr_node->temp_var++;
+			curr_node=curr_elem->ref;
+			curr_node->temp_var=0;
+			if(funcs->enterstruct!=NULL)
+			{
+				ret=funcs->enterstruct(addr,data,curr_elem,
+					para);
+				if(ret<0)
+					return ret;
+			}
+			continue;
+		}
+		// get this elem's ops
+		elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
+		if(elem_ops==NULL)
+			return -EINVAL;
+
+		ret=funcs->proc_func(addr,data,curr_elem,para);
+		if(ret<0)
+			return ret;
+		curr_node->temp_var++;
+	}while(1);
+	if(funcs->finish==NULL)
+		return 0;
+	return funcs->finish(addr,data,struct_template,para);
+}
+
+
+struct create_para
+{
+	int offset;
+	int curr_offset;
+	struct struct_elem_attr * curr_desc;
+};
+
+int _create_template_start(void * addr,void * data,void * elem, void * para)
+{
+	int ret;
+	int i;
+	struct create_para * my_para = para;
+	my_para->offset=0;
+	my_para->curr_offset=0;
+	STRUCT_NODE * root_node=elem;
+	STRUCT_NODE * temp_node;
+	// prepare the root node's elem_list
+	root_node->elem_no=_count_struct_num(root_node->struct_desc);
+	
+	ret=Palloc0(&(root_node->elem_list),
+		sizeof(struct elem_template)*root_node->elem_no);
+	if(ret<0)
+		return ret;
+
+	// prepare the struct node for SUBSTRUCT elem and ARRAY elem
+
+	for( i=0;i<root_node->elem_no;i++)
+	{
+		root_node->elem_list[i].elem_desc=&(root_node->struct_desc[i]);
+		if((root_node->struct_desc[i].type == CUBE_TYPE_SUBSTRUCT) ||
+			(root_node->struct_desc[i].type == CUBE_TYPE_ARRAY))
+		{
+			
+			ret = Palloc0(&temp_node,sizeof(STRUCT_NODE)); 
+			if(ret<0)
+				return ret;
+			root_node->elem_list[i].ref=temp_node;
+			temp_node->struct_desc=root_node->struct_desc[i].ref;
+		}
+	} 
+	return 0;
+}
+
+int _create_template_enterstruct(void * addr,void * data,void * elem, void * para)
+{
+	int ret;
+	int i;
+	struct create_para * my_para = para;
+	struct elem_template * curr_elem=elem;
+	STRUCT_NODE * curr_node = curr_elem->ref;
+	STRUCT_NODE * temp_node;
+	// prepare the root node's elem_list
+	curr_node->elem_no=_count_struct_num(curr_node->struct_desc);
+	
+	ret=Palloc0(&(curr_node->elem_list),
+		sizeof(struct elem_template)*curr_node->elem_no);
+	if(ret<0)
+		return ret;
+
+	// prepare the struct node for SUBSTRUCT elem and ARRAY elem
+
+	for( i=0;i<curr_node->elem_no;i++)
+	{
+		curr_node->elem_list[i].elem_desc=&(curr_node->struct_desc[i]);
+		if((curr_node->struct_desc[i].type == CUBE_TYPE_SUBSTRUCT) ||
+			(curr_node->struct_desc[i].type == CUBE_TYPE_ARRAY))
+		{
+			
+			ret = Palloc0(&temp_node,sizeof(STRUCT_NODE)); 
+			if(ret<0)
+				return ret;
+			curr_node->elem_list[i].ref=temp_node;
+			temp_node->struct_desc=curr_node->struct_desc[i].ref;
+		}
+	} 
+	curr_node->offset=curr_offset;
+	return 0;
+	
+}
+
+int _create_template_exitstruct(void * addr,void * data,void * elem, void * para)
+{
+	int ret;
+	int i;
+	struct create_para * my_para = para;
+	struct elem_template * curr_elem=elem;
+	STRUCT_NODE * curr_node = curr_elem->ref;
+	STRUCT_NODE * temp_node;
+	struct create_para * my_para = para;
+	return 0;
+}
+
+int _create_template_proc_func(void * addr,void * data,void * elem, void * para)
+{
+	struct create_para * my_para = para;
+	return 0;
+}
+
+int _create_template_finish(void * addr,void * data,void * elem, void * para)
+{
+	struct create_para * my_para = para;
+	return 0;
+}
+
+void * create_struct_template(struct struct_elem_attr * struct_desc)
+{
+	int ret;
+	struct struct_deal_ops create_template_ops =
+	{
+		.start=_create_template_start,
+		.enterstruct=_create_template_enterstruct,
+		.exitstruct=_create_template_exitstruct,
+		.proc_func=_create_template_proc_func,
+		.finish=_create_template_finish,
+	};
+
+	static struct create_para my_para;
+	
+	STRUCT_NODE * root_node = Calloc0(sizeof(STRUCT_NODE));
+	if(root_node==NULL)
+		return NULL;
+	root_node->struct_desc=struct_desc;
+	ret = _convert_frame_func(NULL,NULL,root_node,&create_template_ops,
+		&my_para);
+	if(ret<0)
+		return NULL;
+	return root_node;
+}
+
+
+/*
 void * create_struct_template(struct struct_elem_attr * struct_desc)
 {
 	STRUCT_NODE * root_node;
@@ -316,6 +540,7 @@ void * create_struct_template(struct struct_elem_attr * struct_desc)
 	STRUCT_NODE * temp_node;
 	struct elem_template * curr_elem;
 	int offset=0;
+	int curr_offset=0;
 	int i;
 	struct struct_elem_attr * curr_desc=struct_desc;
 	struct struct_elem_attr * elem_desc;
@@ -325,7 +550,6 @@ void * create_struct_template(struct struct_elem_attr * struct_desc)
 	root_node=(STRUCT_NODE *)Calloc0(sizeof(STRUCT_NODE));
 	curr_node=root_node;
 	root_node->struct_desc=struct_desc;
-	offset=0;
 
 	do {
 	// first step: count elem no and alloc all the struct node;
@@ -340,7 +564,7 @@ void * create_struct_template(struct struct_elem_attr * struct_desc)
 				return NULL;
 			for(i=0;i<curr_node->elem_no;i++)
 			{
-				curr_node->elem_list[i].father=curr_node;
+				curr_node->elem_list[i].father=NULL;
 			}
 			curr_node->offset=offset;
 		}
@@ -433,6 +657,7 @@ void * create_struct_template(struct struct_elem_attr * struct_desc)
 	return root_node;
 
 }
+*/
 
 void free_struct_template(void * struct_template)
 {
@@ -531,101 +756,11 @@ int struct_free_alloc(void * addr,void * struct_template)
 	return 0;
 }
 
-struct struct_deal_ops
-{
-	int (*start)(void * addr, void * data,void *elem,void * para);
-	int (*testelem)(void * addr, void * data,void *elem,void * para);
-	int (*enterstruct)(void * addr,void * data, void * elem,void * para);
-	int (*exitstruct)(void * addr,void * data,void * elem,void * para);
-	int (*proc_func)(void * addr, void * data, void * elem,void * para);
-	int (*finish)(void * addr, void * data,void *elem,void * para);
-};
 
 struct default_para
 {
 	int offset;
 };
-
-int  _convert_frame_func (void *addr, void * data, void * struct_template,
-	struct struct_deal_ops * funcs,void * para)
-{
-	STRUCT_NODE * root_node=struct_template;
-	STRUCT_NODE * curr_node=root_node;
-	STRUCT_NODE * temp_node;
-	curr_node->temp_var=0;
-	struct elem_template * curr_elem;
-
-
-	int offset=0;
-	struct struct_elem_attr * curr_desc;
-	ELEM_OPS * elem_ops;
-	int def_value;
-	int ret;
-	if(funcs->start!=NULL)
-	{
-		ret=funcs->start(addr,data,struct_template,para);
-		if(ret<0)
-			return ret;
-	}
-
-	curr_desc=root_node->struct_desc;
-
-	do{
-		// throughout the node tree: back
-		if(curr_node->temp_var == curr_node->elem_no)
-		{
-			if(curr_node==root_node)
-				break;
-			temp_node=curr_node;
-			curr_node=curr_node->parent;
-			if(funcs->exitstruct!=NULL)
-			{
-				ret=funcs->exitstruct(addr,data,curr_node,
-					para);
-				if(ret<0)
-					return ret;
-			}
-			continue;
-		}
-
-		curr_elem=&curr_node->elem_list[curr_node->temp_var];
-		if(funcs->testelem!=NULL)
-		{
-			if(!funcs->testelem(addr,data,curr_elem,para))
-			{
-				curr_node->temp_var++;
-				continue;
-			}
-		}
-			// throughout the node tree: into the sub_struct
-		if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
-		{
-			curr_node->temp_var++;
-			curr_node=curr_elem->ref;
-			curr_node->temp_var=0;
-			if(funcs->enterstruct!=NULL)
-			{
-				ret=funcs->enterstruct(addr,data,curr_elem,
-					para);
-				if(ret<0)
-					return ret;
-			}
-			continue;
-		}
-		// get this elem's ops
-		elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
-		if(elem_ops==NULL)
-			return -EINVAL;
-
-		ret=funcs->proc_func(addr,data,curr_elem,para);
-		if(ret<0)
-			return ret;
-		curr_node->temp_var++;
-	}while(1);
-	if(funcs->finish==NULL)
-		return 0;
-	return funcs->finish(addr,data,struct_template,para);
-}
 
 int _elem_get_bin_length(void * value,void * elem,void * addr)
 {

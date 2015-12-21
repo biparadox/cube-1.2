@@ -37,10 +37,10 @@ struct connect_login
 
 struct verify_login
 {
+	char uuid[DIGEST_SIZE];
 	struct connect_login login_info;
 	char nonce_len[4];
    	char *nonce;
-	char uuid[DIGEST_SIZE];
 	int  listnum;
 	char *uuidlist;
 	void * namelist;
@@ -55,10 +55,10 @@ static struct struct_elem_attr connect_login_desc[]=
 
 static struct struct_elem_attr verify_login_desc[]=
 {
+    {"uuid",CUBE_TYPE_UUID,DIGEST_SIZE,NULL,NULL},
     {"login_info",CUBE_TYPE_SUBSTRUCT,0,&connect_login_desc,NULL},
     {"nonce_len",CUBE_TYPE_STRING,4,NULL},
     {"nonce",CUBE_TYPE_DEFINE,sizeof(char *),NULL,"nonce_len"},
-    {"uuid",CUBE_TYPE_UUID,DIGEST_SIZE,NULL,NULL},
     {"listnum",CUBE_TYPE_INT,DIGEST_SIZE,NULL,NULL},
     {"uuidlist",CUBE_TYPE_DEFUUIDARRAY,DIGEST_SIZE,NULL,"listnum"},
     {"namelist",CUBE_TYPE_DEFNAMELIST,DIGEST_SIZE,NULL,"listnum"},
@@ -68,7 +68,7 @@ static struct struct_elem_attr verify_login_desc[]=
 int main() {
 
 //	struct connect_login test_login={"HuJun","openstack"};
-	struct verify_login test_login={{"HuJun","openstack"},"0x20","","",4,"",		""};
+	struct verify_login test_login={"",{"HuJun","openstack"},"0x20","",4,"",		""};
 	char buffer[512];
 	char buffer1[512];
 	char text[512];
