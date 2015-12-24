@@ -108,6 +108,37 @@ static inline int _is_elem_in_subset(void * elem,void * subset)
 }
 
 
+static inline void * _elem_get_addr(void * elem,void * addr)
+{
+	int offset_array[10];
+	int limit=0;
+	int i;
+	memset(offset_array,0,sizeof(offset_array));
+
+	struct elem_template * curr_elem=elem;
+
+	while(curr_elem!=NULL)
+	{
+		if(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY)
+			offset_array[limit++]=curr_elem->offset +
+				curr_elem->size * curr_elem->index;
+		else
+		{
+			if(offset_array[limit]==0)
+				offset_array[limit]=curr_elem->offset;
+		}
+		curr_elem=curr_elem->father;
+	}
+	
+
+	for(i=limit;i>0;i--)
+	{
+		addr=*((void **)(addr+offset_array[i]));
+		
+	}
+	return addr+offset_array[0];
+}
+
 static inline int _elem_get_offset(void * elem)
 {
 	int offset=0;
@@ -134,7 +165,7 @@ static inline int _elem_get_defvalue(void * elem,void * addr)
 	struct elem_template * temp_subset;
 	ELEM_OPS * elem_ops;
 	int define_value;
-	int offset;
+	void * def_addr;
 	if(temp_elem==NULL)
 		return -EINVAL;
 	elem_ops=struct_deal_ops[temp_elem->elem_desc->type];
@@ -153,9 +184,9 @@ static inline int _elem_get_defvalue(void * elem,void * addr)
 			return -EINVAL;	
 	}
 
-	offset=_elem_get_offset(temp_elem);
+	def_addr=_elem_get_addr(temp_elem,addr);
 	// if define elem is an elem in curr_elem's father subset
-	define_value=elem_ops->get_int_value(addr+offset,curr_elem);
+	define_value=elem_ops->get_int_value(def_addr,temp_elem);
 	if((define_value<0) || (define_value >=1024))
 		return -EINVAL;
 	return define_value;

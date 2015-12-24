@@ -199,8 +199,9 @@ int get_fixed_elemsize(int type)
 		case CUBE_TYPE_DEFSTRARRAY:
 		case CUBE_TYPE_UUIDARRAY:
 		case CUBE_TYPE_DEFUUIDARRAY:
-		case CUBE_TYPE_DEFNAMELIST:
 			return sizeof(char *);
+		case CUBE_TYPE_DEFNAMELIST:
+			return sizeof(char *)+sizeof(int);
 		case CUBE_TYPE_BINARRAY:
 		case CUBE_TYPE_BITMAP:	 
 			return -1;
@@ -526,7 +527,7 @@ int _create_template_proc_func(void * addr,void * data,void * elem, void * para)
 		curr_elem->def=temp_elem;
 		curr_elem->offset=my_para->curr_offset;
 		curr_elem->size=sizeof(void *);
-		my_para->offset+=curr_elem->size;
+		my_para->curr_offset+=curr_elem->size;
 	}
 	else
 	{
@@ -857,22 +858,49 @@ int    _elem_get_bin_value(void * addr,void * data,void * elem)
 	int ret;
 	struct elem_template * curr_elem=elem;
 	ELEM_OPS * elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
+	void * elem_addr;
+	elem_addr=_elem_get_addr(elem,addr);
+	
 	
 	if(elem_ops->get_bin_value==NULL)
 	{
-		if((ret=_elem_get_bin_length(*(char **)(addr+curr_elem->offset),			elem,addr))<0)
+		
+		if((ret=_elem_get_bin_length(*(char **)elem_addr,elem,addr))<0)
 			return ret;
 		if(_ispointerelem(curr_elem->elem_desc->type))
-			Memcpy(data,*(char **)(addr+curr_elem->offset),ret);
+			Memcpy(data,*(char **)elem_addr,ret);
 		else
-			Memcpy(data,addr+curr_elem->offset,ret);
+			Memcpy(data,elem_addr,ret);
 	}
 	else
 	{
-		ret=elem_ops->get_bin_value(addr+curr_elem->offset,
-			data,curr_elem);
-		if(ret<0)
-			return ret;
+		if(_isdefineelem(curr_elem->elem_desc->type))
+		{
+			int def_value=_elem_get_defvalue(curr_elem,addr);
+			if(def_value<0)
+				return def_value;
+			int offset=0;
+			int i;
+			int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
+			if(addroffset<0)
+				return addroffset;
+			
+			for(i=0;i<def_value;i++)
+			{
+				ret=elem_ops->get_bin_value(*(void **)elem_addr+addroffset*i,data+offset,curr_elem);
+				if(ret<0)
+					return ret;
+				offset+=ret;
+			}
+			return offset;
+		}
+		else
+		{
+			ret=elem_ops->get_bin_value(elem_addr,
+				data,curr_elem);
+			if(ret<0)
+				return ret;
+		}
 	}
 	return ret;
 } 
@@ -882,6 +910,8 @@ int    _elem_set_bin_value(void * addr,void * data,void * elem)
 	int ret;
 	struct elem_template * curr_elem=elem;
 	ELEM_OPS * elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
+	void * elem_addr;
+	elem_addr=_elem_get_addr(elem,addr);
 	
 	if(elem_ops->set_bin_value==NULL)
 	{
@@ -892,17 +922,43 @@ int    _elem_set_bin_value(void * addr,void * data,void * elem)
 			int tempret=Palloc0(addr+curr_elem->offset,ret);
 			if(tempret<0)
 				return tempret;
-			Memcpy(*(char **)(addr+curr_elem->offset),data,ret);
+			Memcpy(*(char **)elem_addr,data,ret);
 		}
 		else
-			Memcpy(addr+curr_elem->offset,data,ret);
+			Memcpy(elem_addr,data,ret);
 	}
 	else
 	{
-		ret=elem_ops->set_bin_value(addr+curr_elem->offset,
-			data,curr_elem);
-		if(ret<0)
-			return ret;
+		if(_isdefineelem(curr_elem->elem_desc->type))
+		{
+			int def_value=_elem_get_defvalue(curr_elem,addr);
+			if(def_value<0)
+				return def_value;
+			int offset=0;
+			int i;
+			int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
+			if(addroffset<0)
+				return addroffset;
+			ret=Palloc0(elem_addr,addroffset*def_value);
+			if(ret<0)
+				return ret;
+	
+			for(i=0;i<def_value;i++)
+			{
+				ret=elem_ops->set_bin_value(*(void **)elem_addr+addroffset*i,data+offset,curr_elem);
+				if(ret<0)
+					return ret;
+				offset+=ret;
+			}
+			return offset;
+		}
+		else
+		{
+
+			ret=elem_ops->set_bin_value(elem_addr,data,curr_elem);
+			if(ret<0)
+				return ret;
+		}
 	}
 	return ret;
 } 
