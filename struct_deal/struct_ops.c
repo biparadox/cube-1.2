@@ -155,52 +155,32 @@ int uuidarray_set_text_value(void * addr, char * text,void * elem_template)
 
 int defuuidarray_get_text_value(void * addr, void * data,void * elem_template)
 {
-	int i,j,retval;
 	char * text=data;
 	struct elem_template * curr_elem=elem_template;
-	BYTE * digest=*(BYTE **)addr;
+	BYTE * digest=addr;
 	int offset=0;
-	int array_num=_elem_get_defvalue(curr_elem,addr);
-	if(array_num<=0)
-		return array_num;
-	if(array_num>DIGEST_SIZE*2)
-		return -EINVAL;
-	for(i=0;i<array_num;i++)
-	{
-		if(i!=0)
-			*(text+offset++)=',';
-		_digest_to_uuid(digest+i*DIGEST_SIZE,text+offset);
-		offset+=DIGEST_SIZE*2;
-	}	
+	_digest_to_uuid(digest,text+offset);
+	offset+=DIGEST_SIZE*2;
 
+	*(text+offset++)=',';
 	*(text+offset)=0;
 	return offset+1;
 }
 
 int defuuidarray_set_text_value(void * addr, char * text,void * elem_template)
 {
-	int i,j,retval;
+	int retval;
 	struct elem_template * curr_elem=elem_template;
 	int offset=0;
-	int array_num=_elem_get_defvalue(curr_elem,addr);
-	if(array_num<=0)
-		return array_num;
-	if(array_num>DIGEST_SIZE*2)
-		return -EINVAL;
 
-	retval=Palloc0(addr,DIGEST_SIZE*array_num);
+	BYTE * digest=addr;
+
+	while((*(text+offset)==',')||(*(text+offset)==' '))
+		offset++;
+	retval=_uuid_to_digest(text+offset,digest);
 	if(retval<0)
 		return retval;
-	BYTE * digest=*(BYTE **)addr;
-	for(i=0;i<array_num;i++)
-	{
-		while((*(text+offset)==',')||(*(text+offset)==' '))
-			offset++;
-		retval=_uuid_to_digest(text+offset,digest+i*DIGEST_SIZE);
-		if(retval<0)
-			return retval;
-		offset+=DIGEST_SIZE*2;
-	}	
+	offset+=DIGEST_SIZE*2;
 	return offset;
 }
 
@@ -249,47 +229,36 @@ int namelist_set_bin_value(void * addr, void * data,void * elem_template)
 
 int namelist_get_text_value(void * addr, void * data,void * elem_template)
 {
-	int i,retval;
-	void * namelist=*(void **)addr;
+	void * namelist=addr;
 	int addroffset=0;
 	int offset=0;
 	char * text=data;
 	char * name;
 	int  value;
-	int  base=0;
 	struct elem_template * curr_elem=elem_template;
 	int textlen=0;
-	int array_num=_elem_get_defvalue(curr_elem,addr);
-	if(array_num<=0)
-		return array_num;
-	
-	if(array_num>DIGEST_SIZE*2)
+
+	textlen=strlen(*(char **)(namelist+addroffset));
+	if(textlen>DIGEST_SIZE)
 		return -EINVAL;
-	for(i=0;i<array_num;i++)
+	memcpy(text+offset,*(char **)(namelist+addroffset),textlen);
+	offset+=textlen;
+	addroffset+=sizeof(char *);
+	value=*(unsigned int*)(namelist+addroffset);
+
+	curr_elem->index++;
+	if(value<curr_elem->index)
+		return -EINVAL;
+	if(value>curr_elem->index)
 	{
-		if(i!=0)
-			text[offset++]=',';
-		textlen=strlen(*(char **)(namelist+addroffset));
-		if(textlen>DIGEST_SIZE)
-			return -EINVAL;
-		memcpy(text+offset,*(char **)(namelist+addroffset),textlen);
+		text[offset++]='=';
+		textlen=Itoa(value,data+offset);
+		if(textlen<0)
+			return textlen;
 		offset+=textlen;
-		addroffset+=sizeof(char *);
-		value=*(unsigned int*)(namelist+addroffset);
-		if(value<base)
-			return -EINVAL;
-		if(value>base)
-		{
-			text[offset++]='=';
-			textlen=Itoa(value,data+offset);
-			if(textlen<0)
-				return textlen;
-			offset+=textlen;
-			base=value;
-		}
-		addroffset+=sizeof(int);
-		base++;
-	}	
+		curr_elem->index=value;
+	}
+	text[offset++]=',';
 	text[offset]=0;
 	return offset;
 }
@@ -297,7 +266,7 @@ int namelist_get_text_value(void * addr, void * data,void * elem_template)
 int namelist_set_text_value(void * addr, char * text,void * elem_template)
 {
 	int i,j,retval;
-	void * namelist;
+	void * namelist=addr;
 	struct elem_template * curr_elem=elem_template;
 	int offset=0;
 	int addroffset=0;
@@ -305,44 +274,33 @@ int namelist_set_text_value(void * addr, char * text,void * elem_template)
 	int namelen=0;
 	char * name;
 	int  value;
-	int  base=0;
-	int array_num=_elem_get_defvalue(curr_elem,addr);
-	if(array_num<=0)
-		return array_num;
-	if(array_num>DIGEST_SIZE*2)
-		return -EINVAL;
+
 	char buf[128];
 
-	retval=Palloc0(addr,array_num*(sizeof(char *)+sizeof(int)));
-	if(retval<0)
-		return retval;
-	namelist=*(void **)addr;
-	for(i=0;i<array_num;i++)
+	textlen=Getfiledfromstr(buf,text+offset,',',128);
+	if(textlen>DIGEST_SIZE*2)
+		return -EINVAL;
+	namelen=Getfiledfromstr(buf+DIGEST_SIZE*2,buf,'=',textlen);
+	curr_elem->index++;
+	if(namelen==textlen)
 	{
-		textlen=Getfiledfromstr(buf,text+offset,',',128);
-		if(textlen>DIGEST_SIZE*2)
+		value=curr_elem->index;
+	}
+	else
+	{
+		value=Atoi(buf+namelen+1,textlen-namelen);
+		if(value<curr_elem->index)
 			return -EINVAL;
-		namelen=Getfiledfromstr(buf+DIGEST_SIZE*2,buf,'=',textlen);
-		if(namelen==textlen)
-			value=base;
-		else
-		{
-			value=Atoi(buf+namelen+1,textlen-namelen);
-			if(value<base)
-				return -EINVAL;
-			base=value;
-		}
-		retval=Palloc0(namelist+addroffset,namelen+1);
-		if(retval<0)
-			return -ENOMEM;
-		memcpy(*(char **)(namelist+addroffset),text+offset,namelen);
-		*(*(char **)(namelist+addroffset)+namelen)=0;
-		offset+=textlen+1;
-		addroffset+=sizeof(char *);
-		memcpy(namelist+addroffset,&value,sizeof(int));
-		addroffset+=sizeof(int);
-		base++;
-	}	
+		curr_elem->index=value;
+	}
+	retval=Palloc0(namelist+addroffset,namelen+1);
+	if(retval<0)
+		return -ENOMEM;
+	memcpy(*(char **)(namelist+addroffset),text+offset,namelen);
+	*(*(char **)(namelist+addroffset)+namelen)=0;
+	offset+=textlen+1;
+	addroffset+=sizeof(char *);
+	memcpy(namelist+addroffset,&value,sizeof(int));
 	return offset;
 }
 

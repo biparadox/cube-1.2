@@ -884,6 +884,7 @@ int    _elem_get_bin_value(void * addr,void * data,void * elem)
 			int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
 			if(addroffset<0)
 				return addroffset;
+			curr_elem->index=0;
 			
 			for(i=0;i<def_value;i++)
 			{
@@ -919,7 +920,7 @@ int    _elem_set_bin_value(void * addr,void * data,void * elem)
 			return ret;
 		if(_ispointerelem(curr_elem->elem_desc->type))
 		{
-			int tempret=Palloc0(addr+curr_elem->offset,ret);
+			int tempret=Palloc0(elem_addr,ret);
 			if(tempret<0)
 				return tempret;
 			Memcpy(*(char **)elem_addr,data,ret);
@@ -942,6 +943,7 @@ int    _elem_set_bin_value(void * addr,void * data,void * elem)
 			ret=Palloc0(elem_addr,addroffset*def_value);
 			if(ret<0)
 				return ret;
+			curr_elem->index=0;
 	
 			for(i=0;i<def_value;i++)
 			{
@@ -966,24 +968,51 @@ int    _elem_set_bin_value(void * addr,void * data,void * elem)
 int    _elem_get_text_value(void * addr,char * text,void * elem)
 {
 	int ret;
+	void * elem_addr;
+	elem_addr=_elem_get_addr(elem,addr);
 	struct elem_template * curr_elem=elem;
 	ELEM_OPS * elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
 	
 	if(elem_ops->get_text_value==NULL)
 	{
-		if((ret=_elem_get_bin_length(*(char **)(addr+curr_elem->offset),			elem,addr))<0)
+		if((ret=_elem_get_bin_length(*(char **)elem_addr,elem,addr))<0)
 			return ret;
 		if(_ispointerelem(curr_elem->elem_desc->type))
-			Memcpy(text,*(char **)(addr+curr_elem->offset),ret);
+			Memcpy(text,*(char **)elem_addr,ret);
 		else
-			Memcpy(text,addr+curr_elem->offset,ret);
+			Memcpy(text,elem_addr,ret);
 	}
 	else
 	{
-		ret=elem_ops->get_text_value(addr+curr_elem->offset,
-			text,curr_elem);
-		if(ret<0)
-			return ret;
+		if(_isdefineelem(curr_elem->elem_desc->type))
+		{
+			int def_value=_elem_get_defvalue(curr_elem,addr);
+			if(def_value<0)
+				return def_value;
+			int offset=0;
+			int i;
+			int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
+			if(addroffset<0)
+				return addroffset;
+			
+			curr_elem->index=0;
+			for(i=0;i<def_value;i++)
+			{
+				ret=elem_ops->get_text_value(*(void **)elem_addr+addroffset*i,text+offset,curr_elem);
+				if(ret<0)
+					return ret;
+				offset+=ret-1;
+			}
+			*(text+offset-1)=0;
+			return offset;
+		}
+		else
+		{
+			ret=elem_ops->get_text_value(elem_addr,
+				text,curr_elem);
+			if(ret<0)
+				return ret;
+		}
 	}
 	return ret;
 } 
@@ -994,37 +1023,66 @@ int    _elem_set_text_value(void * addr,char * text,void * elem)
 	struct elem_template * curr_elem=elem;
 	ELEM_OPS * elem_ops=struct_deal_ops[curr_elem->elem_desc->type];
 	
+	void * elem_addr;
+	elem_addr=_elem_get_addr(elem,addr);
+	
 	if(elem_ops->set_text_value==NULL)
 	{
 		if((ret=_elem_get_bin_length(text,elem,addr))<0)
 			return ret;
 		if(_ispointerelem(curr_elem->elem_desc->type))
 		{
-			int tempret=Palloc0(addr+curr_elem->offset,ret);
+			int tempret=Palloc0(elem_addr,ret);
 			if(tempret<0)
 				return tempret;
-			Memcpy(*(char **)(addr+curr_elem->offset),text,ret);
+			Memcpy(*(char **)elem_addr,text,ret);
 		}
 		else
 		{
 			int str_len=strlen(text);
 			if(str_len>=ret)
 			{
-				Memcpy(addr+curr_elem->offset,text,ret);
+				Memcpy(elem_addr,text,ret);
 			}
 			else
 			{
-				Memcpy(addr+curr_elem->offset,text,str_len);
-				Memset(addr+curr_elem->offset+str_len,0,ret-str_len);	
+				Memcpy(elem_addr,text,str_len);
+				Memset(elem_addr+str_len,0,ret-str_len);	
 			}
 		}
 	}
 	else
 	{
-		ret=elem_ops->set_text_value(addr+curr_elem->offset,
-			text,curr_elem);
-		if(ret<0)
-			return ret;
+		if(_isdefineelem(curr_elem->elem_desc->type))
+		{
+			int def_value=_elem_get_defvalue(curr_elem,addr);
+			if(def_value<0)
+				return def_value;
+			int offset=0;
+			int i;
+			int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
+			if(addroffset<0)
+				return addroffset;
+			ret=Palloc0(elem_addr,addroffset*def_value);
+			if(ret<0)
+				return ret;
+			curr_elem->index=0;
+	
+			for(i=0;i<def_value;i++)
+			{
+				ret=elem_ops->set_text_value(*(void **)elem_addr+addroffset*i,text+offset,curr_elem);
+				if(ret<0)
+					return ret;
+				offset+=ret;
+			}
+			Memcpy(*(char **)elem_addr,text,ret);
+		}
+		else
+		{
+			ret=elem_ops->set_text_value(elem_addr,text,curr_elem);
+			if(ret<0)
+				return ret;
+		}
 	}
 	return ret;
 } 
@@ -1226,33 +1284,42 @@ int _getjsonstr(char * json_str,char * text,int text_len,int json_type)
 			str_offset=str_len+2;
 			break;
 		case JSON_ELEM_ARRAY:
-			*json_str='[';
-			*(json_str+1)='\"';
-			str_offset+=2;
-			for(i=0;i<text_len;i++)
 			{
-				if((text[i]==0) || (text[i]==','))
-				{	
-					*(json_str+str_offset)='\"';
-					*(json_str+str_offset+1)=',';
-					*(json_str+str_offset+2)='\"';
-					str_offset+=3;	
-				}
-				else
+				int isinelem=0;
+				int array_no=0;
+				*json_str='[';
+				str_offset++;
+				for(i=0;i<text_len;i++)
 				{
-					*(json_str+str_offset)=*(text+i);
-					str_offset++;
+					if((text[i]==0) || (text[i]==','))
+					{	
+						if(isinelem)
+						{
+							*(json_str+str_offset++)='\"';
+							isinelem=0;
+						}
+					}
+
+					else
+					{
+						if(!isinelem)
+						{
+							if(array_no>0)
+								*(json_str+str_offset++)=',';
+							
+							*(json_str+str_offset++)='\"';
+							isinelem=1;
+							array_no++;
+						}
+						*(json_str+str_offset++)=*(text+i);
+					}
 				}
-			}
-			if((*(text+i-1)!=0)&&(*(text+i-1)!=','))
-			{
-				*(json_str+str_offset++)='\"';
+				if((*(text+i-1)!=0)&&(*(text+i-1)!=','))
+				{
+					if(isinelem)
+						*(json_str+str_offset++)='\"';
+				}
 				*(json_str+str_offset++)=']';
-				*(json_str+str_offset)=0;
-			}
-			else
-			{		
-				*(json_str+str_offset-1)=']';
 				*(json_str+str_offset)=0;
 			}
 			break;
