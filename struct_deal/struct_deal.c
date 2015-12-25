@@ -1075,7 +1075,8 @@ int    _elem_set_text_value(void * addr,char * text,void * elem)
 					return ret;
 				offset+=ret;
 			}
-			Memcpy(*(char **)elem_addr,text,ret);
+			return offset;
+//			Memcpy(*(char **)elem_addr,text,ret);
 		}
 		else
 		{

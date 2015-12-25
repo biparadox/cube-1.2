@@ -87,30 +87,30 @@ int main() {
 	int i;
 
   	mem_init();
-	test_login.nonce=Talloc(0x20);
+	test_login.nonce=Calloc(0x20);
 	memset(test_login.nonce,'A',0x20);
 	memset(test_login.uuid,'B',0x20);
-	test_login.uuidlist=Talloc(DIGEST_SIZE*4);
+	test_login.uuidlist=Calloc(DIGEST_SIZE*4);
 	memset(test_login.uuidlist,'C',DIGEST_SIZE*4);
-	test_login.namelist=Talloc(sizeof(NAME2VALUE)*test_login.listnum);
+	test_login.namelist=Calloc(sizeof(NAME2VALUE)*test_login.listnum);
 	NAME2VALUE * namelist=test_login.namelist;
 
 	for(i=0;i<test_login.listnum;i++)
 	{
-		namelist[i].name=Talloc(10);
+		namelist[i].name=Calloc(10);
 		sprintf(namelist[i].name,"name_%d",i);
 	}
-	namelist[0].value=0;
-	namelist[1].value=1;
-	namelist[2].value=3;
-	namelist[3].value=4;
+	namelist[0].value=1;
+	namelist[1].value=2;
+	namelist[2].value=4;
+	namelist[3].value=5;
 
 	struct_deal_init();
 
 //	recover_struct=Calloc(sizeof(struct verify_login));
     	void * struct_template=create_struct_template(verify_login_desc);
-	recover_struct=Talloc(struct_size(struct_template));
-	recover_struct1=Talloc(struct_size(struct_template));
+	recover_struct=Calloc(struct_size(struct_template));
+	recover_struct1=Calloc(struct_size(struct_template));
 	ret=struct_2_blob(&test_login,buffer,struct_template);	
 	printf("get %d size blob!\n",ret);
 

@@ -198,8 +198,7 @@ int namelist_get_bin_value(void * addr, void * data,void * elem_template)
 	memcpy(data,*(char **)namelist,textlen+1);
 	
 	offset+=textlen+1;
-	addroffset+=sizeof(char *);
-	memcpy(data+offset,namelist+addroffset,sizeof(int));
+	memcpy(data+offset,&namelist->value,sizeof(int));
 	offset+=sizeof(int);
 	return offset;
 }
@@ -220,16 +219,14 @@ int namelist_set_bin_value(void * addr, void * data,void * elem_template)
 		return -ENOMEM;
 	memcpy(*(char **)namelist,data+offset,textlen+1);
 	offset+=textlen+1;
-	addroffset+=sizeof(char *);
-	memcpy(namelist+addroffset,data+offset,sizeof(int));
+	memcpy(&namelist->value,data+offset,sizeof(int));
 	offset+=sizeof(int);
-	addroffset+=sizeof(int);
 	return offset;
 }
 
 int namelist_get_text_value(void * addr, void * data,void * elem_template)
 {
-	void * namelist=addr;
+	NAME2VALUE * namelist=addr;
 	int addroffset=0;
 	int offset=0;
 	char * text=data;
@@ -238,13 +235,12 @@ int namelist_get_text_value(void * addr, void * data,void * elem_template)
 	struct elem_template * curr_elem=elem_template;
 	int textlen=0;
 
-	textlen=strlen(*(char **)(namelist+addroffset));
+	textlen=strlen(namelist->name);
 	if(textlen>DIGEST_SIZE)
 		return -EINVAL;
-	memcpy(text+offset,*(char **)(namelist+addroffset),textlen);
+	memcpy(text+offset,namelist->name,textlen);
 	offset+=textlen;
-	addroffset+=sizeof(char *);
-	value=*(unsigned int*)(namelist+addroffset);
+	value=namelist->value;
 
 	curr_elem->index++;
 	if(value<curr_elem->index)
@@ -259,14 +255,14 @@ int namelist_get_text_value(void * addr, void * data,void * elem_template)
 		curr_elem->index=value;
 	}
 	text[offset++]=',';
-	text[offset]=0;
+	text[offset++]=0;
 	return offset;
 }
 
 int namelist_set_text_value(void * addr, char * text,void * elem_template)
 {
 	int i,j,retval;
-	void * namelist=addr;
+	NAME2VALUE * namelist=addr;
 	struct elem_template * curr_elem=elem_template;
 	int offset=0;
 	int addroffset=0;
@@ -293,14 +289,13 @@ int namelist_set_text_value(void * addr, char * text,void * elem_template)
 			return -EINVAL;
 		curr_elem->index=value;
 	}
-	retval=Palloc0(namelist+addroffset,namelen+1);
+	retval=Palloc0(&(namelist->name),namelen+1);
 	if(retval<0)
 		return -ENOMEM;
-	memcpy(*(char **)(namelist+addroffset),text+offset,namelen);
-	*(*(char **)(namelist+addroffset)+namelen)=0;
+	memcpy(namelist->name,text+offset,namelen);
+	*(namelist->name+namelen)=0;
 	offset+=textlen+1;
-	addroffset+=sizeof(char *);
-	memcpy(namelist+addroffset,&value,sizeof(int));
+	namelist->value=value;
 	return offset;
 }
 
