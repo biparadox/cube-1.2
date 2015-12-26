@@ -547,8 +547,8 @@ int _create_template_exitstruct(void * addr,void * data,void * elem, void * para
 		if(!_isvalidvalue(temp_elem->elem_desc->type))
 			return -EINVAL;
 		curr_elem->def=temp_elem;
-		curr_elem->size=sizeof(void *);
-		my_para->curr_offset=curr_elem->offset+curr_elem->size;
+		curr_elem->size=my_para->curr_offset;
+		my_para->curr_offset=curr_elem->offset+sizeof(void *);
 	}
 	else
 	{

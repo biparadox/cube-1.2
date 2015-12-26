@@ -120,8 +120,10 @@ static inline void * _elem_get_addr(void * elem,void * addr)
 	while(curr_elem!=NULL)
 	{
 		if(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY)
-			offset_array[limit++]=curr_elem->offset +
-				curr_elem->size * curr_elem->index;
+		{
+			offset_array[limit]+=curr_elem->size * curr_elem->index;
+			offset_array[++limit]=curr_elem->offset;
+		}
 		else
 		{
 			if(offset_array[limit]==0)
