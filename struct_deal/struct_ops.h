@@ -38,6 +38,7 @@ struct elem_template
 	void * def;	
 	int flag;
 	int index;
+	int limit;
 	struct elem_template * father;
 };
 #endif

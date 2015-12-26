@@ -360,7 +360,20 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 				if(ret<0)
 					return ret;
 			}
-			curr_node->temp_var++;
+			if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
+				curr_node->temp_var++;
+			else if(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY)
+			{	
+				if(curr_elem->index>=curr_elem->limit)
+				{
+					curr_node->temp_var++;
+					curr_elem->limit=0;
+				}
+				else
+					curr_elem->index++;
+			}
+			else
+				return -EINVAL;
 			continue;
 		}
 
@@ -374,9 +387,33 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 			}
 		}
 			// throughout the node tree: into the sub_struct
-		if((curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
-			||(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY))
+		if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
 		{
+			if(funcs->enterstruct!=NULL)
+			{
+				ret=funcs->enterstruct(addr,data,curr_elem,
+					para);
+				if(ret<0)
+					return ret;
+			}
+			if(curr_elem->limit==0)
+			{
+				curr_node->temp_var++;
+				continue;
+			}
+			curr_node=curr_elem->ref;
+			curr_node->temp_var=0;
+			continue;
+		}
+		else if(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY)
+		{
+//			if(curr_elem->limit==0)
+//			{
+//				curr_elem->limit=_elem_get_defvalue(curr_elem,addr);
+//				if(curr_elem->limit<=0)
+//					return -EINVAL;
+//				curr_elem->index=0;
+//			}
 			curr_node=curr_elem->ref;
 			curr_node->temp_var=0;
 			if(funcs->enterstruct!=NULL)
@@ -408,8 +445,8 @@ struct create_para
 {
 	int offset;
 	int curr_offset;
-	STRUCT_NODE * root_node;
 	STRUCT_NODE * curr_node;
+	struct elem_template * parent_elem;
 };
 
 int _create_template_start(void * addr,void * data,void * elem, void * para)
@@ -421,7 +458,7 @@ int _create_template_start(void * addr,void * data,void * elem, void * para)
 	my_para->curr_offset=0;
 	STRUCT_NODE * root_node=elem;
 	STRUCT_NODE * temp_node;
-	my_para->root_node=root_node;
+	my_para->parent_elem=NULL;
 	my_para->curr_node=root_node;
 	// prepare the root node's elem_list
 	root_node->elem_no=_count_struct_num(root_node->struct_desc);
@@ -488,6 +525,10 @@ int _create_template_enterstruct(void * addr,void * data,void * elem, void * par
 //	curr_node->offset=my_para->curr_offset;
 	if(curr_elem->elem_desc->type == CUBE_TYPE_ARRAY)
 		my_para->curr_offset=0;
+	if(curr_elem->father==NULL)
+		curr_elem->father=my_para->parent_elem;
+	curr_elem->limit=1;
+	my_para->parent_elem=curr_elem;
 	return 0;
 }
 
@@ -499,6 +540,13 @@ int _create_template_exitstruct(void * addr,void * data,void * elem, void * para
 	struct elem_template * curr_elem=elem;
 	if(curr_elem->elem_desc->type == CUBE_TYPE_ARRAY)
 	{
+		struct elem_template * temp_elem;
+		temp_elem= _get_elem_by_name(my_para->curr_node,curr_elem->elem_desc->def);
+		if(temp_elem==NULL)
+			return -EINVAL;
+		if(!_isvalidvalue(temp_elem->elem_desc->type))
+			return -EINVAL;
+		curr_elem->def=temp_elem;
 		curr_elem->size=sizeof(void *);
 		my_para->curr_offset=curr_elem->offset+curr_elem->size;
 	}
@@ -506,7 +554,9 @@ int _create_template_exitstruct(void * addr,void * data,void * elem, void * para
 	{
 		curr_elem->size=my_para->curr_offset-curr_elem->offset;
 	}
-	
+	my_para->parent_elem=curr_elem->father;
+	curr_elem->limit=0;
+	curr_elem->index=0;
 	return 0;
 }
 
@@ -548,6 +598,7 @@ int _create_template_proc_func(void * addr,void * data,void * elem, void * para)
 		my_para->curr_offset+=curr_elem->size;
 		
 	}
+	curr_elem->father=my_para->parent_elem;
 	return 0;
 }
 
@@ -1076,7 +1127,6 @@ int    _elem_set_text_value(void * addr,char * text,void * elem)
 				offset+=ret;
 			}
 			return offset;
-//			Memcpy(*(char **)elem_addr,text,ret);
 		}
 		else
 		{
@@ -1087,6 +1137,30 @@ int    _elem_set_text_value(void * addr,char * text,void * elem)
 	}
 	return ret;
 } 
+
+
+int struct_2_blob_enterstruct(void * addr, void * data, void * elem,void * para)
+{
+	struct default_para  * my_para = para;
+	struct elem_template	* curr_elem=elem;
+	if(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY)
+	{
+		if(curr_elem->limit==0)
+		{
+			curr_elem->limit=_elem_get_defvalue(curr_elem,addr);
+			curr_elem->index=0;
+		}
+	}
+	return 0;		
+}
+
+int struct_2_blob_exitstruct(void * addr, void * data, void * elem,void * para)
+{
+	struct default_para  * my_para = para;
+	struct elem_template	* curr_elem=elem;
+
+	return 0;		
+}
 
 
 int proc_struct_2_blob(void * addr,void * data,void * elem,void * para)
@@ -1106,6 +1180,8 @@ int struct_2_blob(void * addr, void * blob, void * struct_template)
 	int ret;
 	struct struct_deal_ops struct_2_blob_ops =
 	{
+		.enterstruct=&struct_2_blob_enterstruct,
+		.exitstruct=&struct_2_blob_exitstruct,
 		.proc_func=&proc_struct_2_blob,
 	};	
 	static struct default_para my_para;

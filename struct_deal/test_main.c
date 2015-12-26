@@ -27,14 +27,22 @@
 #include "../include/json.h"
 #include "../include/struct_deal.h"
 
+typedef struct uuid_head
+{
+	BYTE uuid[DIGEST_SIZE];
+	char name[DIGEST_SIZE];
+	int type;
+	int subtype;
+}__attribute__((packed)) UUID_HEAD;
+
 struct connect_login
 {
     char user[DIGEST_SIZE];
     char * passwd;
-//    char nonce[DIGEST_SIZE];
+    char nonce[DIGEST_SIZE];
 } __attribute__((packed));
 
-
+/*
 struct verify_login
 {
 	char uuid[DIGEST_SIZE];
@@ -45,14 +53,42 @@ struct verify_login
 	char *uuidlist;
 	void * namelist;
 } __attribute__((packed));
-
+*/
 static struct struct_elem_attr connect_login_desc[]=
 {
     {"user",CUBE_TYPE_STRING,DIGEST_SIZE,NULL,NULL},
     {"passwd",CUBE_TYPE_ESTRING,sizeof(char *),NULL,NULL},
+    {"nonce",CUBE_TYPE_STRING,DIGEST_SIZE,NULL,NULL},
     {NULL,CUBE_TYPE_ENDDATA,0,NULL}
 };
 
+struct struct_elem_attr uuid_head_desc[] =
+{
+	{"uuid",CUBE_TYPE_UUID,DIGEST_SIZE,NULL},
+	{"name",CUBE_TYPE_STRING,DIGEST_SIZE,NULL},
+	{"type",CUBE_TYPE_ENUM,sizeof(int),NULL},
+	{"subtype",CUBE_TYPE_ENUM,sizeof(int),NULL},
+	{NULL,CUBE_TYPE_ENDDATA,0,NULL}
+};
+
+static struct struct_elem_attr login_db_desc[] =
+{
+    	{"head",CUBE_TYPE_SUBSTRUCT,0,&uuid_head_desc,NULL},
+   	{"record_no",CUBE_TYPE_INT,sizeof(int),NULL,NULL},
+    	{"login_list",CUBE_TYPE_ARRAY,0,&connect_login_desc,"record_no"},
+	{NULL,CUBE_TYPE_ENDDATA,0,NULL}
+	
+};
+
+struct login_db
+{
+	UUID_HEAD head;
+	int record_no;
+	struct connect_login * login_list;
+}__attribute__((packed));
+
+
+/*
 static struct struct_elem_attr verify_login_desc[]=
 {
     {"uuid",CUBE_TYPE_UUID,DIGEST_SIZE,NULL,NULL},
@@ -64,22 +100,35 @@ static struct struct_elem_attr verify_login_desc[]=
     {"namelist",CUBE_TYPE_DEFNAMELIST,DIGEST_SIZE,NULL,"listnum"},
     {NULL,CUBE_TYPE_ENDDATA,0,NULL,NULL}
 };
+*/
 
 int main() {
 
-//	struct connect_login test_login={"HuJun","openstack"};
-	struct verify_login test_login={"",{"HuJun","openstack"},"0x20","",4,"",		""};
-	char buffer[512];
-	char buffer1[512];
-	char text[512];
-	char text1[512];
+	char * name_list[] = {
+		"Hujun",
+		"Taozheng",
+		"Wangyubo",
+		NULL
+	};
+	char * passwd_list[] = {
+		"openstack",
+		"passwd",
+		"baixibao",
+		NULL,
+	};
+//	struct verify_login test_login={"",{"HuJun","openstack"},"0x20","",4,"",		""};
+	char buffer[4096];
+	char buffer1[4096];
+	char text[4096];
+	char text1[4096];
 	void * root;
 //	char * json_string = "{\"login_info\":{\"user\":\"HuJun\","
 //		"\"passwd\":\"openstack\"},\"nonce_len\":\"0x20\","
 //		"\"nonce\":\"AAAAAAAABBBBBBBBCCCCCCCCDDDDEEFG\"}";
 	int ret;
-	struct verify_login * recover_struct;
-	struct verify_login * recover_struct1;
+	struct login_db init_struct;
+	struct login_db * recover_struct;
+	struct login_db * recover_struct1;
 	
 	//char * namelist= "login_info.user,login_info.passwd";
 //	char * namelist= "login_info";
@@ -87,9 +136,29 @@ int main() {
 	int i;
 
   	mem_init();
-	test_login.nonce=Calloc(0x20);
+	struct_deal_init();
+
+
+	Memset(init_struct.head.uuid,'B',0x20);
+	Strcpy(init_struct.head.name,"login_list");
+	init_struct.head.type=1025;
+	init_struct.head.subtype=6;
+
+	for(i=0;name_list[i]!=NULL;i++);
+	init_struct.record_no=i;
+
+	ret=Galloc0(&init_struct.login_list,sizeof(struct connect_login)*init_struct.record_no);
+	for(i=0;i<init_struct.record_no;i++)
+	{
+		Strncpy(init_struct.login_list[i].user,name_list[i],DIGEST_SIZE);
+		init_struct.login_list[i].passwd=passwd_list[i];
+		Memset(init_struct.login_list[i].nonce, 'A'+(char)i,DIGEST_SIZE);
+		
+	}
+	
+/*
+	nonce=Calloc(0x20);
 	memset(test_login.nonce,'A',0x20);
-	memset(test_login.uuid,'B',0x20);
 	test_login.uuidlist=Calloc(DIGEST_SIZE*4);
 	memset(test_login.uuidlist,'C',DIGEST_SIZE*4);
 	test_login.namelist=Calloc(sizeof(NAME2VALUE)*test_login.listnum);
@@ -104,14 +173,13 @@ int main() {
 	namelist[1].value=2;
 	namelist[2].value=4;
 	namelist[3].value=5;
-
-	struct_deal_init();
+*/
 
 //	recover_struct=Calloc(sizeof(struct verify_login));
-    	void * struct_template=create_struct_template(verify_login_desc);
+    	void * struct_template=create_struct_template(login_db_desc);
 	recover_struct=Calloc(struct_size(struct_template));
 	recover_struct1=Calloc(struct_size(struct_template));
-	ret=struct_2_blob(&test_login,buffer,struct_template);	
+	ret=struct_2_blob(&init_struct,buffer,struct_template);	
 	printf("get %d size blob!\n",ret);
 
 /*
