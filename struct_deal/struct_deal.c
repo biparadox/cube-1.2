@@ -1138,6 +1138,16 @@ int struct_2_blob_enterstruct(void * addr, void * data, void * elem,void * para)
 			curr_elem->index=0;
 		}
 	}
+	else if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
+	{
+		if(curr_elem->limit==0)
+		{
+			curr_elem->limit=curr_elem->elem_desc->size;
+			if(curr_elem->limit==0)
+				curr_elem->limit=1;
+			curr_elem->index=0;
+		}
+	}
 	return 0;		
 }
 
