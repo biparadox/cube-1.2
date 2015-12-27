@@ -124,6 +124,10 @@ static inline void * _elem_get_addr(void * elem,void * addr)
 			offset_array[limit]+=curr_elem->size * curr_elem->index;
 			offset_array[++limit]=curr_elem->offset;
 		}
+		else if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
+		{
+			offset_array[limit]+=curr_elem->offset+curr_elem->size*curr_elem->index;
+		}
 		else
 		{
 			offset_array[limit]+=curr_elem->offset;
@@ -135,6 +139,8 @@ static inline void * _elem_get_addr(void * elem,void * addr)
 	for(i=limit;i>0;i--)
 	{
 		addr=*((void **)(addr+offset_array[i]));
+		if(addr==NULL)
+			return NULL;
 		
 	}
 	return addr+offset_array[0];

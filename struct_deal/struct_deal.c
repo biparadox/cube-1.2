@@ -1130,22 +1130,16 @@ int struct_2_blob_enterstruct(void * addr, void * data, void * elem,void * para)
 {
 	struct default_para  * my_para = para;
 	struct elem_template	* curr_elem=elem;
-	if(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY)
+	if(curr_elem->limit==0)
 	{
-		if(curr_elem->limit==0)
-		{
+		curr_elem->index=0;
+		if(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY)
 			curr_elem->limit=_elem_get_defvalue(curr_elem,addr);
-			curr_elem->index=0;
-		}
-	}
-	else if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
-	{
-		if(curr_elem->limit==0)
+		else if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
 		{
 			curr_elem->limit=curr_elem->elem_desc->size;
 			if(curr_elem->limit==0)
 				curr_elem->limit=1;
-			curr_elem->index=0;
 		}
 	}
 	return 0;		
@@ -1213,6 +1207,8 @@ int struct_2_part_blob(void * addr,void * blob, void * struct_template,int flag)
 	struct struct_deal_ops struct_2_blob_ops =
 	{
 		.testelem=part_deal_test,
+		.enterstruct=&struct_2_blob_enterstruct,
+		.exitstruct=&struct_2_blob_exitstruct,
 		.proc_func=&proc_struct_2_blob,
 	};	
 	static struct part_deal_para my_para;
@@ -1225,6 +1221,36 @@ int struct_2_part_blob(void * addr,void * blob, void * struct_template,int flag)
 }
 
 
+int blob_2_struct_enterstruct(void * addr, void * data, void * elem,void * para)
+{
+	int ret;
+	struct default_para  * my_para = para;
+	struct elem_template	* curr_elem=elem;
+	void * elem_addr;
+	if(curr_elem->limit==0)
+	{
+		curr_elem->index=0;
+		if(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY)
+		{
+			curr_elem->limit=_elem_get_defvalue(curr_elem,addr);
+			if(curr_elem->father==NULL)
+				elem_addr=addr;
+			else
+				elem_addr=_elem_get_addr(curr_elem->father,addr);
+			elem_addr+=curr_elem->offset;
+			
+			if(curr_elem->limit>0)
+				ret=Palloc0(elem_addr,curr_elem->size*curr_elem->limit);
+		}
+		else if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
+		{
+			curr_elem->limit=curr_elem->elem_desc->size;
+			if(curr_elem->limit==0)
+				curr_elem->limit=1;
+		}
+	}
+	return 0;		
+}
 int proc_blob_2_struct(void * addr,void * data,void * elem,void * para)
 {
 	struct default_para  * my_para = para;
@@ -1241,6 +1267,7 @@ int blob_2_struct(void * blob, void * addr, void * struct_template)
 	int ret;
 	struct struct_deal_ops blob_2_struct_ops =
 	{
+		.enterstruct=&blob_2_struct_enterstruct,
 		.proc_func=&proc_blob_2_struct,
 	};	
 	static struct default_para my_para;
