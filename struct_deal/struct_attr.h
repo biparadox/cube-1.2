@@ -126,8 +126,7 @@ static inline void * _elem_get_addr(void * elem,void * addr)
 		}
 		else
 		{
-			if(offset_array[limit]==0)
-				offset_array[limit]=curr_elem->offset;
+			offset_array[limit]+=curr_elem->offset;
 		}
 		curr_elem=curr_elem->father;
 	}

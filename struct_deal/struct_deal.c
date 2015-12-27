@@ -360,17 +360,15 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 				if(ret<0)
 					return ret;
 			}
-			if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
-				curr_node->temp_var++;
-			else if(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY)
+			curr_elem->index++;
+			if((curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
+				||(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY))
 			{	
 				if(curr_elem->index>=curr_elem->limit)
 				{
 					curr_node->temp_var++;
 					curr_elem->limit=0;
 				}
-				else
-					curr_elem->index++;
 			}
 			else
 				return -EINVAL;
@@ -387,7 +385,8 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 			}
 		}
 			// throughout the node tree: into the sub_struct
-		if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
+		if((curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
+			||(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY))
 		{
 			if(funcs->enterstruct!=NULL)
 			{
@@ -396,33 +395,16 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 				if(ret<0)
 					return ret;
 			}
-			if(curr_elem->limit==0)
+			if(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY)
 			{
-				curr_node->temp_var++;
-				continue;
+				if(curr_elem->limit==0)
+				{
+					curr_node->temp_var++;
+					continue;
+				}
 			}
 			curr_node=curr_elem->ref;
 			curr_node->temp_var=0;
-			continue;
-		}
-		else if(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY)
-		{
-//			if(curr_elem->limit==0)
-//			{
-//				curr_elem->limit=_elem_get_defvalue(curr_elem,addr);
-//				if(curr_elem->limit<=0)
-//					return -EINVAL;
-//				curr_elem->index=0;
-//			}
-			curr_node=curr_elem->ref;
-			curr_node->temp_var=0;
-			if(funcs->enterstruct!=NULL)
-			{
-				ret=funcs->enterstruct(addr,data,curr_elem,
-					para);
-				if(ret<0)
-					return ret;
-			}
 			continue;
 		}
 		// get this elem's ops
@@ -529,6 +511,7 @@ int _create_template_enterstruct(void * addr,void * data,void * elem, void * par
 		curr_elem->father=my_para->parent_elem;
 	curr_elem->limit=1;
 	my_para->parent_elem=curr_elem;
+	my_para->curr_offset=0;
 	return 0;
 }
 
@@ -549,14 +532,18 @@ int _create_template_exitstruct(void * addr,void * data,void * elem, void * para
 		curr_elem->def=temp_elem;
 		curr_elem->size=my_para->curr_offset;
 		my_para->curr_offset=curr_elem->offset+sizeof(void *);
+		curr_elem->limit=0;
 	}
 	else
 	{
-		curr_elem->size=my_para->curr_offset-curr_elem->offset;
+		curr_elem->size=my_para->curr_offset;
+		curr_elem->limit=curr_elem->elem_desc->size;
+		if(curr_elem->limit==0)
+			curr_elem->limit=1;
+		my_para->curr_offset=curr_elem->offset+curr_elem->size*curr_elem->limit;
 	}
 	my_para->parent_elem=curr_elem->father;
-	curr_elem->limit=0;
-	curr_elem->index=0;
+	curr_elem->index=curr_elem->limit;
 	return 0;
 }
 
