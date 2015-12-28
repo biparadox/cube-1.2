@@ -72,6 +72,7 @@ static inline int _ispointerelem(int type)
 		case CUBE_TYPE_UUIDARRAY:
 		case CUBE_TYPE_DEFUUIDARRAY:
 		case CUBE_TYPE_DEFNAMELIST:
+		case CUBE_TYPE_ARRAY:
 			return 1;
 		default:
 			return 0;

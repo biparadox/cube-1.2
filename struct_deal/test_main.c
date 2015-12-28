@@ -75,8 +75,8 @@ static struct struct_elem_attr login_db_desc[] =
 {
     	{"head",CUBE_TYPE_SUBSTRUCT,0,&uuid_head_desc,NULL},
    	{"record_no",CUBE_TYPE_INT,sizeof(int),NULL,NULL},
-    	{"login_list1",CUBE_TYPE_SUBSTRUCT,3,&connect_login_desc,NULL},
     	{"login_list2",CUBE_TYPE_ARRAY,0,&connect_login_desc,"record_no"},
+    	{"login_list1",CUBE_TYPE_SUBSTRUCT,3,&connect_login_desc,NULL},
 	{NULL,CUBE_TYPE_ENDDATA,0,NULL}
 	
 };
@@ -85,8 +85,8 @@ struct login_db
 {
 	UUID_HEAD head;
 	int record_no;
-	struct connect_login login_list1[3];
 	struct connect_login * login_list2;
+	struct connect_login login_list1[3];
 }__attribute__((packed));
 
 
@@ -186,8 +186,16 @@ int main() {
 
 //	recover_struct=Calloc(sizeof(struct verify_login));
     	void * struct_template=create_struct_template(login_db_desc);
-	recover_struct=Calloc(struct_size(struct_template));
-	recover_struct1=Calloc(struct_size(struct_template));
+
+	int size=struct_size(struct_template);
+	printf("this struct's size is %d\n",size);
+
+	ret=Galloc0(&recover_struct,size);
+	if(ret<0)
+		return ret;
+	ret=Galloc0(&recover_struct1,size);
+	if(ret<0)
+		return ret;
 	ret=struct_2_blob(&init_struct,buffer,struct_template);	
 	printf("get %d size blob!\n",ret);
 

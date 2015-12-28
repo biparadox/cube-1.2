@@ -620,134 +620,6 @@ void * create_struct_template(struct struct_elem_attr * struct_desc)
 	return root_node;
 }
 
-
-/*
-void * create_struct_template(struct struct_elem_attr * struct_desc)
-{
-	STRUCT_NODE * root_node;
-	STRUCT_NODE * curr_node;
-	STRUCT_NODE * temp_node;
-	struct elem_template * curr_elem;
-	int offset=0;
-	int curr_offset=0;
-	int i;
-	struct struct_elem_attr * curr_desc=struct_desc;
-	struct struct_elem_attr * elem_desc;
-	ELEM_OPS * elem_ops;
-	int ret;
-
-	root_node=(STRUCT_NODE *)Calloc0(sizeof(STRUCT_NODE));
-	curr_node=root_node;
-	root_node->struct_desc=struct_desc;
-
-	do {
-	// first step: count elem no and alloc all the struct node;
-		if(curr_node->elem_list==NULL)
-		{
-			curr_desc=curr_node->struct_desc;
-			curr_node->elem_no=_count_struct_num(curr_desc);
-			if(curr_node->elem_no<=0)
-				return NULL;
-			ret=Palloc0(&(curr_node->elem_list),sizeof(struct elem_template )*curr_node->elem_no);
-			if(ret<0)
-				return NULL;
-			for(i=0;i<curr_node->elem_no;i++)
-			{
-				curr_node->elem_list[i].father=NULL;
-			}
-			curr_node->offset=offset;
-		}
-		curr_elem=&curr_node->elem_list[curr_node->temp_var];
-		elem_desc=&curr_desc[curr_node->temp_var];
-			
-		if((elem_desc->type<0)||(elem_desc->type>CUBE_TYPE_ENDDATA))
-			return NULL;
-				
-		if(elem_desc->name==NULL)
-		{
-			curr_node->size=offset-curr_node->offset;
-			curr_node=curr_node->parent;
-			if(curr_node==NULL)
-				break;
-			curr_desc=curr_node->struct_desc;
-			continue;
-		}
-			// process the child struct
-		if(elem_desc->type==CUBE_TYPE_SUBSTRUCT)
-		{
-			ret=Palloc0(&(curr_elem->ref),sizeof(STRUCT_NODE));
-			if(ret<0)
-				return NULL;
-			temp_node=(STRUCT_NODE *)curr_elem->ref;
-			temp_node->parent=curr_node;
-			temp_node->struct_desc=elem_desc->ref;
-			curr_node->temp_var++;
-			curr_node=temp_node;
-			curr_elem->elem_desc=elem_desc;
-			curr_elem->offset=offset;
-			curr_node->offset=offset;
-			continue;	
-		}
-		if(elem_desc->type==CUBE_TYPE_ENDDATA)
-		{
-			curr_node->size=offset-curr_node->offset;
-			curr_node=curr_node->parent;
-			if(curr_node==NULL)
-				break;
-			curr_desc=curr_node->struct_desc;
-			continue;
-		}
-		// process the defined elem
-		if(_isdefineelem(elem_desc->type))
-		{
-			struct elem_template * temp_elem;
-			temp_elem  = _get_elem_by_name(curr_node,elem_desc->def);
-			if(temp_elem==NULL)
-				return NULL;
-			if(temp_elem->elem_desc==NULL)
-				return NULL;
-			if(!_isvalidvalue(temp_elem->elem_desc->type))
-				return NULL;
-			temp_elem->def = (void *)DEFINE_TAG;
-
-			curr_elem->def=temp_elem;
-			elem_ops=struct_deal_ops[elem_desc->type];
-			if(elem_ops==NULL)
-				return NULL;
-			curr_elem->elem_desc=elem_desc;
-			curr_elem->offset=offset;
-			curr_elem->size=sizeof(void *);
-			offset+=curr_elem->size;
-		}
-		else
-		{
-			// get this elem's ops
-			elem_ops=struct_deal_ops[elem_desc->type];
-			if(elem_ops==NULL)
-				return NULL;
-			curr_elem->elem_desc=elem_desc;
-			curr_elem->ref=curr_elem->elem_desc->ref;
-			curr_elem->offset=offset;
-			if(elem_ops->elem_size==NULL)
-			{
-				if( (curr_elem->size=get_fixed_elemsize(elem_desc->type))<0)
-					curr_elem->size=elem_desc->size;
-				offset+=curr_elem->size;
-			}
-			else
-			{
-				curr_elem->size=elem_ops->elem_size(curr_elem->elem_desc);
-				offset+=curr_elem->size;
-			}
-		}
-		curr_node->temp_var++;
-	}while(1);
-
-	return root_node;
-
-}
-*/
-
 void free_struct_template(void * struct_template)
 {
 	STRUCT_NODE * root_node=struct_template;
@@ -789,10 +661,12 @@ struct elem_template * _get_last_elem(void * struct_template)
 	STRUCT_NODE * temp_node;
 
 	last_elem=&root_node->elem_list[root_node->elem_no-1];
+/*
 	while(last_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
 	{
 		last_elem=&root_node->elem_list[root_node->elem_no-1];
 	}
+*/
 	return last_elem;
 }
 
@@ -800,6 +674,11 @@ int struct_size(void * struct_template)
 {
 	struct elem_template * last_elem=_get_last_elem(struct_template);
 	ELEM_OPS * elem_ops;
+	int total_size;
+
+	if(last_elem->elem_desc->type == CUBE_TYPE_SUBSTRUCT)
+		return last_elem->offset+last_elem->size*last_elem->elem_desc->size;
+
 	elem_ops=struct_deal_ops[last_elem->elem_desc->type];
 	if((elem_ops==NULL)|| (elem_ops->elem_size==NULL))
 		return last_elem->offset+last_elem->elem_desc->size;
@@ -1285,6 +1164,7 @@ int blob_2_part_struct(void * blob,void * addr, void * struct_template,int flag)
 	struct struct_deal_ops blob_2_struct_ops =
 	{
 		.testelem=part_deal_test,
+		.enterstruct=&blob_2_struct_enterstruct,
 		.proc_func=&proc_blob_2_struct,
 	};	
 	static struct part_deal_para my_para;
@@ -1638,6 +1518,19 @@ int _tojson_enterstruct(void * addr,void * data, void * elem,void * para)
 	_print_elem_name(data,elem,para);
 	*(json_str+my_para->offset)='{';
 	my_para->offset+=1;
+	struct elem_template * curr_elem=elem;
+	if(curr_elem->limit==0)
+	{
+		curr_elem->index=0;
+		if(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY)
+			curr_elem->limit=_elem_get_defvalue(curr_elem,addr);
+		else if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
+		{
+			curr_elem->limit=curr_elem->elem_desc->size;
+			if(curr_elem->limit==0)
+				curr_elem->limit=1;
+		}
+	}
 	return my_para->offset;
 }
 int _tojson_exitstruct(void * addr,void * data, void * elem,void * para)
@@ -1739,10 +1632,34 @@ int _jsonto_enterstruct(void * addr,void * data, void * elem,void * para)
 {
 	struct jsonto_para * my_para=para;
 	struct elem_template	* curr_elem=elem;
+	int ret;
 	void * temp_json_node=json_find_elem(curr_elem->elem_desc->name,my_para->json_node);
 	if(json_get_type(temp_json_node) != JSON_ELEM_MAP)
 		return -EINVAL;
 	my_para->json_node=temp_json_node;
+	void * elem_addr;
+	if(curr_elem->limit==0)
+	{
+		curr_elem->index=0;
+		if(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY)
+		{
+			curr_elem->limit=_elem_get_defvalue(curr_elem,addr);
+			if(curr_elem->father==NULL)
+				elem_addr=addr;
+			else
+				elem_addr=_elem_get_addr(curr_elem->father,addr);
+			elem_addr+=curr_elem->offset;
+			
+			if(curr_elem->limit>0)
+				ret=Palloc0(elem_addr,curr_elem->size*curr_elem->limit);
+		}
+		else if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
+		{
+			curr_elem->limit=curr_elem->elem_desc->size;
+			if(curr_elem->limit==0)
+				curr_elem->limit=1;
+		}
+	}
 	return 1;
 }
 int _jsonto_exitstruct(void * addr,void * data, void * elem,void * para)
