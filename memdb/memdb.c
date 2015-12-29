@@ -312,7 +312,7 @@ int memdb_init()
 	}
 
 
-	// init the index db
+	// init the index db's template
 	base_struct_template=create_struct_template(&struct_index_desc);
 //	struct_set_flag(base_struct_template,CUBE_ELEM_FLAG_TEMP,"name,type");
 //	struct_set_flag(base_struct_template,CUBE_ELEM_FLAG_TEMP<<1,"name,type,size");
@@ -320,12 +320,11 @@ int memdb_init()
 	memdb_set_template(DB_INDEX,0,base_struct_template);
 
 	memdb_set_index(DB_INDEX,0,CUBE_ELEM_FLAG_INDEX,"head.name,head.type,head.subtype,flag,uuid");	
-	// init and set base struct 
-	base_struct_template=create_struct_template(&elem_attr_octet_desc);
-	struct_set_flag(base_struct_template,CUBE_ELEM_FLAG_TEMP,"name,type");
-	struct_set_flag(base_struct_template,CUBE_ELEM_FLAG_TEMP<<1,"name,type,size");
-	
+
+	// init and set struct db's template 
+	base_struct_template=create_struct_template(&struct_define_desc);
 	memdb_set_template(DB_STRUCT_DESC,0,base_struct_template);
+	memdb_set_index(DB_STRUCT_DESC,0,CUBE_ELEM_FLAG_INDEX,"head.name,head.type,head.subtype,elem_no,elem_desc");
 
 	
 	// init and set namelist
@@ -530,7 +529,7 @@ int memdb_print_struct(void * data,char * json_str)
 	json_str[stroffset++]='[';
 	struct_template=memdb_get_template(DB_STRUCT_DESC,0);
 
-	struct_desc=struct_record->elem_desc_list;
+	struct_desc=struct_record->elem_desc;
 	elem_desc=struct_desc;
 
 	for(i=0;i<struct_record->elem_no;i++)
@@ -628,7 +627,7 @@ int _comp_struct_digest(BYTE * digest,void * record)
 
 	for(i=0;i<struct_record->elem_no;i++)
 	{
-		ret=struct_2_blob(&struct_record->elem_desc_list[i],buf+offset,base_struct_template);
+		ret=struct_2_blob(&struct_record->elem_desc[i],buf+offset,base_struct_template);
 		if(ret<0)
 			return ret;
 		offset+=ret;	
@@ -878,7 +877,7 @@ int _read_struct_json(void * root,void ** record)
 			struct_desc_record->head.subtype=0;		
 			struct_desc_record->elem_no=elem_no;		
 			memset(struct_desc_record->head.uuid,0,DIGEST_SIZE);
-			struct_desc_record->elem_desc_list=struct_desc;
+			struct_desc_record->elem_desc=struct_desc;
 			ret=_comp_struct_digest(struct_desc_record->head.uuid,struct_desc_record);
 			if(ret<0)
 				return ret;
@@ -1186,7 +1185,7 @@ int read_memdb_json_desc(void * root,BYTE * uuid)
 			struct_desc_record->head.type=TYPE_STRUCT_DESC;		
 			struct_desc_record->head.subtype=0;		
 			memset(struct_desc_record->head.uuid,0,DIGEST_SIZE);
-			struct_desc_record->elem_desc_list=struct_desc;
+			struct_desc_record->elem_desc=struct_desc;
 			ret=_comp_struct_digest(struct_desc_record->head.uuid,struct_desc_record);
 			if(ret<0)
 				return ret;
@@ -1284,7 +1283,7 @@ int read_memdb_json_desc(void * root,BYTE * uuid)
 	struct_desc_record->head.type=TYPE_STRUCT_DESC;		
 	struct_desc_record->head.subtype=0;		
 	memset(struct_desc_record->head.uuid,0,DIGEST_SIZE);
-	struct_desc_record->elem_desc_list=struct_desc;
+	struct_desc_record->elem_desc=struct_desc;
 	ret=_comp_struct_digest(struct_desc_record->head.uuid,struct_desc_record);
 	if(ret<0)
 		return ret;

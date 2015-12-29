@@ -479,6 +479,9 @@ int _create_template_enterstruct(void * addr,void * data,void * elem, void * par
 	STRUCT_NODE * curr_node = curr_elem->ref;
 	STRUCT_NODE * temp_node;
 	// prepare the root node's elem_list
+//	if(curr_elem->elem_desc->ref==NULL)
+//		return -EINVAL;
+//	curr_node->struct_desc=curr_elem->elem_desc->ref;	
 	curr_node->elem_no=_count_struct_num(curr_node->struct_desc);
 	
 	ret=Palloc0(&(curr_node->elem_list),
@@ -1829,7 +1832,8 @@ int struct_set_flag(void * struct_template,int flag, char * namelist)
 		curr_elem = _get_elem_by_name(root_node,name);
 		if(curr_elem==NULL)
 			return -EINVAL;
-		if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
+		if((curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
+			||(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY))
 		{
 			ret=struct_set_allflag(curr_elem->ref,flag);
 		}
@@ -1840,7 +1844,10 @@ int struct_set_flag(void * struct_template,int flag, char * namelist)
 		count++;
 		if(namelist[offset]==',')
 			offset++;
-		father_node=curr_elem->father;
+		if(curr_elem->father==NULL)
+			father_node=root_node;
+		else
+			father_node=curr_elem->father->ref;
 		do{
 			father_node->flag |= flag;
 			if(father_node==root_node)
@@ -1871,7 +1878,8 @@ int struct_clear_flag(void * struct_template,int flag, char * namelist)
 		curr_elem = _get_elem_by_name(root_node,name);
 		if(curr_elem==NULL)
 			return -EINVAL;
-		if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
+		if((curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
+			||(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY))
 		{
 			ret=struct_set_allflag(curr_elem->ref,flag);
 		}
@@ -1882,12 +1890,17 @@ int struct_clear_flag(void * struct_template,int flag, char * namelist)
 		count++;
 		if(namelist[offset]==',')
 			offset++;
-		father_node=curr_elem->father;
+		if(curr_elem->father==NULL)
+			father_node=root_node;
+		else
+			father_node=curr_elem->father->ref;
 		do {
 			for(i=0;i<father_node->elem_no;i++)
 			{	
 				temp_elem=&father_node->elem_list[i];
-				if(temp_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
+				if((temp_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
+					||(temp_elem->elem_desc->type==CUBE_TYPE_ARRAY))
+					
 				{
 					temp_node=temp_elem->ref;
 					if(temp_node->flag &flag)
