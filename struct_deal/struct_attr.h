@@ -230,15 +230,44 @@ static inline int _elem_set_defvalue(void * elem,void * addr,int value)
 		ret=Itoa(value,buffer);
 		if(ret<0)
 			return -EINVAL;
-		ret=elem_ops->set_text_value(def_addr,buffer,temp_elem);
-		if(ret<0)
-			return -EINVAL;
+		if(elem_ops->set_text_value==NULL)
+		{
+			int str_len=strlen(buffer);
+			if(_ispointerelem(temp_elem->elem_desc->type))
+			{
+				int tempret=Palloc0(def_addr,str_len+1);
+				if(tempret<0)
+					return tempret;
+				Memcpy(*(char **)def_addr,buffer,str_len+1);
+			}
+			else
+			{
+				Memcpy(def_addr,buffer,str_len);
+			}
+			
+		}
+		else
+		{
+			ret=elem_ops->set_text_value(def_addr,buffer,temp_elem);
+			if(ret<0)
+				return -EINVAL;
+		}
 	}
 	else
 	{
-		ret=elem_ops->set_bin_value(def_addr,&value,temp_elem);
-		if(ret<0)
-			return -EINVAL;
+		if(elem_ops->set_bin_value==NULL)
+		{
+			ret=get_fixed_elemsize(temp_elem->elem_desc->type);
+			if(ret<=0)
+				return -EINVAL;
+			Memcpy(def_addr,&value,ret);
+		}
+		else
+		{
+			ret=elem_ops->set_bin_value(def_addr,&value,temp_elem);
+			if(ret<0)
+				return -EINVAL;
+		}
 	}
 	return value;
 }

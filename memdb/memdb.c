@@ -859,11 +859,11 @@ int _read_struct_json(void * root,void ** record)
 	if(desc_node ==NULL)
 		return -EINVAL;
 
-	temp_node = json_find_elem("elem_no",root_node);
-	if(temp_node == NULL)
-	{
-		struct_desc_record-> elem_no = json_get_elemno(desc_node);
-	}
+//	temp_node = json_find_elem("elem_no",root_node);
+//	if(temp_node == NULL)
+//	{
+//		struct_desc_record-> elem_no = json_get_elemno(desc_node);
+//	}
 	
 	ret=json_2_struct(root_node,struct_desc_record,struct_template);
 
