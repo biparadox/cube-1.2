@@ -353,6 +353,7 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 			temp_node=curr_node;
 			curr_node=curr_node->parent;
 			curr_elem=&curr_node->elem_list[curr_node->temp_var];
+			curr_elem->index++;
 			if(funcs->exitstruct!=NULL)
 			{
 				ret=funcs->exitstruct(addr,data,curr_elem,
@@ -360,7 +361,6 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 				if(ret<0)
 					return ret;
 			}
-			curr_elem->index++;
 			if((curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
 				||(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY))
 			{	
@@ -1518,12 +1518,10 @@ int _tojson_enterstruct(void * addr,void * data, void * elem,void * para)
 {
 	struct default_para * my_para=para;
 	char * json_str=data;
-	_print_elem_name(data,elem,para);
-	*(json_str+my_para->offset)='{';
-	my_para->offset+=1;
 	struct elem_template * curr_elem=elem;
 	if(curr_elem->limit==0)
 	{
+		_print_elem_name(data,elem,para);
 		curr_elem->index=0;
 		if(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY)
 			curr_elem->limit=_elem_get_defvalue(curr_elem,addr);
@@ -1533,16 +1531,34 @@ int _tojson_enterstruct(void * addr,void * data, void * elem,void * para)
 			if(curr_elem->limit==0)
 				curr_elem->limit=1;
 		}
+		if(curr_elem->limit>1)
+		{
+			*(json_str+my_para->offset)='[';
+			my_para->offset++;
+		}
 	}
+	*(json_str+my_para->offset)='{';
+	my_para->offset++;
 	return my_para->offset;
 }
 int _tojson_exitstruct(void * addr,void * data, void * elem,void * para)
 {
 	struct default_para * my_para=para;
 	char * json_str=data;
+	struct elem_template * curr_elem=elem;
 
 	*(json_str+my_para->offset)='}';
-	my_para->offset+=1;
+	my_para->offset++;
+	
+	if((curr_elem->limit>1)&&
+		(curr_elem->index>=curr_elem->limit))
+	{
+		*(json_str+my_para->offset)=']';
+		my_para->offset++;
+	}
+	*(json_str+my_para->offset)=',';
+	my_para->offset++;
+
 	return my_para->offset;
 }
 
@@ -1573,8 +1589,10 @@ int _tojson_finish(void * addr, void * data,void *elem,void * para)
 	struct default_para * my_para=para;
 	char * json_str=data;
 	
+	if(my_para->offset>1)
+		my_para->offset--;
 	*(json_str+my_para->offset)='}';
-	my_para->offset+=1;
+	my_para->offset++;
 	*(json_str+my_para->offset)='\0';
 	return 1;	
 }
@@ -1636,17 +1654,30 @@ int _jsonto_enterstruct(void * addr,void * data, void * elem,void * para)
 	struct jsonto_para * my_para=para;
 	struct elem_template	* curr_elem=elem;
 	int ret;
-	void * temp_json_node=json_find_elem(curr_elem->elem_desc->name,my_para->json_node);
-	if(json_get_type(temp_json_node) != JSON_ELEM_MAP)
-		return -EINVAL;
-	my_para->json_node=temp_json_node;
+	void * temp_json_node;
 	void * elem_addr;
+
 	if(curr_elem->limit==0)
 	{
+		temp_json_node=json_find_elem(curr_elem->elem_desc->name,my_para->json_node);
+		if((json_get_type(temp_json_node) != JSON_ELEM_MAP)
+			&&(json_get_type(temp_json_node) != JSON_ELEM_ARRAY))
+			return -EINVAL;
+		my_para->json_node=temp_json_node;
 		curr_elem->index=0;
 		if(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY)
 		{
 			curr_elem->limit=_elem_get_defvalue(curr_elem,addr);
+			if(curr_elem->limit==0)
+			{
+				curr_elem->limit=json_get_elemno(temp_json_node);
+				if(curr_elem->limit<0)
+					return -EINVAL;
+				ret=_elem_set_defvalue(curr_elem,addr,curr_elem->limit);
+				if(ret<0)
+					return -EINVAL;
+				
+			}
 			if(curr_elem->father==NULL)
 				elem_addr=addr;
 			else
@@ -1663,13 +1694,36 @@ int _jsonto_enterstruct(void * addr,void * data, void * elem,void * para)
 				curr_elem->limit=1;
 		}
 	}
+	if(curr_elem->limit>1)
+	{
+		if(curr_elem->index==0)
+		{
+			my_para->json_node=json_get_first_child(my_para->json_node);
+			if(my_para->json_node==NULL)
+				return -EINVAL;
+		}
+		else
+		{
+			my_para->json_node=json_get_next_child(my_para->json_node);
+			if(my_para->json_node==NULL)
+				return -EINVAL;
+		}
+	}
 	return 1;
 }
 int _jsonto_exitstruct(void * addr,void * data, void * elem,void * para)
 {
 	struct jsonto_para * my_para=para;
 	void * temp_json_node=json_get_father(my_para->json_node);
+	struct elem_template	* curr_elem=elem;
 	my_para->json_node=temp_json_node;
+	if(curr_elem->index>=curr_elem->limit)
+	{
+		if(curr_elem->limit>1)
+		{
+			my_para->json_node=json_get_father(temp_json_node);
+		}
+	}
 
 	return 1;
 }

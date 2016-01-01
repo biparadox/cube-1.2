@@ -200,4 +200,47 @@ static inline int _elem_get_defvalue(void * elem,void * addr)
 	return define_value;
 }
 
+static inline int _elem_set_defvalue(void * elem,void * addr,int value)
+{
+	struct elem_template * curr_elem=elem;
+	struct elem_template * temp_elem=curr_elem->def;
+	ELEM_OPS * elem_ops;
+	void * def_addr;
+	int ret;
+	if(temp_elem==NULL)
+		return -EINVAL;
+	
+	if((value<0)|| (value>1024))
+		return -EINVAL;
+	
+
+	elem_ops=struct_deal_ops[temp_elem->elem_desc->type];
+	if(elem_ops==NULL)
+		return NULL;
+
+	// now compute the define elem's offset
+
+	def_addr=_elem_get_addr(temp_elem,addr);
+	// if define elem is an elem in curr_elem's father subset
+	
+	char buffer[DIGEST_SIZE];
+	if((temp_elem->elem_desc->type == CUBE_TYPE_STRING)
+		||(temp_elem->elem_desc->type == CUBE_TYPE_ESTRING))
+	{
+		ret=Itoa(value,buffer);
+		if(ret<0)
+			return -EINVAL;
+		ret=elem_ops->set_text_value(def_addr,buffer,temp_elem);
+		if(ret<0)
+			return -EINVAL;
+	}
+	else
+	{
+		ret=elem_ops->set_bin_value(def_addr,&value,temp_elem);
+		if(ret<0)
+			return -EINVAL;
+	}
+	return value;
+}
+
 #endif

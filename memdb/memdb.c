@@ -836,6 +836,7 @@ int _read_struct_json(void * root,void ** record)
 	void * father_node = root;
 	void * curr_node = root;
 	void * temp_node = NULL;
+	void * desc_node = NULL;
 	void * struct_template ; 
 	int i;
 	int elem_no;
@@ -848,12 +849,30 @@ int _read_struct_json(void * root,void ** record)
 	struct elem_attr_octet * elem_desc; 
 	
 	struct_template=memdb_get_template(DB_STRUCT_DESC,0);
-	
-	elem_no = json_get_elemno(father_node);
-	
-	ret=Galloc(&struct_desc,sizeof(struct elem_attr_octet)*(elem_no+1));
+	if(struct_template==NULL)
+		return -EINVAL;
+	ret=Galloc0(&struct_desc_record,struct_size(struct_template));
 	if(ret<0)
 		return ret;
+	
+	desc_node = json_find_elem("elem_desc",root_node);
+	if(desc_node ==NULL)
+		return -EINVAL;
+
+	temp_node = json_find_elem("elem_no",root_node);
+	if(temp_node == NULL)
+	{
+		struct_desc_record-> elem_no = json_get_elemno(desc_node);
+	}
+	
+	ret=json_2_struct(root_node,struct_desc_record,struct_template);
+
+
+//	ret=Galloc(&struct_desc,sizeof(struct elem_attr_octet)*(elem_no+1));
+	if(ret<0)
+		return ret;
+
+/*
 	json_node_set_pointer(father_node,struct_desc);
 
 	i=0;
@@ -971,6 +990,7 @@ int _read_struct_json(void * root,void ** record)
 		i++;
 
 	}while(curr_node!=root_node);
+*/
 	*record=struct_desc_record;
 	
 	return 0;
@@ -987,14 +1007,14 @@ int read_struct_json_desc(void * root, BYTE * uuid)
 
 	if(json_get_type(root)!= JSON_ELEM_MAP)
 		return -EINVAL;
-
+/*
 	temp_node=json_find_elem("desc",root);
 	if(temp_node==NULL)
 		return -EINVAL;
 	if(json_get_type(temp_node)!=JSON_ELEM_ARRAY)
 		return -EINVAL;	
-
-	ret = _read_struct_json(temp_node,&struct_desc_record);
+*/
+	ret = _read_struct_json(root,&struct_desc_record);
 	if(ret<0)
 		return ret;
 	
