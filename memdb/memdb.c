@@ -516,40 +516,12 @@ int memdb_print_struct(void * data,char * json_str)
 	struct elem_attr_octet * struct_desc; 	
 	struct elem_attr_octet * elem_desc; 
 
-	head_template = create_struct_template(&struct_record_head_desc);
-	if(head_template==NULL)
-		return -EINVAL;
-
-	ret=struct_2_json(data,json_str,head_template);
-	if(ret<0)
-		return ret;
-	stroffset+=ret;
-
-	json_str[stroffset-1]=',';
-	json_str[stroffset++]='[';
 	struct_template=memdb_get_template(DB_STRUCT_DESC,0);
 
-	struct_desc=struct_record->elem_desc;
-	elem_desc=struct_desc;
-
-	for(i=0;i<struct_record->elem_no;i++)
-	{
-		if(get_fixed_elemsize(elem_desc->type)>0)
-			ret=struct_2_part_json(elem_desc,json_str+stroffset,struct_template,CUBE_ELEM_FLAG_TEMP);
-		else if(iselemneeddef(elem_desc->type))
-			ret=struct_2_json(elem_desc,json_str+stroffset,struct_template);
-		else
-			ret=struct_2_part_json(elem_desc,json_str+stroffset,struct_template,CUBE_ELEM_FLAG_TEMP<<1);
-		if(ret<0)
-			return ret;
-		stroffset+=ret;
-		json_str[stroffset++]=',';
-		elem_desc++;
-	}
-	json_str[stroffset++]=']';
-	json_str[stroffset++]='}';
-	json_str[stroffset]=0;
-	return stroffset;
+	ret=struct_2_part_json(struct_record,json_str,struct_template,CUBE_ELEM_FLAG_INDEX);
+	if(ret<0)
+		return ret;
+	return ret;
 }
 
 int memdb_print_namelist(void * namelist,char * json_str)
@@ -610,6 +582,26 @@ int _comp_namelist_digest(BYTE * digest,void * namelist)
 	return 0;
 }
 
+
+int memdb_comp_uuid(void * record, int type,int subtype)
+{
+	BYTE buf[4096];	
+	int blob_size;
+	void * struct_template=memdb_get_template(type,subtype);
+	if(struct_template == NULL)
+		return -EINVAL;
+	if(record==NULL)
+		return -EINVAL;
+	UUID_HEAD * head=record;
+	
+	blob_size=struct_2_part_blob(record,buf,struct_template,CUBE_ELEM_FLAG_INDEX);
+	if(blob_size<0)
+		return blob_size;
+	calculate_context_sm3(buf,blob_size,&head->uuid);
+	
+	return blob_size;
+}
+
 int _comp_struct_digest(BYTE * digest,void * record)
 {
 	BYTE buf[4096];	
@@ -620,20 +612,12 @@ int _comp_struct_digest(BYTE * digest,void * record)
 	void * base_struct_template=memdb_get_template(DB_STRUCT_DESC,0);
 	if(record==NULL)
 		return -EINVAL;
-	memcpy(buf+offset,&struct_record->head.type,sizeof(int));
-	offset+=sizeof(int);
-	memcpy(buf+offset,&struct_record->head.subtype,sizeof(int));
-	offset+=sizeof(int);
+	int blob_size;
+	
+	blob_size=struct_2_part_blob(struct_record,buf,base_struct_template,CUBE_ELEM_FLAG_INDEX);
 
-	for(i=0;i<struct_record->elem_no;i++)
-	{
-		ret=struct_2_blob(&struct_record->elem_desc[i],buf+offset,base_struct_template);
-		if(ret<0)
-			return ret;
-		offset+=ret;	
-	}
 	calculate_context_sm3(buf,offset,digest);
-	return 0;
+	return blob_size;
 }
 
 int _merge_namelist(void * list1, void * list2)
@@ -841,36 +825,116 @@ int _read_struct_json(void * root,void ** record)
 	int i;
 	int elem_no;
 	int elem_size;
+
 	struct struct_desc_record * struct_desc_record;
+	struct struct_desc_record * child_desc_record;
 	BYTE struct_uuid[DIGEST_SIZE];
 
-	struct elem_attr_octet * struct_desc; 	
+	struct elem_attr_octet * struct_desc_octet; 	
+	struct elem_attr_octet * elem_desc_octet; 
 
-	struct elem_attr_octet * elem_desc; 
-	
+	struct struct_elem_attr * struct_desc;
+	struct struct_elem_attr * elem_desc;
+
+	// get the struct_desc_record  's self template	
 	struct_template=memdb_get_template(DB_STRUCT_DESC,0);
 	if(struct_template==NULL)
 		return -EINVAL;
-	ret=Galloc0(&struct_desc_record,struct_size(struct_template));
+
+	// generate the struct_desc_record struct
+
+	ret=Galloc0(&struct_desc_record,sizeof(struct struct_desc_record));
 	if(ret<0)
 		return ret;
-	
-	desc_node = json_find_elem("elem_desc",root_node);
-	if(desc_node ==NULL)
-		return -EINVAL;
 
-//	temp_node = json_find_elem("elem_no",root_node);
-//	if(temp_node == NULL)
-//	{
-//		struct_desc_record-> elem_no = json_get_elemno(desc_node);
-//	}
-	
 	ret=json_2_struct(root_node,struct_desc_record,struct_template);
+
+	if(ret<0)
+		return ret;
+
+	// convert all the ref name to ref uuid
+        // and generate the struct_desc list
+
+	ret=Galloc0(&struct_desc,sizeof(struct struct_elem_attr)*(struct_desc_record->elem_no+1));
+	if(ret<0)
+		return ret;
+	struct_desc_octet=struct_desc_record->elem_desc;
+
+	struct_desc_record->tail_desc=struct_desc;
+
+	for(i=0;i<struct_desc_record->elem_no;i++)
+	{
+		elem_desc_octet=struct_desc_octet+i;
+		elem_desc=struct_desc+i;
+
+		// duplicate all the value except ref		
+
+		ret=Galloc0(&elem_desc->name,Strnlen(elem_desc_octet->name,DIGEST_SIZE));
+		if(ret<0)
+			return ret;
+		Strncpy(elem_desc->name,elem_desc_octet->name,DIGEST_SIZE);
+
+		elem_desc->type=elem_desc_octet->type;
+		elem_desc->size=elem_desc_octet->size;
+		if(elem_desc_octet->def[0]==0)
+			elem_desc->def=NULL;
+		else
+			elem_desc->def=elem_desc_octet->def;
+		
+		// if their is no valid ref
+		if((elem_desc_octet->type == CUBE_TYPE_SUBSTRUCT)
+			||(elem_desc_octet->type == CUBE_TYPE_ARRAY))
+		{
+			
+			if(elem_desc_octet->ref[0]!=0)
+			{
+				child_desc_record=memdb_find(elem_desc_octet->ref,DB_STRUCT_DESC,0);
+			}		
+			else
+			{
+				child_desc_record=memdb_find_byname(elem_desc_octet->ref_name,DB_STRUCT_DESC,0);	
+			}
+			if(child_desc_record==NULL)
+				return -EINVAL;
+			elem_desc->ref=child_desc_record->tail_desc;	
+			if(elem_desc->ref==NULL)
+				return -EINVAL;
+			Memcpy(elem_desc_octet->ref,child_desc_record->head.uuid,DIGEST_SIZE);
+		}
+
+		else if((elem_desc_octet->type == CUBE_TYPE_ENUM)
+			||(elem_desc_octet->type == CUBE_TYPE_FLAG))
+		{
+			if(elem_desc_octet->ref[0]!=0)
+			{
+				child_desc_record=memdb_find(elem_desc_octet->ref,DB_NAMELIST,0);
+			}		
+			else
+			{
+				child_desc_record=memdb_find_byname(elem_desc_octet->ref_name,DB_NAMELIST,0);	
+			}
+			if(child_desc_record==NULL)
+				return -EINVAL;
+			elem_desc->ref=child_desc_record->tail_desc;	
+			if(elem_desc->ref==NULL)
+				return -EINVAL;
+			Memcpy(elem_desc_octet->ref,child_desc_record->head.uuid,DIGEST_SIZE);
+
+		}
+
+	}
+	ret=_comp_struct_digest(struct_desc_record->head.uuid,struct_desc_record);
+	if(ret<0)
+		return ret;
+	memdb_store(struct_desc_record,DB_STRUCT_DESC,0);
+	
+
+	// convett the ref
+
+	// compute the struct's template
 
 
 //	ret=Galloc(&struct_desc,sizeof(struct elem_attr_octet)*(elem_no+1));
-	if(ret<0)
-		return ret;
 
 /*
 	json_node_set_pointer(father_node,struct_desc);

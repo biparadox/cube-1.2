@@ -125,6 +125,16 @@ int main() {
 
 	// test index elem's  store
 
+	void * struct_elem;
+	struct_elem=memdb_find_byname("msghead",DB_STRUCT_DESC,0);
+	if(struct_elem==NULL)
+		printf("read msghead struct error!\n");
+	else
+	{
+		memdb_print_struct(struct_elem,print_buffer);
+		printf("%s\n",print_buffer);
+	}
+
 	INDEX_ELEM * index;
 	index=memdb_get_first(DB_INDEX,0);
 	while(index!=NULL)
