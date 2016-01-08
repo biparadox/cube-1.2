@@ -66,7 +66,7 @@ int read_json_file(char * file_name)
 		if(ret<0)
 		{
 			printf("solve json str error!\n");
-			return ret;
+			break;
 		}
 		json_offset+=ret;
 
@@ -91,6 +91,15 @@ int main() {
 	void * findlist;
 	void * memdb_template ;
 	BYTE uuid[DIGEST_SIZE];
+	int i;
+	
+	char * baseconfig[] =
+	{
+		"baseflag.json",
+		"typelist.json",
+		"subtypelist.json",
+		NULL
+	};
 
 	mem_init();
 	struct_deal_init();
@@ -98,10 +107,13 @@ int main() {
 
 // test namelist reading start
 
-	ret=read_json_file("typelist.json");
-	if(ret<0)
-		return ret;
-	printf("read %d elem from file!\n",ret);
+	for(i=0;baseconfig[i]!=NULL;i++)
+	{
+		ret=read_json_file(baseconfig[i]);
+		if(ret<0)
+			return ret;
+		printf("read %d elem from file %s!\n",ret,baseconfig[i]);
+	}
 
 	
 	int msg_type = memdb_get_typeno("MESSAGE");
@@ -111,30 +123,30 @@ int main() {
 
 	if(findlist!=NULL)
 	{
-		ret=memdb_print_namelist(findlist,print_buffer);
+		ret=memdb_print(findlist,print_buffer);
 		if(ret<0)
 			return -EINVAL;
 		printf("%s\n",print_buffer);
 	}
 // test struct desc reading start
-
+/*
 	ret=read_json_file("msghead.json");
 	if(ret<0)
 		return ret;
-	printf("read %d elem from file!\n");
+	printf("read %d elem from file!\n",ret);
 
 	// test index elem's  store
 
 	void * struct_elem;
-	struct_elem=memdb_find_byname("msghead",DB_STRUCT_DESC,0);
+	struct_elem=memdb_find_byname("msg_head",DB_STRUCT_DESC,0);
 	if(struct_elem==NULL)
 		printf("read msghead struct error!\n");
 	else
 	{
-		memdb_print_struct(struct_elem,print_buffer);
+		memdb_print(struct_elem,print_buffer);
 		printf("%s\n",print_buffer);
 	}
-
+*/
 	INDEX_ELEM * index;
 	index=memdb_get_first(DB_INDEX,0);
 	while(index!=NULL)
@@ -149,7 +161,7 @@ int main() {
 		}
 		if(index->head.type==DB_STRUCT_DESC)
 		{
-			ret=memdb_print_struct(findlist,print_buffer);
+			ret=memdb_print(findlist,print_buffer);
 			if(ret<0)
 				return -EINVAL;
 			
@@ -157,7 +169,7 @@ int main() {
 		}
 		if(memdb_is_elem_namelist(findlist))
 		{
-			ret=memdb_print_namelist(findlist,print_buffer);	
+			ret=memdb_print(findlist,print_buffer);	
 			if(ret<0)
 				return -EINVAL;
 			

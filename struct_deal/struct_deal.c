@@ -1075,11 +1075,11 @@ int part_deal_test(void * addr,void * data,void * elem,void *para)
 {
 	struct part_deal_para * my_para=para;
 	struct elem_template * curr_elem=elem;
-	if(curr_elem->elem_desc->type == CUBE_TYPE_SUBSTRUCT)
-	{
-		STRUCT_NODE * temp_node=curr_elem->ref;
-		return temp_node->flag & my_para->flag;
-	}
+//	if(curr_elem->elem_desc->type == CUBE_TYPE_SUBSTRUCT)
+//	{
+//		STRUCT_NODE * temp_node=curr_elem->ref;
+//		return temp_node->flag & my_para->flag;
+//	}
 	return curr_elem->flag & my_para->flag;	
 }
 
@@ -1818,7 +1818,7 @@ int struct_set_allflag(void * struct_template,int flag)
 			curr_node->temp_var++;
 			curr_node=curr_elem->ref;
 			curr_node->temp_var=0;
-			curr_node->flag |=flag;
+			curr_elem->flag |=flag;
 			continue;
 		}
 		else
@@ -1874,6 +1874,7 @@ int struct_set_flag(void * struct_template,int flag, char * namelist)
 	STRUCT_NODE * root_node=struct_template;
 	STRUCT_NODE * father_node=NULL;
 	struct elem_template * curr_elem;
+	struct elem_template * father_elem;
 	int ret;
 	char name[DIGEST_SIZE+1];
 	int offset=0;
@@ -1886,14 +1887,11 @@ int struct_set_flag(void * struct_template,int flag, char * namelist)
 		curr_elem = _get_elem_by_name(root_node,name);
 		if(curr_elem==NULL)
 			return -EINVAL;
+		curr_elem->flag |= flag;
 		if((curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
 			||(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY))
 		{
 			ret=struct_set_allflag(curr_elem->ref,flag);
-		}
-		else
-		{
-			curr_elem->flag |= flag;
 		}
 		count++;
 		if(namelist[offset]==',')
@@ -1901,14 +1899,15 @@ int struct_set_flag(void * struct_template,int flag, char * namelist)
 		if(curr_elem->father==NULL)
 			father_node=root_node;
 		else
-			father_node=curr_elem->father->ref;
-		do{
-			father_node->flag |= flag;
-			if(father_node==root_node)
-				break;
-			father_node=father_node->parent;
-		}while(1);
-
+		{
+			father_elem=curr_elem->father;
+			father_node=father_elem->ref;
+			while(father_elem!=NULL)
+			{
+				father_elem->flag |= flag;
+				father_elem=father_elem->father;
+			};
+		}
 	}
 	return count;
 }
