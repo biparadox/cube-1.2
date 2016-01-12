@@ -498,12 +498,12 @@ int memdb_reset_baselist()
 
 void * memdb_get_subtypelist(int type)
 {
-	struct struct_namelist * subtypelist;	
+	struct struct_subtypelist * subtypelist;	
 	subtypelist=memdb_get_first(DB_SUBTYPELIST,0);
 
 	while(subtypelist!=NULL)
 	{
-		if(subtypelist->head.subtype==type)
+		if(subtypelist->type==type)
 			return subtypelist;
 		subtypelist=memdb_get_next(DB_SUBTYPELIST,0);
 	}
@@ -835,7 +835,16 @@ int read_typelist_json_desc(void * root,BYTE * uuid)
 		return -EINVAL;
 	ret=struct_set_ref(subtypelist_template,"head.type",baselist->elemlist);
 	ret=struct_set_ref(subtypelist_template,"type",baselist->elemlist);
-
+	void * recordtype_template=memdb_get_template(DB_RECORDTYPE,0);
+	if(recordtype_template==NULL)
+		return -EINVAL;
+	ret=struct_set_ref(recordtype_template,"head.type",baselist->elemlist);
+	ret=struct_set_ref(recordtype_template,"type",baselist->elemlist);
+	
+	struct struct_namelist * baseflag = memdb_find_byname("baseflag",DB_NAMELIST,0);
+	if(baseflag==NULL)
+		return -EINVAL;
+	struct_set_ref(recordtype_template,"index.flag",baseflag->elemlist);
 
 	return ret;	
 }
@@ -1171,13 +1180,6 @@ int read_struct_json_desc(void * root, BYTE * uuid)
 
 	if(json_get_type(root)!= JSON_ELEM_MAP)
 		return -EINVAL;
-/*
-	temp_node=json_find_elem("desc",root);
-	if(temp_node==NULL)
-		return -EINVAL;
-	if(json_get_type(temp_node)!=JSON_ELEM_ARRAY)
-		return -EINVAL;	
-*/
 	ret = _read_struct_json(root,&struct_desc_record);
 	if(ret<0)
 		return ret;
@@ -1227,6 +1229,26 @@ int read_record_json_desc(void * root,BYTE * uuid)
 	if(ret<0)
 		return ret;
 
+	record_type->head.type=DB_RECORDTYPE;
+
+	temp_node=json_find_elem("type",root);
+	if(temp_node==NULL)
+		return -EINVAL;
+	
+
+	ret=struct_write_elem_text("type",record_type,json_get_valuestr(temp_node),struct_template);
+	if(ret<0)
+		return ret;
+
+	struct struct_subtypelist * subtypelist=memdb_get_subtypelist(record_type->type);
+	if(subtypelist==NULL)
+		return -EINVAL;
+
+	ret=struct_set_ref(struct_template,"subtype",subtypelist->tail_desc);
+
+	if(ret<0)
+		return ret;
+
 	ret=json_2_struct(root,record_type,struct_template);
 	if(ret<0)
 		return ret;
@@ -1234,10 +1256,7 @@ int read_record_json_desc(void * root,BYTE * uuid)
 	temp_node=json_find_elem("struct_name",root);
 	if(temp_node!=NULL)
 	{
-		ret= json_node_getvalue(temp_node,buffer,DIGEST_SIZE*2);
-		if(ret<0)
-			return ret;
-		struct_desc_record=memdb_find_byname(buffer,DB_STRUCT_DESC,0);
+		struct_desc_record=memdb_find_byname(json_get_valuestr(temp_node),DB_STRUCT_DESC,0);
 		if(struct_desc_record==NULL)
 			return -EINVAL;
 		Memcpy(record_type->uuid,struct_desc_record->head.uuid,DIGEST_SIZE);
@@ -1252,7 +1271,7 @@ int read_record_json_desc(void * root,BYTE * uuid)
 	ret=memdb_comp_uuid(record_type);
 	if(ret<0)
 		return ret;
-	struct_template=create_struct_template(struct_desc_record);
+	struct_template=create_struct_template(struct_desc_record->tail_desc);
 	if(struct_template==NULL)
 		return -EINVAL;
 	record_type->tail_desc=struct_template;

@@ -56,6 +56,7 @@ int read_json_file(char * file_name)
 	readlen=read(fd,json_buffer,1024);
 	if(readlen<0)
 		return -EIO;
+	json_buffer[readlen]=0;
 	printf("%s\n",json_buffer);
 	close(fd);
 
@@ -98,6 +99,7 @@ int main() {
 		"baseflag.json",
 		"typelist.json",
 		"subtypelist.json",
+		"msghead.json",
 		NULL
 	};
 
