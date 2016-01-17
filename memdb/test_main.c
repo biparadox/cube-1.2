@@ -70,6 +70,8 @@ int read_json_file(char * file_name)
 			break;
 		}
 		json_offset+=ret;
+		if(ret<32)
+			continue;
 
 		ret=memdb_read_desc(root_node,uuid);
 		if(ret<0)
@@ -100,6 +102,7 @@ int main() {
 		"typelist.json",
 		"subtypelist.json",
 		"msghead.json",
+		"headrecord.json",
 		NULL
 	};
 
@@ -121,15 +124,22 @@ int main() {
 	int msg_type = memdb_get_typeno("MESSAGE");
 	if(msg_type<=0)
 		return -EINVAL;
-	findlist=memdb_get_subtypelist(msg_type);
 
-	if(findlist!=NULL)
+	int subtype=memdb_get_subtypeno(msg_type,"HEAD");
+	if(subtype<=0)
+		return -EINVAL;
+
+	void * record;
+	record=memdb_get_first(msg_type,subtype);
+	while(record!=NULL)
 	{
-		ret=memdb_print(findlist,print_buffer);
+		ret=memdb_print(record,print_buffer);
 		if(ret<0)
 			return -EINVAL;
 		printf("%s\n",print_buffer);
+		record=memdb_get_next(msg_type,subtype);
 	}
+
 // test struct desc reading start
 /*
 	ret=read_json_file("msghead.json");
@@ -149,6 +159,7 @@ int main() {
 		printf("%s\n",print_buffer);
 	}
 */
+/*
 	INDEX_ELEM * index;
 	index=memdb_get_first(DB_INDEX,0);
 	while(index!=NULL)
@@ -179,6 +190,6 @@ int main() {
 		}
 		index=memdb_get_next(DB_INDEX,0);
 	}
-
+*/
 	return 0;
 }
