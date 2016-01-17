@@ -1778,11 +1778,11 @@ int part_json_test(void * addr,void * data,void * elem,void *para)
 {
 	struct part_jsonto_para * my_para=para;
 	struct elem_template * curr_elem=elem;
-	if(curr_elem->elem_desc->type == CUBE_TYPE_SUBSTRUCT)
-	{
-		STRUCT_NODE * temp_node=curr_elem->ref;
-		return temp_node->flag & my_para->flag;
-	}
+//	if(curr_elem->elem_desc->type == CUBE_TYPE_SUBSTRUCT)
+//	{
+//		STRUCT_NODE * temp_node=curr_elem->ref;
+//		return temp_node->flag & my_para->flag;
+//	}
 	return curr_elem->flag & my_para->flag;	
 }
 

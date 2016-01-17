@@ -333,7 +333,7 @@ int memdb_init()
 
 	namelist_template=create_struct_template(&struct_namelist_desc);
 	struct_set_flag(namelist_template,CUBE_ELEM_FLAG_INDEX,"head.name,head.type,elem_no,elemlist");
-	struct_set_flag(namelist_template,CUBE_ELEM_FLAG_INPUT,"elem_no,elemlist");
+	struct_set_flag(namelist_template,CUBE_ELEM_FLAG_INPUT,"head.name,elem_no,elemlist");
 
 
 	memdb_set_template(DB_NAMELIST,0,namelist_template);
@@ -938,6 +938,7 @@ int _read_struct_json(void * root,void ** record)
 
 	struct struct_desc_record * struct_desc_record;
 	struct struct_desc_record * child_desc_record;
+	struct struct_namelist * ref_namelist;
 	BYTE struct_uuid[DIGEST_SIZE];
 
 	struct elem_attr_octet * struct_desc_octet; 	
@@ -1017,18 +1018,18 @@ int _read_struct_json(void * root,void ** record)
 		{
 			if(elem_desc_octet->ref[0]!=0)
 			{
-				child_desc_record=memdb_find(elem_desc_octet->ref,DB_NAMELIST,0);
+				ref_namelist=memdb_find(elem_desc_octet->ref,DB_NAMELIST,0);
 			}		
 			else
 			{
-				child_desc_record=memdb_find_byname(elem_desc_octet->ref_name,DB_NAMELIST,0);	
+				ref_namelist=memdb_find_byname(elem_desc_octet->ref_name,DB_NAMELIST,0);	
 			}
-			if(child_desc_record==NULL)
+			if(ref_namelist==NULL)
 				return -EINVAL;
-			elem_desc->ref=child_desc_record->tail_desc;	
+			elem_desc->ref=ref_namelist->elemlist;	
 			if(elem_desc->ref==NULL)
 				return -EINVAL;
-			Memcpy(elem_desc_octet->ref,child_desc_record->head.uuid,DIGEST_SIZE);
+			Memcpy(elem_desc_octet->ref,ref_namelist->head.uuid,DIGEST_SIZE);
 
 		}
 
@@ -1211,6 +1212,7 @@ int register_struct_template(int type, int subtype,void * struct_desc)
 int read_record_json_desc(void * root,BYTE * uuid)
 {
 	int ret;
+	int i;
 	// get the struct desc db
 	void * temp_node ;
 	struct struct_desc_record * struct_desc_record;
@@ -1274,6 +1276,12 @@ int read_record_json_desc(void * root,BYTE * uuid)
 	struct_template=create_struct_template(struct_desc_record->tail_desc);
 	if(struct_template==NULL)
 		return -EINVAL;
+	for(i=0;i<record_type->flag_no;i++)
+	{
+		struct_set_flag(struct_template,record_type->index[i].flag,
+			(char *)record_type->index[i].elemlist);
+
+	}
 	record_type->tail_desc=struct_template;
 
 	memdb_store(record_type,DB_RECORDTYPE,0);
