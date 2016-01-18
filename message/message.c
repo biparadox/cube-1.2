@@ -23,6 +23,27 @@ char text[4096];
 
 static  struct tag_msg_kits * msg_kits;
 
+int message_get_state(void * message)
+{
+	struct message_box * msg_box;
+
+	msg_box=(struct message_box *)message;
+
+	if(message==NULL)
+		return -EINVAL;
+	return msg_box->head.state;
+}
+
+void * message_get_activemsg(void * message)
+{
+	struct message_box * msg_box;
+	int ret;
+	if(message==NULL)
+		return -EINVAL;
+	msg_box=(struct message_box *)message;
+	return msg_box->active_msg;
+}
+
 void * _msg_load_template(char * subtypename)
 {
 	int subtype;
@@ -37,7 +58,7 @@ void * _msg_load_template(char * subtypename)
 int msgfunc_init()
 {
 	int ret;
-	msg_kits=Calloc(sizeof(struct tag_msg_kits));
+	ret=Galloc0(&msg_kits,sizeof(struct tag_msg_kits));
 	if(msg_kits==NULL)
 		return -ENOMEM;
 	msg_kits->type=memdb_get_typeno("MESSAGE");	
@@ -52,21 +73,69 @@ int msgfunc_init()
 	return 0;	
 }
 
-void * message_init(char * tag, int version)
+void * message_init()
 {
+	int ret;
 	struct message_box * msg_box;
-	msg_box= Calloc(sizeof(struct message_box));
-	if(msg_box==NULL)
+	ret=Galloc0(&msg_box,sizeof(struct message_box));
+	if(ret<0)
 		return NULL;
-	if(strncmp(tag,"MESG",4)!=0)
-		return -EINVAL;
-	if(version!=0x00010001)
-		return -EINVAL;
-	memset(msg_box,0,sizeof(struct message_box));
-	struct_write_elem("tag",&(msg_box->head),tag,msg_kits->head_template);
-	struct_write_elem("version",&(msg_box->head),&version,msg_kits->head_template);
+	Memcpy(msg_box->head.tag,"MESG",4);
+	msg_box->head.version=0x00010001;
+
+//	struct_write_elem("version",&(msg_box->head),&version,msg_kits->head_template);
 	msg_box->box_state=MSG_BOX_INIT;
 	return msg_box;
+}
+
+int __message_alloc_record_site(void * message)
+{
+	struct message_box * msg_box;
+	int ret;
+	MSG_HEAD * msg_head;
+
+	msg_box=(struct message_box *)message;
+
+	msg_head=&(msg_box->head);
+	if(message==NULL)
+		return -EINVAL;
+	
+	// malloc a new record_array space,and duplicate the old record_array value
+	if(msg_head->record_num>0)
+	{
+		ret=Galloc0(&msg_box->record,(sizeof(BYTE *)+sizeof(void *)+sizeof(int))*msg_head->record_num);
+		if(msg_box->record==NULL)
+			return -ENOMEM;
+		memset(msg_box->record,0,(sizeof(BYTE *)+sizeof(void *)+sizeof(int))*msg_box->head.record_num);
+
+		msg_box->precord=msg_box->record+msg_head->record_num;
+		msg_box->record_size=msg_box->precord+msg_head->record_num;
+	}
+	return 0;
+}
+
+
+int message_record_init(void * message)
+{
+        struct message_box * msg_box=message;
+        MSG_HEAD * message_head;
+        void * template;
+        int record_size;
+        int readbuf[1024];
+
+        if((msg_box==NULL) || IS_ERR(msg_box))
+            return -EINVAL;
+
+        message_head=&(msg_box->head);
+        msg_box->record_template=memdb_get_template(message_head->record_type,
+		message_head->record_subtype);
+        if(msg_box->record_template == NULL)
+            return -EINVAL;
+        if(IS_ERR(msg_box->record_template))
+            return msg_box->record_template;
+
+        __message_alloc_record_site(message);
+        return 0;
 }
 /*
 void message_free(void * message)

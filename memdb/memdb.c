@@ -568,13 +568,21 @@ int memdb_print(void * data,char * json_str)
 	struct struct_desc_record * struct_record=data;
 	void * struct_template ; 
 	int ret;
+	int offset;
 
 	struct_template=memdb_get_template(struct_record->head.type,struct_record->head.subtype);
-
-	ret=struct_2_json(struct_record,json_str,struct_template);
-	if(ret<0)
-		return ret;
-	return ret;
+	
+	if(memdb_is_dynamic(struct_record->head.type))
+	{
+		offset=struct_2_json(data+sizeof(UUID_HEAD),json_str,struct_template);
+	}
+	else
+	{
+		offset=struct_2_json(struct_record,json_str,struct_template);
+	}
+	if(offset<0)
+		return offset;
+	return offset;
 }
 
 int memdb_print_namelist(void * namelist,char * json_str)

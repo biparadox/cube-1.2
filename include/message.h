@@ -62,8 +62,8 @@ typedef struct tagMessage_Head  //强制访问控制标记
    int  flow;
    int  state;
    int  flag;
-   char record_type[4];
-   char record_subtype[4];
+   int  record_type;
+   int  record_subtype;
    int  record_num;
    int  record_size;
    int  expand_num;   
@@ -112,7 +112,7 @@ struct request_cmd
 
 int message_get_state(void * message);
 
-void * message_init(char * tag, int version);
+void * message_init();
 int message_record_init(void * message);
 void message_free(void * message);
 int message_free_blob(void * message);
