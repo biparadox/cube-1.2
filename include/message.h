@@ -74,7 +74,8 @@ typedef struct tagMessage_Head  //强制访问控制标记
 typedef struct tagMessage_Expand_Data  //general expand data struct
 {
    int  data_size;   //this expand data's size
-   char tag[4];      //expand data's type
+   int  type;
+   int  subtype;      //expand data's type
    BYTE data[0];
 } __attribute__((packed)) MSG_EXPAND;
 
@@ -123,7 +124,7 @@ const char * message_get_sender(void * message);
 const char * message_get_receiver(void * message);
 int message_set_receiver(void * message,const char * receiver_uuid);
 
-void * message_create(char * type,void * active_msg);
+void * message_create(int type,int subtype,void * active_msg);
 void * message_clone(void * message);
 int  message_add_record(void * message,void * record);
 int  message_add_record_blob(void * message,int record_size, BYTE * record);

@@ -44,6 +44,15 @@ void * message_get_activemsg(void * message)
 	return msg_box->active_msg;
 }
 
+int message_get_flag(void * message)
+{
+	struct message_box * msg_box;
+	int ret;
+
+	msg_box=(struct message_box *)message;
+
+	return msg_box->head.flag;
+}
 void * _msg_load_template(char * subtypename)
 {
 	int subtype;
@@ -114,6 +123,32 @@ int __message_alloc_record_site(void * message)
 	return 0;
 }
 
+int __message_alloc_expand_site(void * message)
+{
+	struct message_box * msg_box;
+	int ret;
+	MSG_HEAD * msg_head;
+
+	msg_box=(struct message_box *)message;
+
+	msg_head=&(msg_box->head);
+	if(message==NULL)
+		return -EINVAL;
+	
+	// malloc a new record_array space,and duplicate the old record_array value
+	if(msg_head->expand_num>0)
+	{
+		ret=Galloc0(&msg_box->expand,(sizeof(BYTE *)+sizeof(void *)+sizeof(int))*msg_head->expand_num);
+		if(msg_box->expand==NULL)
+			return -ENOMEM;
+		memset(msg_box->expand,0,(sizeof(BYTE *)+sizeof(void *)+sizeof(int))*msg_box->head.expand_num);
+
+		msg_box->pexpand=msg_box->expand+msg_head->expand_num;
+		msg_box->expand_size=msg_box->pexpand+msg_head->expand_num;
+	}
+	return 0;
+}
+
 
 int message_record_init(void * message)
 {
@@ -136,6 +171,312 @@ int message_record_init(void * message)
 
         __message_alloc_record_site(message);
         return 0;
+}
+
+void * message_create(int type,int subtype,void * active_msg)
+{
+	struct message_box * msg_box;
+	MSG_HEAD * message_head;
+	void * template;
+	int record_size;
+	int ret;
+
+	msg_box=(struct message_box *)message_init();
+	if((msg_box==NULL) || IS_ERR(msg_box))
+		return -EINVAL;
+
+	message_head=&msg_box->head;
+
+	message_head->record_type=type;
+	message_head->record_subtype=subtype;
+
+
+   	msg_box->box_state=MSG_BOX_INIT;
+	msg_box->head.state=MSG_BOX_INIT;
+
+	ret=message_record_init(msg_box);
+	if(ret<0)
+	{
+//		message_free(msg_box);
+		return NULL;	
+	}
+	msg_box->active_msg=active_msg;
+	return msg_box;
+}
+
+int __message_add_record_site(void * message,int increment)
+{
+	struct message_box * msg_box;
+	int ret;
+	MSG_HEAD * msg_head;
+	BYTE * data;
+	void * old_recordarray;
+	void * old_precordarray;
+	void * old_sizearray;
+	
+
+	msg_box=(struct message_box *)message;
+
+	msg_head=&(msg_box->head);
+	if(message==NULL)
+		return -EINVAL;
+	
+	int record_no=msg_head->record_num;
+	msg_head->record_num+=increment;
+
+	old_recordarray=msg_box->record;
+	old_precordarray=msg_box->precord;
+	old_sizearray=msg_box->record_size;
+
+	// malloc a new record_array space,and duplicate the old record_array value
+	ret=Galloc0(&msg_box->record,(sizeof(BYTE *)+sizeof(void *)+sizeof(int))*msg_head->record_num);
+	if(ret<0)
+		return -ENOMEM;
+	msg_box->precord=msg_box->record+msg_head->record_num;
+	msg_box->record_size=msg_box->precord+msg_head->record_num;
+
+	if(record_no>0)
+	{
+		memcpy(msg_box->record,old_recordarray,record_no*sizeof(BYTE *));
+		memcpy(msg_box->precord,old_precordarray,record_no*sizeof(void *));
+		memcpy(msg_box->record_size,old_sizearray,record_no*sizeof(int));
+		// free the old record array,use new record to replace it
+		Free(old_recordarray);
+	}
+	return 0;
+}
+
+int message_add_record(void * message,void * record)
+{
+	struct message_box * msg_box;
+	int ret;
+	MSG_HEAD * msg_head;
+        int curr_site;
+
+	msg_box=(struct message_box *)message;
+
+	msg_head=&(msg_box->head);
+	if(message==NULL)
+		return -EINVAL;
+	if(record==NULL)
+		return -EINVAL;
+	
+    	int record_no=msg_head->record_num;
+
+    	for(curr_site=0;curr_site<record_no;curr_site++)
+    	{
+        	if((msg_box->precord[curr_site]==NULL)
+                    	&&(msg_box->record[curr_site]==NULL))
+        	break;
+    	}
+    	if(curr_site==record_no)
+        	ret=__message_add_record_site(message,1);
+    	if(ret<0)
+	    	return ret;
+
+	// assign the record's value 
+    	msg_box->precord[curr_site]=record;
+    	msg_box->box_state=MSG_BOX_ADD;
+    	return ret;
+}
+
+int message_record_struct2blob(void * message)
+{
+	struct message_box * msg_box;
+	int ret;
+	int i;
+	BYTE * buffer;
+	const int bufsize=4096;
+	MSG_HEAD * msg_head;
+	int blobsize;
+
+	int record_size;
+	msg_box=(struct message_box *)message;
+
+	msg_head=&(msg_box->head);
+	if(message==NULL)
+		return -EINVAL;
+
+	ret=Galloc0(&buffer,bufsize);
+	if(ret<0)
+		return -ENOMEM;
+
+	record_size=0;
+	for(i=0;i<msg_head->record_num;i++)
+	{
+		if(msg_box->record[i]==NULL)
+		{
+			if(msg_box->precord[i]==NULL)
+				return -EINVAL;
+			blobsize=struct_2_blob(msg_box->precord[i],buffer,msg_box->record_template);
+			if(blobsize<0)
+			{
+				Free(buffer);
+				return blobsize;
+			}
+			msg_box->record_size[i]=blobsize;
+			ret=Galloc0(&msg_box->record[i],blobsize);
+			if(msg_box->record[i]==NULL)
+			{
+				Free(buffer);
+				return -ENOMEM;
+			}
+			Memcpy(msg_box->record[i],buffer,msg_box->record_size[i]);
+		}
+		record_size+=msg_box->record_size[i];
+	}
+	Free(buffer);
+	msg_box->head.record_size=record_size;
+	return record_size;
+}
+
+int message_expand_struct2blob(void * message)
+{
+	struct message_box * msg_box;
+	int ret;
+	int i;
+	BYTE * buffer;
+	const int bufsize=4096;
+	MSG_HEAD * msg_head;
+	int expand_size;
+
+	msg_box=(struct message_box *)message;
+
+	msg_head=&(msg_box->head);
+	if(message==NULL)
+		return -EINVAL;
+
+	ret=Galloc0(&buffer,bufsize);
+	if(buffer==NULL)
+		return -ENOMEM;
+	expand_size=0;
+	for(i=0;i<msg_head->expand_num;i++)
+	{
+		if(msg_box->pexpand[i]==NULL)
+		{
+			if(msg_box->expand[i]==NULL)
+				return -EINVAL;
+			MSG_EXPAND * curr_expand=(MSG_EXPAND *)(msg_box->expand[i]);
+			msg_box->expand_size[i]=curr_expand->data_size;
+			expand_size+=msg_box->expand_size[i];
+			continue;
+		}
+
+		MSG_EXPAND * curr_expand=(MSG_EXPAND *)(msg_box->pexpand[i]);
+		void * struct_template=memdb_get_template(curr_expand->type,curr_expand->subtype);
+		if(struct_template==NULL)
+			return -EINVAL;
+		ret=struct_2_blob(msg_box->pexpand[i],buffer,struct_template);
+		if(ret<0)
+		{
+			Free(buffer);
+			return ret;
+		}
+
+		msg_box->expand_size[i]=ret;
+		curr_expand->data_size=ret;
+		ret=Galloc0(&msg_box->expand[i],ret);
+		if(msg_box->expand[i]==NULL)
+		{
+			Free(buffer);
+			return -ENOMEM;
+		}
+		Memcpy(msg_box->expand[i],buffer,msg_box->expand_size[i]);
+		Memcpy(msg_box->expand[i],&ret,sizeof(int));
+		expand_size+=msg_box->expand_size[i];
+	}
+	Free(buffer);
+	msg_box->head.expand_size=expand_size;
+	return expand_size;
+}
+int message_output_blob(void * message, BYTE ** blob)
+{
+	struct message_box * msg_box;
+	int ret;
+	MSG_HEAD * msg_head;
+	BYTE * data;
+	BYTE * buffer;
+	int i,j;
+	int record_size,expand_size;
+	int head_size;
+	int blob_size,offset;
+	
+
+	msg_box=(struct message_box *)message;
+
+	if(message==NULL)
+		return -EINVAL;
+	if(blob==NULL)
+		return -EINVAL;
+
+	record_size=0;
+	expand_size=0;
+	ret=Galloc0(&buffer,4096);
+	if(buffer==NULL)
+		return -ENOMEM;
+
+	int flag=message_get_flag(message);
+	if(flag &MSG_FLAG_CRYPT)
+	{
+		if(msg_box->blob == NULL)
+			return -EINVAL;
+	}
+	if(msg_box->record_template == NULL)
+	{
+		if(msg_box->blob == NULL)
+			return -EINVAL;
+	}
+
+	if(msg_box->head.record_num<0)
+		return -EINVAL;
+	if(msg_box->head.expand_num<0)
+		return -EINVAL;
+
+	offset=sizeof(MSG_HEAD);
+
+	// duplicate record blob
+	if(msg_box->blob != NULL)
+	{
+		Memcpy(buffer+offset,msg_box->blob,msg_box->head.record_size);
+		offset+=msg_box->head.record_size;
+	}	
+	else 
+	{
+		ret=message_record_struct2blob(message);
+		if(ret<0)
+		{
+			Free(buffer);
+			return ret;
+		}
+		for(i=0;i<msg_box->head.record_num;i++)
+		{
+			Memcpy(buffer+offset,msg_box->record[i],msg_box->record_size[i]);
+			offset+=msg_box->record_size[i];
+		}
+	}
+
+	// duplicate expand blob
+	ret=message_expand_struct2blob(message);
+	if(ret<0)
+		return ret;
+
+	for(i=0;i<msg_box->head.expand_num;i++)
+	{
+		Memcpy(buffer+offset,msg_box->expand[i],msg_box->expand_size[i]);
+		offset+=msg_box->expand_size[i];
+	}
+
+	Memcpy(buffer,&msg_box->head,sizeof(MSG_HEAD));
+
+	blob_size=sizeof(MSG_HEAD)+msg_box->head.record_size+msg_box->head.expand_size;
+	msg_box->blob=buffer;
+	ret=Galloc0(blob,blob_size);
+	if(ret<0)
+		return ret;
+	Memcpy(*blob,buffer,blob_size);
+	
+	Free(buffer);
+	return blob_size;
 }
 /*
 void message_free(void * message)
@@ -549,11 +890,11 @@ void * message_clone(void * message)
 	}
 	for(i=0;i<src_msg->head.expand_num;i++)
 	{
-		MESSAGE_EXPAND * src_expand = (MESSAGE_EXPAND *)src_msg->pexpand[i];
+		MSG_EXPAND * src_expand = (MSG_EXPAND *)src_msg->pexpand[i];
 		if(src_expand!=NULL)
 		{
 			void * expand_template;
-			MESSAGE_EXPAND * expand;
+			MSG_EXPAND * expand;
 			if(!strncmp("FTRE",src_expand->tag,4))
 				continue;
 			if(!strncmp("FTAE",src_expand->tag,4))
@@ -778,7 +1119,7 @@ int message_add_expand_blob(void * message,void * expand)
 	struct message_box * msg_box;
 	int ret;
 	MSG_HEAD * msg_head;
-	MESSAGE_EXPAND * expand_head;
+	MSG_EXPAND * expand_head;
 
 	msg_box=(struct message_box *)message;
 
@@ -787,7 +1128,7 @@ int message_add_expand_blob(void * message,void * expand)
 		return -EINVAL;
 	if(expand==NULL)
 		return -EINVAL;
-	expand_head=(MESSAGE_EXPAND *)expand;
+	expand_head=(MSG_EXPAND *)expand;
 	if(expand_head->data_size<0)
 		return -EINVAL;
 	if(expand_head->data_size>4096)
@@ -903,13 +1244,13 @@ int message_expand_struct2blob(void * message)
 		{
 			if(msg_box->expand[i]==NULL)
 				return -EINVAL;
-			MESSAGE_EXPAND * curr_expand=(MESSAGE_EXPAND *)(msg_box->expand[i]);
+			MSG_EXPAND * curr_expand=(MSG_EXPAND *)(msg_box->expand[i]);
 			msg_box->expand_size[i]=curr_expand->data_size;
 			expand_size+=msg_box->expand_size[i];
 			continue;
 		}
 
-		MESSAGE_EXPAND * curr_expand=(MESSAGE_EXPAND *)(msg_box->pexpand[i]);
+		MSG_EXPAND * curr_expand=(MSG_EXPAND *)(msg_box->pexpand[i]);
 		void * struct_template=load_record_template(curr_expand->tag);
 		if(struct_template==NULL)
 			return -EINVAL;
@@ -1196,7 +1537,7 @@ int message_output_text(void * message, char * text)
 	}
 	for(i=0;i<msg_head->expand_num;i++)
 	{
-		MESSAGE_EXPAND * expand;
+		MSG_EXPAND * expand;
 		ret=message_get_expand(message,&expand,i);
 		void * expand_template=load_record_template(expand->tag);
 		if(expand_template==NULL)
