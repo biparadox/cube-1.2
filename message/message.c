@@ -478,6 +478,77 @@ int message_output_blob(void * message, BYTE ** blob)
 	Free(buffer);
 	return blob_size;
 }
+
+int message_output_json(void * message, char * text)
+{
+	struct message_box * msg_box;
+	int ret;
+	MSG_HEAD * msg_head;
+	BYTE * data;
+	BYTE * buffer;
+	int i,j;
+	int record_size,expand_size;
+	int head_size;
+	int text_size,offset;
+	
+	msg_box=(struct message_box *)message;
+
+	if(message==NULL)
+		return -EINVAL;
+	if(text==NULL)
+		return -EINVAL;
+	msg_head=&msg_box->head;
+	
+	buffer=Talloc(512);
+	if(buffer==NULL)
+		return -EINVAL;
+	// output head text
+	Strcpy(text,"{ \"Head\":");
+	offset=Strlen(text);
+	ret=struct_2_json(msg_head,text+offset,msg_kits->head_template);
+	if(ret<0)
+		return ret;
+	offset+=ret;
+	// output record text
+	Strcpy(buffer,",\"Record\":[");
+	ret=Strlen(buffer);
+	Strcpy(text+offset,buffer);
+	offset+=ret;	
+
+	for(i=0;i<msg_head->record_num;i++)
+	{
+		if(i>0)
+			text[offset++]=',';
+		
+		ret=struct_2_json(msg_box->precord[i],text+offset,msg_box->record_template);
+		if(ret<0)
+			return ret;
+		offset+=ret;
+	}
+	
+	Strcpy(buffer,"],\"Expand\" :[");
+	Strcpy(text+offset,buffer);
+	offset+=Strlen(buffer);
+	for(i=0;i<msg_head->expand_num;i++)
+	{
+		MSG_EXPAND * expand;
+		expand=msg_box->pexpand[i];
+		void * expand_template=memdb_get_template(expand->type,
+			expand->subtype);
+		if(expand_template==NULL)
+			return -EINVAL;
+		ret=struct_2_json(msg_box->pexpand[i],text+offset,expand_template);
+		if(ret<0)
+			return ret;
+		offset+=ret;
+	}
+	Strcpy(buffer,"]}");
+	Strcpy(text+offset,buffer);
+	offset+=Strlen(buffer);
+
+	Free(buffer);
+	return offset;
+}
 /*
 void message_free(void * message)
 {
