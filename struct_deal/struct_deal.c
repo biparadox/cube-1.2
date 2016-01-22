@@ -11,50 +11,268 @@
 #include "struct_ops.h"
 #include "struct_attr.h"
 
-static VALUE2POINTER InitFuncList [] =
+struct InitElemInfo_struct
 {
-	{CUBE_TYPE_STRING,&string_convert_ops},
-	{CUBE_TYPE_ESTRING,&estring_convert_ops},
-	{CUBE_TYPE_BINDATA,&bindata_convert_ops},
-	{CUBE_TYPE_DEFINE,&define_convert_ops},
-	{CUBE_TYPE_UUID,&uuid_convert_ops},
-	{CUBE_TYPE_UUIDARRAY,&uuidarray_convert_ops},
-	{CUBE_TYPE_DEFUUIDARRAY,&defuuidarray_convert_ops},
-	{CUBE_TYPE_DEFNAMELIST,&defnamelist_convert_ops},
-	{CUBE_TYPE_INT,&int_convert_ops},
-	{CUBE_TYPE_ENUM,&enum_convert_ops},
-	{CUBE_TYPE_FLAG,&flag_convert_ops},
-	{CUBE_TYPE_ENDDATA,NULL},
+	enum cube_struct_elem_type type;
+	void * enum_ops; 
+	int  flag;
+	int  offset;
+};
+
+static struct InitElemInfo_struct InitElemInfo [] =
+{
+	{CUBE_TYPE_STRING,&string_convert_ops,ELEM_ATTR_VALUE,-1},
+	{CUBE_TYPE_ESTRING,&estring_convert_ops,ELEM_ATTR_VALUE|ELEM_ATTR_POINTER,0},
+	{CUBE_TYPE_BINDATA,&bindata_convert_ops,0,-1},
+	{CUBE_TYPE_DEFINE,&define_convert_ops,ELEM_ATTR_POINTER|ELEM_ATTR_DEFINE,0},
+	{CUBE_TYPE_UUID,&uuid_convert_ops,0,DIGEST_SIZE},
+	{CUBE_TYPE_UUIDARRAY,&uuidarray_convert_ops,ELEM_ATTR_POINTER|ELEM_ATTR_ARRAY,0},
+	{CUBE_TYPE_DEFUUIDARRAY,&defuuidarray_convert_ops,ELEM_ATTR_POINTER|ELEM_ATTR_ARRAY|ELEM_ATTR_DEFINE,0},
+	{CUBE_TYPE_DEFNAMELIST,&defnamelist_convert_ops,ELEM_ATTR_POINTER|ELEM_ATTR_DEFINE,0},
+	{CUBE_TYPE_INT,&int_convert_ops,ELEM_ATTR_VALUE,sizeof(int)},
+	{CUBE_TYPE_UCHAR,&int_convert_ops,ELEM_ATTR_VALUE,sizeof(char)},
+	{CUBE_TYPE_USHORT,&int_convert_ops,ELEM_ATTR_VALUE,sizeof(short)},
+	{CUBE_TYPE_LONGLONG,&int_convert_ops,ELEM_ATTR_VALUE,sizeof(long long)},
+	{TPM_TYPE_UINT64,&int_convert_ops,ELEM_ATTR_VALUE,8},
+	{TPM_TYPE_UINT32,&int_convert_ops,ELEM_ATTR_VALUE,4},
+	{TPM_TYPE_UINT16,&int_convert_ops,ELEM_ATTR_VALUE,2},
+	{CUBE_TYPE_ENUM,&enum_convert_ops,0,sizeof(int)},
+	{CUBE_TYPE_FLAG,&flag_convert_ops,0,sizeof(int)},
+	{CUBE_TYPE_SUBSTRUCT,NULL,ELEM_ATTR_SUBSET,0},
+	{CUBE_TYPE_ARRAY,NULL,ELEM_ATTR_POINTER|ELEM_ATTR_ARRAY|ELEM_ATTR_SUBSET,0},
+	{CUBE_TYPE_ENDDATA,NULL,0,0},
 };
 
 void ** struct_deal_ops;
+int * struct_deal_flag;
+int * struct_deal_offset;
 static void * ops_list[CUBE_TYPE_ENDDATA];
+static int  flag_list[CUBE_TYPE_ENDDATA];
+static int  offset_list[CUBE_TYPE_ENDDATA];
 
-static inline int struct_register_ops(int value,void * pointer)
+static inline int struct_register_ops(int value,void * pointer,int flag,int offset)
 {
 	if((value<0) || (value>=CUBE_TYPE_ENDDATA))
 		return -EINVAL;
-	struct_deal_ops=&ops_list;
-	struct_deal_ops[value]=pointer;
+	ops_list[value]=pointer;
+	flag_list[value]=flag;
+	offset_list[value]=offset;
 	return 0; 
 }
 
-int iselemneeddef(int type)
+static inline int _testelemattr(int type, int flag)
 {
-	if(_isdefineelem(type))
-		return 1;
-	switch(type)
+	if((type<0) || (type >=CUBE_TYPE_ENDDATA))
+		return -EINVAL;
+	return flag_list[type]&flag;
+
+}
+
+static inline int _isdefineelem(int type)
+{
+	return _testelemattr(type,ELEM_ATTR_DEFINE);
+}
+
+static inline int _isarrayelem(int type)
+{
+	return _testelemattr(type,ELEM_ATTR_ARRAY);
+}
+
+static inline int _ispointerelem(int type)
+{
+	return _testelemattr(type,ELEM_ATTR_POINTER);
+}
+
+static inline int _issubsetelem(int type)
+{
+	return _testelemattr(type,ELEM_ATTR_POINTER);
+}
+
+static inline int _isvalidvalue(int type)
+{
+	return _testelemattr(type,ELEM_ATTR_VALUE);
+}
+
+
+static inline int _is_elem_in_subset(void * elem,void * subset)
+{
+	struct elem_template * curr_elem=elem;
+	struct elem_template * curr_subset=subset;
+	
+	if(_issubsetelem(curr_subset->elem_desc->type))
 	{
-		case CUBE_TYPE_ENUM:
-		case CUBE_TYPE_FLAG:
-		case CUBE_TYPE_SUBSTRUCT:
-			return 1;
-		default:
-			break;
-	}	
+		while(curr_elem->father!=NULL)
+		{
+			if(curr_elem->father==subset)
+				return 1;
+			curr_elem=curr_elem->father;
+		}
+	}
 	return 0;
 }
 
+void * _elem_get_addr(void * elem,void * addr)
+{
+	int offset_array[10];
+	int limit=0;
+	int i;
+	memset(offset_array,0,sizeof(offset_array));
+
+	struct elem_template * curr_elem=elem;
+
+	while(curr_elem!=NULL)
+	{
+		if(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY)
+		{
+			offset_array[limit]+=curr_elem->size * curr_elem->index;
+			offset_array[++limit]=curr_elem->offset;
+		}
+		else if(curr_elem->elem_desc->type==CUBE_TYPE_SUBSTRUCT)
+		{
+			offset_array[limit]+=curr_elem->offset+curr_elem->size*curr_elem->index;
+		}
+		else
+		{
+			offset_array[limit]+=curr_elem->offset;
+		}
+		curr_elem=curr_elem->father;
+	}
+	
+
+	for(i=limit;i>0;i--)
+	{
+		addr=*((void **)(addr+offset_array[i]));
+		if(addr==NULL)
+			return NULL;
+		
+	}
+	return addr+offset_array[0];
+}
+
+int _elem_get_offset(void * elem)
+{
+	int offset=0;
+	struct elem_template * curr_elem=elem;
+
+	while(curr_elem!=NULL)
+	{
+		if(curr_elem->elem_desc->type==CUBE_TYPE_ARRAY)
+			offset+=curr_elem->offset +
+				curr_elem->size * curr_elem->index;
+		else
+			offset+=curr_elem->offset;
+		
+		curr_elem=curr_elem->father;
+	}
+	return offset;	
+	
+}
+
+int _elem_get_defvalue(void * elem,void * addr)
+{
+	struct elem_template * curr_elem=elem;
+	struct elem_template * temp_elem=curr_elem->def;
+	struct elem_template * temp_subset;
+	ELEM_OPS * elem_ops;
+	int define_value;
+	void * def_addr;
+	if(temp_elem==NULL)
+		return -EINVAL;
+	elem_ops=struct_deal_ops[temp_elem->elem_desc->type];
+	if(elem_ops==NULL)
+		return NULL;
+
+	if(elem_ops->get_int_value == NULL)
+		return -EINVAL;
+
+	// now compute the define elem's offset
+
+	// if define elem is the first layer child
+	if(temp_elem->father!=NULL)
+	{
+		if(!_is_elem_in_subset(curr_elem,temp_elem->father))
+			return -EINVAL;	
+	}
+
+	def_addr=_elem_get_addr(temp_elem,addr);
+	// if define elem is an elem in curr_elem's father subset
+	define_value=elem_ops->get_int_value(def_addr,temp_elem);
+	if((define_value<0) || (define_value >=1024))
+		return -EINVAL;
+	return define_value;
+}
+
+int _elem_set_defvalue(void * elem,void * addr,int value)
+{
+	struct elem_template * curr_elem=elem;
+	struct elem_template * temp_elem=curr_elem->def;
+	ELEM_OPS * elem_ops;
+	void * def_addr;
+	int ret;
+	if(temp_elem==NULL)
+		return -EINVAL;
+	
+	if((value<0)|| (value>1024))
+		return -EINVAL;
+	
+
+	elem_ops=struct_deal_ops[temp_elem->elem_desc->type];
+	if(elem_ops==NULL)
+		return NULL;
+
+	// now compute the define elem's offset
+
+	def_addr=_elem_get_addr(temp_elem,addr);
+	// if define elem is an elem in curr_elem's father subset
+	
+	char buffer[DIGEST_SIZE];
+	if((temp_elem->elem_desc->type == CUBE_TYPE_STRING)
+		||(temp_elem->elem_desc->type == CUBE_TYPE_ESTRING))
+	{
+		ret=Itoa(value,buffer);
+		if(ret<0)
+			return -EINVAL;
+		if(elem_ops->set_text_value==NULL)
+		{
+			int str_len=strlen(buffer);
+			if(_ispointerelem(temp_elem->elem_desc->type))
+			{
+				int tempret=Palloc0(def_addr,str_len+1);
+				if(tempret<0)
+					return tempret;
+				Memcpy(*(char **)def_addr,buffer,str_len+1);
+			}
+			else
+			{
+				Memcpy(def_addr,buffer,str_len);
+			}
+			
+		}
+		else
+		{
+			ret=elem_ops->set_text_value(def_addr,buffer,temp_elem);
+			if(ret<0)
+				return -EINVAL;
+		}
+	}
+	else
+	{
+		if(elem_ops->set_bin_value==NULL)
+		{
+			ret=get_fixed_elemsize(temp_elem->elem_desc->type);
+			if(ret<=0)
+				return -EINVAL;
+			Memcpy(def_addr,&value,ret);
+		}
+		else
+		{
+			ret=elem_ops->set_bin_value(def_addr,&value,temp_elem);
+			if(ret<0)
+				return -EINVAL;
+		}
+	}
+	return value;
+}
 
 int struct_deal_init()
 {
@@ -67,10 +285,12 @@ int struct_deal_init()
 		struct_deal_ops[i]=NULL;
 	}
 	
-	for(i=0;InitFuncList[i].value!=CUBE_TYPE_ENDDATA;i++)
+	for(i=0;InitElemInfo[i].type!=CUBE_TYPE_ENDDATA;i++)
 	{
-		ret=struct_register_ops(InitFuncList[i].value,
-			InitFuncList[i].pointer);
+		ret=struct_register_ops(InitElemInfo[i].type,
+			InitElemInfo[i].enum_ops,
+			InitElemInfo[i].flag,
+			InitElemInfo[i].offset);
 		if(ret<0)
 			return ret;
 	}
@@ -174,7 +394,15 @@ void * _get_elem_by_name(void * start_node, char * name)
 	return NULL;
 }
 
+int get_fixed_elemsize(int type)
+{
+	if(_ispointerelem(type))
+		return sizeof(void *);
+	return offset_list[type];
+	
+}
 
+/*
 int get_fixed_elemsize(int type)
 {
 
@@ -186,6 +414,8 @@ int get_fixed_elemsize(int type)
 			return DIGEST_SIZE;
 		case CUBE_TYPE_ENUM:
 		case CUBE_TYPE_FLAG:
+		case CUBE_TYPE_DEFENUM:
+		case CUBE_TYPE_DEFFLAG:
 		case CUBE_TYPE_TIME:
 		case CUBE_TYPE_BOOL:
 			return sizeof(int);
@@ -230,6 +460,7 @@ int get_fixed_elemsize(int type)
 	}
 	return -1;	
 }
+*/
 
 static inline int _getelemjsontype(int type)
 {
@@ -239,6 +470,8 @@ static inline int _getelemjsontype(int type)
 		case CUBE_TYPE_UUID:
 		case CUBE_TYPE_ENUM:
 		case CUBE_TYPE_FLAG:
+		case CUBE_TYPE_DEFENUM:
+		case CUBE_TYPE_DEFFLAG:
 		case CUBE_TYPE_TIME:
 		case CUBE_TYPE_BINDATA: 
 		case CUBE_TYPE_HEXDATA:	 

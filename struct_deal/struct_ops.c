@@ -19,7 +19,7 @@ int dup_str(char ** dest,char * src, int size)
 		return 0;
 	if(size == 0)
 	{
-		len=strlen(src)+1;
+		len=Strlen(src)+1;
 	}
 	else
 	{
@@ -30,7 +30,7 @@ int dup_str(char ** dest,char * src, int size)
 	ret=Palloc((void **)dest,len);
 	if(ret<0)
 		return ret;
-	memcpy(*dest,src,len);
+	Memcpy(*dest,src,len);
 	return len;			
 }
 
@@ -40,7 +40,7 @@ int estring_get_length (void * value,void * attr)
 	struct elem_template * elem_attr=attr;
 	struct struct_elem_attr * elem_desc = elem_attr->elem_desc;
 	int retval;
-	retval = strlen(value);
+	retval = Strlen(value);
 	if (retval<0)
 		retval = -EINVAL;
 	retval++;
@@ -192,13 +192,13 @@ int namelist_get_bin_value(void * addr, void * data,void * elem_template)
 	int offset=0;
 	struct elem_template * curr_elem=elem_template;
 	int textlen=0;
-	textlen=strlen(*(char **)namelist);
+	textlen=Strlen(*(char **)namelist);
 	if(textlen>DIGEST_SIZE)
 		return -EINVAL;
-	memcpy(data,*(char **)namelist,textlen+1);
+	Memcpy(data,*(char **)namelist,textlen+1);
 	
 	offset+=textlen+1;
-	memcpy(data+offset,&namelist->value,sizeof(int));
+	Memcpy(data+offset,&namelist->value,sizeof(int));
 	offset+=sizeof(int);
 	return offset;
 }
@@ -211,15 +211,15 @@ int namelist_set_bin_value(void * addr, void * data,void * elem_template)
 	int offset=0;
 	int addroffset=0;
 	int textlen=0;
-	textlen=strlen((char *)data);
+	textlen=Strlen((char *)data);
 	if(textlen>DIGEST_SIZE)
 		return -EINVAL;
 	retval=Palloc0(namelist,textlen+1);
 	if(retval<0)
 		return -ENOMEM;
-	memcpy(*(char **)namelist,data+offset,textlen+1);
+	Memcpy(*(char **)namelist,data+offset,textlen+1);
 	offset+=textlen+1;
-	memcpy(&namelist->value,data+offset,sizeof(int));
+	Memcpy(&namelist->value,data+offset,sizeof(int));
 	offset+=sizeof(int);
 	return offset;
 }
@@ -235,10 +235,10 @@ int namelist_get_text_value(void * addr, void * data,void * elem_template)
 	struct elem_template * curr_elem=elem_template;
 	int textlen=0;
 
-	textlen=strlen(namelist->name);
+	textlen=Strlen(namelist->name);
 	if(textlen>DIGEST_SIZE)
 		return -EINVAL;
-	memcpy(text+offset,namelist->name,textlen);
+	Memcpy(text+offset,namelist->name,textlen);
 	offset+=textlen;
 	value=namelist->value;
 
@@ -292,7 +292,7 @@ int namelist_set_text_value(void * addr, char * text,void * elem_template)
 	retval=Palloc0(&(namelist->name),namelen+1);
 	if(retval<0)
 		return -ENOMEM;
-	memcpy(namelist->name,text+offset,namelen);
+	Memcpy(namelist->name,text+offset,namelen);
 	*(namelist->name+namelen)=0;
 	offset+=textlen+1;
 	namelist->value=value;
@@ -307,7 +307,7 @@ int define_get_text_value(void * addr,char * text,void * elem_template){
 	def_value=_elem_get_defvalue(curr_elem,addr);
 	if(def_value<=0)
 		return def_value;
-	memcpy(text,blob,def_value);
+	Memcpy(text,blob,def_value);
 	return def_value;
 }
 
@@ -407,7 +407,7 @@ int int_get_text_value(void * elem,char * text,void * elem_attr)
 	long long value=0;
 	int len;
 	char buffer[DIGEST_SIZE];
-	memcpy(&value,elem,curr_elem->size);
+	Memcpy(&value,elem,curr_elem->size);
 	i=1;
 	len=2;
 	char *pch=text;
@@ -456,7 +456,7 @@ int int_set_text_value(void * addr,char * text,void * elem_attr)
 			{
 				case 0:
 					ret=0;
-					memcpy(addr,&ret,curr_elem->size);
+					Memcpy(addr,&ret,curr_elem->size);
 					return str_len+1;
 				case 'b':
 				case 'B':
@@ -486,7 +486,7 @@ int int_set_text_value(void * addr,char * text,void * elem_attr)
 			return -EINVAL;
 		ret=ret*base+temp_value;		
 	}
-	memcpy(addr,&ret,curr_elem->size);
+	Memcpy(addr,&ret,curr_elem->size);
 	return str_len+1;
 }
 

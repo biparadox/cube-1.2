@@ -41,6 +41,8 @@ enum cube_struct_elem_type   // describe types could be used in the struct
 			 	// the string's fixed length.
 				// NOTE: there should not be any ' ' in the string.
 				//
+	CUBE_TYPE_DEFENUM,
+	CUBE_TYPE_DEFFLAG,
 	CUBE_TYPE_SUBSTRUCT,    // this element describes a new struct in this site, attr points to the description of the new struct
         CUBE_TYPE_CHOICE,
 		
