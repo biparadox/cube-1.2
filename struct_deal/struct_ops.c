@@ -23,7 +23,7 @@ int dup_str(char ** dest,char * src, int size)
 	}
 	else
 	{
-		len=strnlen(src,size);
+		len=Strnlen(src,size);
 		if(len!=size)
 			len++;
 	}
@@ -341,10 +341,10 @@ int get_string_value(void * addr,void * elem_attr)
 	int str_len;
 	if(curr_elem->elem_desc->type == CUBE_TYPE_STRING)
 	{
-		str_len=strnlen(string,curr_elem->size);
+		str_len=Strnlen(string,curr_elem->size);
 	}
 	else
-		str_len=strnlen(string,16);
+		str_len=Strnlen(string,16);
 
 	// process the head
 	for(i=0;i<str_len;i++)
@@ -437,7 +437,7 @@ int int_set_text_value(void * addr,char * text,void * elem_attr)
 
 	int str_len;
 
-	str_len=strnlen(string,DIGEST_SIZE);
+	str_len=Strnlen(string,DIGEST_SIZE);
 
 	// process the head
 	for(i=0;i<str_len;i++)

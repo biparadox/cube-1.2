@@ -28,7 +28,7 @@ static struct InitElemInfo_struct InitElemInfo [] =
 	{CUBE_TYPE_UUID,&uuid_convert_ops,0,DIGEST_SIZE},
 	{CUBE_TYPE_UUIDARRAY,&uuidarray_convert_ops,ELEM_ATTR_POINTER|ELEM_ATTR_ARRAY,0},
 	{CUBE_TYPE_DEFUUIDARRAY,&defuuidarray_convert_ops,ELEM_ATTR_POINTER|ELEM_ATTR_ARRAY|ELEM_ATTR_DEFINE,0},
-	{CUBE_TYPE_DEFNAMELIST,&defnamelist_convert_ops,ELEM_ATTR_POINTER|ELEM_ATTR_DEFINE,0},
+	{CUBE_TYPE_DEFNAMELIST,&defnamelist_convert_ops,ELEM_ATTR_POINTER|ELEM_ATTR_DEFINE,sizeof(void *)+sizeof(int)},
 	{CUBE_TYPE_INT,&int_convert_ops,ELEM_ATTR_VALUE,sizeof(int)},
 	{CUBE_TYPE_UCHAR,&int_convert_ops,ELEM_ATTR_VALUE,sizeof(char)},
 	{CUBE_TYPE_USHORT,&int_convert_ops,ELEM_ATTR_VALUE,sizeof(short)},
@@ -396,6 +396,8 @@ void * _get_elem_by_name(void * start_node, char * name)
 
 int get_fixed_elemsize(int type)
 {
+	if(offset_list[type]>0)
+		return offset_list[type];
 	if(_ispointerelem(type))
 		return sizeof(void *);
 	return offset_list[type];
