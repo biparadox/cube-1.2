@@ -10,20 +10,17 @@
 #define  _CUBE_STRUCT_ATTR_H
 #include "../include/struct_deal.h"
 
-enum elem_attr_flag
-{
-	ELEM_ATTR_POINTER=0x01,
-	ELEM_ATTR_DEFINE=0x02,
-	ELEM_ATTR_ARRAY=0x04,
-	ELEM_ATTR_ENUM=0x10,
-	ELEM_ATTR_FLAG=0x20,
-	ELEM_ATTR_SUBSET=0x40,
-	ELEM_ATTR_VALUE=0x80,
-};
-
-void * _elem_get_addr(void * elem,void * addr);
-int _elem_get_offset(void * elem);
-int _elem_get_defvalue(void * elem,void * addr);
-int _elem_set_defvalue(void * elem,void * addr,int value);
+ELEM_OPS string_convert_ops;
+ELEM_OPS estring_convert_ops;
+ELEM_OPS bindata_convert_ops;
+ELEM_OPS define_convert_ops;
+ELEM_OPS int_convert_ops;
+ELEM_OPS uuid_convert_ops;
+ELEM_OPS uuidarray_convert_ops;
+ELEM_OPS defuuidarray_convert_ops;
+ELEM_OPS defnamelist_convert_ops;
+ELEM_OPS enum_convert_ops;
+ELEM_OPS flag_convert_ops;
+ELEM_OPS defenum_convert_ops;
 
 #endif

@@ -37,16 +37,16 @@ int enum_get_text_value(void * addr,char * text,void * elem_template){
 	{
 		if(enum_list[i].value==enum_value)
 		{
-			len=strlen(enum_list[i].name);
-			memcpy(text+offset,enum_list[i].name,len+1);
+			len=Strlen(enum_list[i].name);
+			Memcpy(text+offset,enum_list[i].name,len+1);
 			offset+=len+1;
 			return offset;
 		}
 	}
 	if(enum_value==0)
 	{
-		len=strlen(nulstring);
-		memcpy(text+offset,nulstring,len+1);
+		len=Strlen(nulstring);
+		Memcpy(text+offset,nulstring,len+1);
 		offset+=len+1;
 		return offset;
 	}
@@ -126,15 +126,15 @@ int flag_get_text_value(void * addr, char * text, void * elem_template){
 			{
 				text[offset++]='|';
 			}
-			len=strlen(flag_list[i].name);
-			memcpy(text+offset,flag_list[i].name,len);
+			len=Strlen(flag_list[i].name);
+			Memcpy(text+offset,flag_list[i].name,len);
 			offset+=len;
 		}
 	}
 	if(offset==0)
 	{
-		len=strlen(nulstring);
-		memcpy(text+offset,nulstring,len);
+		len=Strlen(nulstring);
+		Memcpy(text+offset,nulstring,len);
 		offset+=len;
 	}
 	text[offset++]=0;
@@ -164,7 +164,7 @@ int flag_set_text_value(void * addr, char * text, void * elem_template){
 		return 0;
 	}
 	char temp_string[DIGEST_SIZE];
-	for(i=0;i<strlen(text);i++)
+	for(i=0;i<Strlen(text);i++)
 	{
 		if(text[i]=='|')
 			continue;
@@ -223,16 +223,16 @@ int defenum_get_text_value(void * addr,char * text,void * elem){
 	{
 		if(enum_list[i].value==enum_value)
 		{
-			len=strlen(enum_list[i].name);
-			memcpy(text+offset,enum_list[i].name,len+1);
+			len=Strlen(enum_list[i].name);
+			Memcpy(text+offset,enum_list[i].name,len+1);
 			offset+=len+1;
 			return offset;
 		}
 	}
 	if(enum_value==0)
 	{
-		len=strlen(nulstring);
-		memcpy(text+offset,nulstring,len+1);
+		len=Strlen(nulstring);
+		Memcpy(text+offset,nulstring,len+1);
 		offset+=len+1;
 		return offset;
 	}
