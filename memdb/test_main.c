@@ -33,7 +33,7 @@
 #include "../include/struct_deal.h"
 #include "../include/memdb.h"
 
-
+/*
 int read_json_file(char * file_name)
 {
 	int ret;
@@ -81,7 +81,7 @@ int read_json_file(char * file_name)
 
 	return struct_no;
 }
-
+*/
 
 int main() {
 
@@ -111,7 +111,7 @@ int main() {
 	memdb_init();
 
 // test namelist reading start
-
+/*
 	for(i=0;baseconfig[i]!=NULL;i++)
 	{
 		ret=read_json_file(baseconfig[i]);
@@ -139,7 +139,7 @@ int main() {
 		printf("%s\n",print_buffer);
 		record=memdb_get_next(msg_type,subtype);
 	}
-
+*/
 // test struct desc reading start
 /*
 	ret=read_json_file("msghead.json");

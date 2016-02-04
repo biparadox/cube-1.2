@@ -24,15 +24,24 @@ int memdb_init();
 int read_json_desc(void * root, BYTE * uuid);
 int memdb_store(void * record, int type,int subtype);
 
+enum new_struct_elem_type
+{
+	CUBE_TYPE_ELEMTYPE=0x60,
+	CUBE_TYPE_RECORDTYPE,
+	CUBE_TYPE_RECORDSUBTYPE,
+};
+
 enum base_cube_db
 {
 	DB_INDEX=0x01,
-	DB_STRUCT_DESC,
 	DB_NAMELIST,
+	DB_STRUCT_DESC,
 	DB_TYPELIST,
 	DB_SUBTYPELIST,
 	DB_CONVERTLIST,
 	DB_RECORDTYPE,
+	DB_BASEEND=0x10,
+	DB_DTYPE_START=0x100,
 };
 
 typedef struct index_elem

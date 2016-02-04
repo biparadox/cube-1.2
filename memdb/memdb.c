@@ -16,6 +16,7 @@
 
 #include "../include/data_type.h"
 #include "../include/list.h"
+#include "../include/attrlist.h"
 #include "../include/string.h"
 #include "../include/alloc.h"
 #include "../include/json.h"
@@ -81,11 +82,11 @@ void * memdb_get_dblist(int type, int subtype)
 	void * db_list;
 	if(type<0) 
 		return NULL;
-	if(type< TYPE_BASE_END)
+	if(type< DB_BASEEND)
 		db_list=static_db_list[type];
-	else if(type == TYPE_DB_LIST)
+	else if(type ==DB_DTYPE_START)
 		db_list=dynamic_db_list;
-	else if(type >TYPE_DB_LIST)
+	else if(type >DB_DTYPE_START)
 		db_list=_get_dynamic_db_bytype(type,subtype);
 	else
 		return NULL;
@@ -278,7 +279,7 @@ int memdb_register_db(BYTE * uuid,int type,int subtype,char * name)
 	
 	
 	
-	if(type< TYPE_BASE_END)
+	if(type< DB_DTYPE_START)
 	{
 		if(static_db_list[type]!=NULL)
 			return -EINVAL;
@@ -287,9 +288,9 @@ int memdb_register_db(BYTE * uuid,int type,int subtype,char * name)
 			return ret;
 		static_db_list[type]=record;
 	}
-	else if(type == TYPE_DB_LIST)
+	else if(type == DB_DTYPE_START)
 		return -EINVAL;
-	else if(type >TYPE_DB_LIST)
+	else if(type >DB_DTYPE_START)
 	{
 		record=_get_dynamic_db_bytype(type,subtype);
 		if(record!=NULL)
@@ -328,12 +329,12 @@ int memdb_init()
 	if(elem_template==NULL)
 		return -EINVAL;
 
-	ret=Galloc(pointer,sizeof(void *)*TYPE_BASE_END);
+	ret=Galloc(pointer,sizeof(void *)*DB_DTYPE_START);
 	if(ret<0)
 		return ret;
 
 	// init the four start list
-	memset(static_db_list,0,sizeof(void *)*TYPE_BASE_END);
+	memset(static_db_list,0,sizeof(void *)*DB_DTYPE_START);
 	static_db_list[DB_INDEX]=init_hash_list(10,DB_INDEX,0);
 	static_db_list[DB_STRUCT_DESC]=init_hash_list(8,DB_STRUCT_DESC,0);
 	static_db_list[DB_NAMELIST]=init_hash_list(8,DB_NAMELIST,0);
@@ -444,7 +445,7 @@ int memdb_init()
 
 	memdb_set_template(DB_RECORDTYPE,0,recordtype_template);
 
-	dynamic_db_list=init_hash_list(8,TYPE_DB_LIST,0);
+	dynamic_db_list=init_hash_list(8,DB_DTYPE_START,0);
 
 
 	return 0;

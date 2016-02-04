@@ -21,6 +21,5 @@ ELEM_OPS defuuidarray_convert_ops;
 ELEM_OPS defnamelist_convert_ops;
 ELEM_OPS enum_convert_ops;
 ELEM_OPS flag_convert_ops;
-ELEM_OPS defenum_convert_ops;
 
 #endif
