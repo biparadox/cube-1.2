@@ -11,13 +11,6 @@
 #include "struct_ops.h"
 #include "struct_attr.h"
 
-struct InitElemInfo_struct
-{
-	enum cube_struct_elem_type type;
-	void * enum_ops; 
-	int  flag;
-	int  offset;
-};
 
 static struct InitElemInfo_struct InitElemInfo [] =
 {

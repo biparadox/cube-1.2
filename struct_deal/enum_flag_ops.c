@@ -9,7 +9,7 @@
 
 
 //const int deftag=0x00FFF000;
-const char * nulstring="NULL";
+//const char * nulstring="NULL";
 int enum_get_text_value(void * addr,char * text,void * elem_template){
 	struct elem_template * elem_attr=elem_template;
 	struct struct_elem_attr * elem_desc = elem_attr->elem_desc;

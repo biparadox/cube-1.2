@@ -24,6 +24,13 @@ enum elem_attr_flag
 
 };
 
+struct InitElemInfo_struct
+{
+	enum cube_struct_elem_type type;
+	void * enum_ops; 
+	int  flag;
+	int  offset;
+};
 typedef struct tagvalue2pointer
 {
 	int value;

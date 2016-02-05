@@ -60,6 +60,8 @@ enum cube_struct_elem_attr
 	CUBE_ELEM_FLAG_TEMP=0x1000,
 };
 
+#define nulstring "NULL"
+
 // pointer stack function
 struct struct_elem_attr
 {

@@ -15,14 +15,13 @@
 
 #define MAX_RECORD_NUM 65536
 
-NAME2VALUE * elem_type_valuelist;
-NAME2VALUE * elem_attr_flaglist;
+//NAME2VALUE * elem_type_valuelist;
+//NAME2VALUE * elem_attr_flaglist;
 
-struct struct_elem_attr * elem_attr_desc; 
+//struct struct_elem_attr * elem_attr_desc; 
 
 int memdb_init();
 int read_json_desc(void * root, BYTE * uuid);
-int memdb_store(void * record, int type,int subtype);
 
 enum new_struct_elem_type
 {
@@ -54,7 +53,7 @@ typedef struct index_elem
 void * memdb_get_dblist(int type,int subtype);
 int  memdb_init();
 
-int  memdb_store(void * data,int type,int subtype);
+void * memdb_store(void * data,int type,int subtype,char * name);
 void * memdb_get_first(int type,int subtype);
 void * memdb_get_next(int type,int subtype);
 void * memdb_remove(void * elem,int type,int subtype);
