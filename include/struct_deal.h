@@ -117,7 +117,9 @@ int struct_free_alloc(void * addr, void * struct_template);
 int struct_size(void * struct_template);
 
 int struct_set_flag(void * struct_template,int flag, char * namelist);
+int struct_set_allflag(void * struct_template,int flag);
 int struct_clear_flag(void * struct_template,int flag,char * namelist);
+int struct_clear_allflag(void * struct_template,int flag);
 int struct_get_flag(void * struct_template,char * name);
 
 int struct_2_blob(void * addr, void * blob, void * struct_template);

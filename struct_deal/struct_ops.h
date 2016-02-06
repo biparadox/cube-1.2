@@ -20,6 +20,8 @@ enum elem_attr_flag
 	ELEM_ATTR_VALUE=0x80,
 	ELEM_ATTR_NUM=0x100,
 	ELEM_ATTR_BOOL=0x200,
+	ELEM_ATTR_NAMELIST=0x400,
+	ELEM_ATTR_REF=0x800,
 	ELEM_ATTR_EMPTY=0x1000,
 
 };
@@ -45,6 +47,7 @@ int _issubsetelem(int type);
 int _isvalidvalue(int type);
 int _isnumelem(int type);
 int _isboolelem(int type);
+int _isnamelistelem(int type);
 void * _elem_get_addr(void * elem,void * addr);
 ELEM_OPS * _elem_get_ops(void * elem);
 int _elem_get_offset(void * elem);

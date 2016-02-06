@@ -29,8 +29,8 @@ static struct InitElemInfo_struct InitElemInfo [] =
 	{TPM_TYPE_UINT64,&int_convert_ops,ELEM_ATTR_VALUE|ELEM_ATTR_NUM,8},
 	{TPM_TYPE_UINT32,&int_convert_ops,ELEM_ATTR_VALUE|ELEM_ATTR_NUM,4},
 	{TPM_TYPE_UINT16,&int_convert_ops,ELEM_ATTR_VALUE|ELEM_ATTR_NUM,2},
-	{CUBE_TYPE_ENUM,&enum_convert_ops,0,sizeof(int)},
-	{CUBE_TYPE_FLAG,&flag_convert_ops,0,sizeof(int)},
+	{CUBE_TYPE_ENUM,&enum_convert_ops,ELEM_ATTR_NAMELIST,sizeof(int)},
+	{CUBE_TYPE_FLAG,&flag_convert_ops,ELEM_ATTR_NAMELIST,sizeof(int)},
 	{CUBE_TYPE_SUBSTRUCT,NULL,ELEM_ATTR_SUBSET,0},
 	{CUBE_TYPE_ARRAY,NULL,ELEM_ATTR_POINTER|ELEM_ATTR_ARRAY|ELEM_ATTR_SUBSET,0},
 	{CUBE_TYPE_ENDDATA,NULL,ELEM_ATTR_EMPTY,0},
@@ -99,6 +99,10 @@ int _isboolelem(int type)
 int _isemptyelem(int type)
 {
 	return _testelemattr(type,ELEM_ATTR_EMPTY);
+}
+int _isnamelistelem(int type)
+{
+	return _testelemattr(type,ELEM_ATTR_NAMELIST);
 }
 
 static inline int _is_elem_in_subset(void * elem,void * subset)

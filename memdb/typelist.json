@@ -1,15 +1,18 @@
 {
-	"info-type":"typelist",
 	"head":
 	{
 		"name":"internal_type",
+		"type":"TYPELIST",
+	},
+	"record":
+	{
+		"elem_no":4,
+		"elemlist":
+		[
+			"MESSAGE=0x200",
+			"TUBE",
+			"BLOCK",
+			"ROUTER"
+		]
 	}
-	"elem_no":4,
-	"elemlist":
-	[
-		"MESSAGE=0x200",
-		"TUBE",
-		"BLOCK",
-		"ROUTER"
-	]
 }

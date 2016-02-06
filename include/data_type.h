@@ -25,6 +25,9 @@ typedef unsigned int         DWORD;
 #define OS210_DEBUG  
 
 #define DIGEST_SIZE	32
+#ifndef NULL
+#define NULL 		0
+#endif
 
 #define IS_ERR(ptr) (ptr-4096 <0)
 

@@ -3,7 +3,7 @@ CFLAGS= -g -c -DUSER_MODE
 CC=gcc
 LD=ld
 CCP=g++
-STRUCTOBJ= memdb_init.o type_subtype_ops.o
+STRUCTOBJ= memdb_init.o type_subtype_ops.o memdb.o
 
 main: ../lib/libmemdb.a  test_main
 test_main: test_main.c ../lib/libstruct.a 
