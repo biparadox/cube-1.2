@@ -27,11 +27,12 @@
 
 #include "memdb_internal.h"
 
-int read_namelist_json_desc(void * root,BYTE * uuid)
+int read_namelist_json_desc(void * root,void * record)
 {
 	int ret;
 	struct struct_namelist * namelist;
-	UUID_HEAD * head;
+	DB_RECORD * db_record=record;
+	void * namelist_template;
 	
 	void * temp_node;
 	char buf[1024];
@@ -39,7 +40,8 @@ int read_namelist_json_desc(void * root,BYTE * uuid)
 	ret=Galloc0(&namelist,sizeof(struct struct_namelist));
 	if(ret<0)
 		return ret;
-	namelist->head.type=DB_NAMELIST;
+	if(db_record->head.type!=DB_NAMELIST)
+		return -EINVAL;
 
 	temp_node=json_find_elem("elemlist",root);
 	if(temp_node==NULL)
@@ -50,17 +52,12 @@ int read_namelist_json_desc(void * root,BYTE * uuid)
 
 	ret=json_2_struct(root,namelist,namelist_template);
 	namelist->elem_no=json_get_elemno(temp_node);
+	db_record->record=namelist;
 
-	ret=memdb_comp_uuid(namelist);
+	ret=memdb_comp_uuid(db_record);
 	if(ret<0)
 		return ret;	
-	ret=memdb_store(namelist,DB_NAMELIST,0);
-	if(ret<0)
-		return ret;	
-	ret=memdb_store_index(namelist,NULL,0);
-	if(ret<0)
-		return ret;
-	
+	ret=memdb_store(namelist,DB_NAMELIST,0,db_record->head.name);
 	return ret;	
 }
 
@@ -177,7 +174,7 @@ int read_typelist_json_desc(void * root,BYTE * uuid)
 
 	return ret;	
 }
-
+/*
 int read_subtypelist_json_desc(void * root,BYTE * uuid)
 {
 	int ret;
@@ -376,7 +373,7 @@ int _read_struct_json(void * root,void ** record)
 
 	// compute the struct's template
 
-
+*/
 /*
 	json_node_set_pointer(father_node,struct_desc);
 
@@ -496,7 +493,7 @@ int _read_struct_json(void * root,void ** record)
 
 	}while(curr_node!=root_node);
 */
-	*record=struct_desc_record;
+/*	*record=struct_desc_record;
 	return 0;
 }
 
@@ -719,9 +716,10 @@ int read_record_json_desc(void * root,BYTE * uuid)
 	return -EINVAL;
 	
 }
-
+*/
 int memdb_read_desc(void * root, BYTE * uuid)
 {
+/*
 	NAME2POINTER funclist[]=
 	{
 		{"namelist",&read_namelist_json_desc},
@@ -735,34 +733,62 @@ int memdb_read_desc(void * root, BYTE * uuid)
 	};	
 
 	int (*read_json_func)(void * root, BYTE * uuid)=NULL;
-
+*/
 	void * temp_node;
+	void * head_node;
+	void * record_node;
 	int i;
+	int ret;
 	char * typestr;
-	temp_node=json_find_elem("info-type",root);
-	if(temp_node==NULL)
+	DB_RECORD * db_record;
+	
+
+
+	head_node=json_find_elem("head",root);
+	if(head_node==NULL)
 	{
-		read_json_func=&read_record_json_desc;
+		return -EINVAL;
+	}
+	record_node=json_find_elem("record",root);
+	if(record_node==NULL)
+	{
+		return -EINVAL;
+	}
+	
+	
+	ret=Galloc0(db_record,sizeof(DB_RECORD));
+	
+	ret=json_2_struct(head_node,&(db_record->head),head_template);
+	if(ret<0)
+		return -EINVAL;	
+	
+	if(read_json_func==NULL)
+		return -EINVAL;
+
+	
+	if(db_record->head.type<DB_DTYPE_START)
+	{
+		switch(db_record->head.type)
+		{
+			case DB_NAMMELIST:
+				ret=read_namelist_json_desc(db_record->record,record_node);
+				break;
+			case DB_STRUCT_DESC:
+				ret=read_typelist_json_desc(db_record->record,record_node);
+				break;
+			case DB_TYPELIST:
+			case DB_SUBTYPELIST:
+			case DB_CONVERTTYPELIST:
+			case DB_RECORDTYPE:
+			default:
+				return -EINVAL;
+		}
 	}
 	else
 	{
-		typestr = json_get_valuestr(temp_node);
-		if(typestr==NULL)
-			return -EINVAL;
 
-		i=0;
-		while(funclist[i].name!=NULL)
-		{
-			if(strcmp(funclist[i].name,typestr)==0)
-			{
-				read_json_func=funclist[i].pointer;
-				break;
-			}
-			i++;
-		}
-	}		
-	if(read_json_func==NULL)
-		return -EINVAL;
-	return read_json_func(root,uuid);
+	}
+
+	return ret;
 	
 }
