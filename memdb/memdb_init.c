@@ -850,6 +850,8 @@ void *  memdb_store(void * data,int type,int subtype,char * name)
 	if(db_list->tail_func!=NULL)
 	{
 		ret=db_list->tail_func(db_list,record);	
+		if(ret<0)
+			return NULL;
 	}
 	ret=memdb_comp_uuid(record);
 	if(ret<0)
@@ -860,6 +862,40 @@ void *  memdb_store(void * data,int type,int subtype,char * name)
 		return NULL;
 
 	return record;
+}
+
+int memdb_store_record(void * record)
+{
+	int ret;
+	struct memdb_desc * db_list;
+	UUID_HEAD * head;
+	DB_RECORD * db_record=record;
+	if(db_record==NULL)
+		return -EINVAL; 
+	if(db_record->record==NULL)
+		return -EINVAL;	
+	db_list=memdb_get_dblist(db_record->head.type,db_record->head.subtype);
+	if(db_list==NULL)
+		return -EINVAL;
+
+	if(db_record->tail==NULL)
+	{
+		if(db_list->tail_func!=NULL)
+		{
+			ret=db_list->tail_func(db_list,db_record);	
+			if(ret<0)
+				return ret;
+		}
+	}
+	ret=memdb_comp_uuid(db_record);
+	if(ret<0)
+		return ret;
+
+	ret=hashlist_add_elem(db_list->record_db,db_record);
+	if(ret<0)
+		return ret;
+
+	return 1;
 }
 
 void * memdb_find(void * data,int type,int subtype)

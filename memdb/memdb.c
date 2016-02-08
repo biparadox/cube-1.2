@@ -21,7 +21,6 @@
 #include "../include/alloc.h"
 #include "../include/json.h"
 #include "../include/struct_deal.h"
-#include "../include/valuelist.h"
 #include "../include/basefunc.h"
 #include "../include/memdb.h"
 
@@ -35,7 +34,6 @@ int read_namelist_json_desc(void * root,void * record)
 	void * namelist_template;
 	
 	void * temp_node;
-	char buf[1024];
 
 	ret=Galloc0(&namelist,sizeof(struct struct_namelist));
 	if(ret<0)
@@ -47,21 +45,21 @@ int read_namelist_json_desc(void * root,void * record)
 	if(temp_node==NULL)
 		return -EINVAL;
 	namelist_template=memdb_get_template(DB_NAMELIST,0);
-	if(namelist==NULL)
+	if(namelist_template==NULL)
 		return -EINVAL;
 
 	ret=json_2_struct(root,namelist,namelist_template);
-	namelist->elem_no=json_get_elemno(temp_node);
+//	namelist->elem_no=json_get_elemno(temp_node);
 	db_record->record=namelist;
 
 	ret=memdb_comp_uuid(db_record);
 	if(ret<0)
 		return ret;	
-	ret=memdb_store(namelist,DB_NAMELIST,0,db_record->head.name);
+	ret=memdb_store_record(db_record);
 	return ret;	
 }
 
-int read_typelist_json_desc(void * root,BYTE * uuid)
+int read_typelist_json_desc(void * root,void * record)
 {
 	int ret;
 	struct struct_namelist * namelist;
@@ -70,110 +68,56 @@ int read_typelist_json_desc(void * root,BYTE * uuid)
 	struct struct_typelist * basetypelist;
 
 	int * temp_node;
-	char buf[1024];
 	void * namelist_template;
 	void * typelist_template;
+	DB_RECORD * db_record=record;
+	DB_RECORD * namelist_record;
 
-	ret=Galloc0(&namelist,sizeof(struct struct_namelist));
-	if(ret<0)
-		return ret;
 
 	ret=Galloc0(&typelist,sizeof(struct struct_typelist));
 	if(ret<0)
 		return ret;
+	if(db_record->head.type!=DB_TYPELIST)
+		return -EINVAL;
 	
 //      store the namelist (if exists) and compute the uuid
 
-	namelist->head.type=DB_NAMELIST;
-	temp_node=json_find_elem("elemlist",root);
-	if(temp_node==NULL)
-		return -EINVAL;
+	temp_node=json_find_elem("uuid",root);
+	if(temp_node == NULL)
+	{
+		// this typelist use namelist describe, 
+		// we should finish namelist store first	
+		ret=Galloc0(&namelist_record,sizeof(DB_RECORD));
+		if(ret<0)
+			return ret;
+		namelist_record->head.type=DB_NAMELIST;
+		ret=read_namelist_json_desc(root,namelist_record);
+		if(ret<0)
+			return ret;
+		Memcpy(typelist->uuid,namelist_record->head.uuid,DIGEST_SIZE);
+		namelist=namelist_record->record;
+		typelist->elem_no=namelist->elem_no;			
+	}
+	else
+	{
+		typelist_template=memdb_get_template(DB_TYPELIST,0);
+		if(typelist_template==NULL)
+			return -EINVAL;
 
-	namelist_template=memdb_get_template(DB_NAMELIST,0);
-	if(namelist_template==NULL)
-		return -EINVAL;
+		ret=json_2_struct(root,typelist,typelist_template);
+		namelist_record=memdb_find(typelist->uuid,DB_NAMELIST,0);
+		if(namelist_record==NULL)
+			return -EINVAL;
+		namelist=namelist_record->record;
+		if(typelist->elem_no==0)
+			typelist->elem_no=namelist->elem_no;
+	}
 
-	typelist_template=memdb_get_template(DB_TYPELIST,0);
-	if(typelist_template==NULL)
-		return -EINVAL;
-
-	ret=json_2_part_struct(root,namelist,namelist_template,CUBE_ELEM_FLAG_INPUT);
-	if(ret<0)
-		return ret;
-
-	ret=memdb_comp_uuid(namelist);
-	if(ret<0)
-		return ret;	
-	ret=memdb_store(namelist,DB_NAMELIST,0);
-
-//      generate the typelist struct
-	
-	Memcpy(typelist->head.name,namelist->head.name,DIGEST_SIZE);
-	typelist->head.type=DB_TYPELIST;
-
-	typelist->elem_no=namelist->elem_no;
-	Memcpy(typelist->uuid,namelist->head.uuid,DIGEST_SIZE);
-	ret=memdb_comp_uuid(typelist);
-	if(ret<0)
-		return ret;
-	typelist->tail_desc=namelist;
-
-//	merge the new typelist function
-
-	baselist=memdb_find_byname("baselist",DB_NAMELIST,0);
-	if(baselist==NULL)
-		return -EINVAL;
-
-	memdb_remove(baselist,DB_INDEX,0);
-
-	ret=_merge_namelist(baselist,namelist);
-	if(ret<0)
-		return ret;
-	ret=memdb_store_index(baselist,NULL,0);
-	if(ret<0)
-		return ret;
-
-//     replace the old baselist to new baselist
-	basetypelist=memdb_find_byname("baselist",DB_TYPELIST,0);
-	if(basetypelist==NULL)
-		return -EINVAL;
-
-	memdb_remove(basetypelist,DB_INDEX,0);
-
-	Memcpy(basetypelist->uuid,baselist->head.uuid,DIGEST_SIZE);
-
-	basetypelist->elem_no=baselist->elem_no;
-
-	ret=memdb_comp_uuid(basetypelist);
-	if(ret<0)
-		return ret;
-	basetypelist->tail_desc=baselist;
-	ret=memdb_store_index(basetypelist,NULL,0);
-	if(ret<0)
-		return ret;
-
-//	reset the typelist ref in head.typelist
- 
-	ret=struct_set_ref(namelist_template,"head.type",baselist->elemlist);
-	ret=struct_set_ref(typelist_template,"head.type",baselist->elemlist);
-	void * subtypelist_template=memdb_get_template(DB_SUBTYPELIST,0);
-	if(subtypelist_template==NULL)
-		return -EINVAL;
-	ret=struct_set_ref(subtypelist_template,"head.type",baselist->elemlist);
-	ret=struct_set_ref(subtypelist_template,"type",baselist->elemlist);
-	void * recordtype_template=memdb_get_template(DB_RECORDTYPE,0);
-	if(recordtype_template==NULL)
-		return -EINVAL;
-	ret=struct_set_ref(recordtype_template,"head.type",baselist->elemlist);
-	ret=struct_set_ref(recordtype_template,"type",baselist->elemlist);
-	
-	struct struct_namelist * baseflag = memdb_find_byname("baseflag",DB_NAMELIST,0);
-	if(baseflag==NULL)
-		return -EINVAL;
-	struct_set_ref(recordtype_template,"index.flag",baseflag->elemlist);
-
+	db_record->record=typelist;
+	ret=memdb_store_record(db_record);
 	return ret;	
 }
+		
 /*
 int read_subtypelist_json_desc(void * root,BYTE * uuid)
 {
@@ -756,29 +700,26 @@ int memdb_read_desc(void * root, BYTE * uuid)
 	}
 	
 	
-	ret=Galloc0(db_record,sizeof(DB_RECORD));
+	ret=Galloc0(&db_record,sizeof(DB_RECORD));
 	
 	ret=json_2_struct(head_node,&(db_record->head),head_template);
 	if(ret<0)
 		return -EINVAL;	
 	
-	if(read_json_func==NULL)
-		return -EINVAL;
-
-	
 	if(db_record->head.type<DB_DTYPE_START)
 	{
 		switch(db_record->head.type)
 		{
-			case DB_NAMMELIST:
-				ret=read_namelist_json_desc(db_record->record,record_node);
+			case DB_NAMELIST:
+				ret=read_namelist_json_desc(record_node,db_record);
 				break;
 			case DB_STRUCT_DESC:
-				ret=read_typelist_json_desc(db_record->record,record_node);
 				break;
 			case DB_TYPELIST:
+				ret=read_typelist_json_desc(record_node,db_record);
+				break;
 			case DB_SUBTYPELIST:
-			case DB_CONVERTTYPELIST:
+			case DB_CONVERTLIST:
 			case DB_RECORDTYPE:
 			default:
 				return -EINVAL;
