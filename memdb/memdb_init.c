@@ -470,21 +470,21 @@ int memdb_is_dynamic(int type)
 void * memdb_get_first(int type,int subtype)
 {
 	int ret;
-	void * db_list;
+	struct memdb_desc * db_list;
 	db_list=memdb_get_dblist(type,subtype);
 	if(db_list==NULL)
 		return NULL;
-	return hashlist_get_first(db_list);
+	return hashlist_get_first(db_list->record_db);
 }
 
 void * memdb_get_next(int type,int subtype)
 {
 	int ret;
-	void * db_list;
+	struct memdb_desc * db_list;
 	db_list=memdb_get_dblist(type,subtype);
 	if(db_list==NULL)
 		return NULL;
-	return hashlist_get_next(db_list);
+	return hashlist_get_next(db_list->record_db);
 }
 
 
@@ -963,6 +963,36 @@ void * memdb_get_subtypelist(int type)
 	}
 	return NULL;
 }
+
+int memdb_print(void * data,char * json_str)
+{
+	DB_RECORD * record = data;
+	void * struct_template ; 
+	int ret;
+	int offset;
+	char * buf="\"record\":";
+
+	struct_template=memdb_get_template(record->head.type,record->head.subtype);
+	if(struct_template==NULL)
+		return -EINVAL;	
+	Strcpy(json_str,"{\"head\":");
+	offset=Strlen(json_str);
+	ret=struct_2_json(&record->head,json_str+offset,head_template);
+	if(ret<0)
+		return ret;
+	offset+=ret;
+	ret=Strlen(buf);
+	Memcpy(json_str+offset,buf,ret);
+	offset+=ret;
+	ret=struct_2_json(record->record,json_str+offset,struct_template);
+	if(ret<0)
+		return ret;
+	offset+=ret;
+	json_str[offset++]='}';
+	
+	return offset;
+}
+
 /*
 int memdb_get_typeno(char * typestr)
 {
