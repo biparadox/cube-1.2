@@ -1,19 +1,5 @@
-#ifdef KERNEL_MODE
 
-#include <linux/string.h>
-#include <linux/list.h>
-#include <linux/slab.h>
-#include <linux/errno.h>
-
-#else
-
-#include<stdlib.h>
-#include<stdio.h>
-#include<string.h>
-#include<errno.h>
-
-#endif
-
+#include "../include/errno.h"
 #include "../include/data_type.h"
 #include "../include/list.h"
 #include "../include/attrlist.h"

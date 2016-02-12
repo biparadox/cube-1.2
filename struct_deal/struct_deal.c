@@ -603,25 +603,36 @@ int    _elem_get_text_value(void * addr,char * text,void * elem)
 	{
 		if(_isdefineelem(curr_elem->elem_desc->type))
 		{
-			int def_value=_elem_get_defvalue(curr_elem,addr);
-			if(def_value<0)
-				return def_value;
 			int offset=0;
 			int i;
 			int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
 			if(addroffset<0)
 				return addroffset;
 			
-			curr_elem->index=0;
-			for(i=0;i<def_value;i++)
+			if(_isarrayelem(curr_elem->elem_desc->type))
 			{
-				ret=elem_ops->get_text_value(*(void **)elem_addr+addroffset*i,text+offset,curr_elem);
+				int def_value=_elem_get_defvalue(curr_elem,addr);
+				if(def_value<0)
+					return def_value;
+				curr_elem->index=0;
+				for(i=0;i<def_value;i++)
+				{
+					ret=elem_ops->get_text_value(*(void **)elem_addr+addroffset*i,text+offset,curr_elem);
+					if(ret<0)
+						return ret;
+					offset+=ret-1;
+				}
+				*(text+offset-1)=0;
+				return offset;
+			}
+			else
+			{
+				ret=elem_ops->get_text_value(elem_addr,
+					text,curr_elem);
 				if(ret<0)
 					return ret;
-				offset+=ret-1;
+					
 			}
-			*(text+offset-1)=0;
-			return offset;
 		}
 		else
 		{
@@ -1264,13 +1275,13 @@ int _tojson_proc_func(void * addr, void * data, void * elem,void * para)
 	struct default_para  * my_para = para;
 	char * json_str=data;
 	struct elem_template	* curr_elem=elem;
-	int ret,text_len;
+	int ret=0,text_len;
 	char buf[512];
 	// get this elem's ops
 	ELEM_OPS * elem_ops=_elem_get_ops(curr_elem);
 	if(elem_ops==NULL)
 		return -EINVAL;
-	_print_elem_name(data,elem,para);
+	ret=_print_elem_name(data,elem,para);
 	text_len=_elem_get_text_value(addr,buf,curr_elem);
 	if(text_len<0)
 		return text_len;

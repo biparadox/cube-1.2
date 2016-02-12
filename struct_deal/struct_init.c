@@ -21,7 +21,7 @@ static struct InitElemInfo_struct InitElemInfo [] =
 	{CUBE_TYPE_UUID,&uuid_convert_ops,0,DIGEST_SIZE},
 	{CUBE_TYPE_UUIDARRAY,&uuidarray_convert_ops,ELEM_ATTR_POINTER|ELEM_ATTR_ARRAY,0},
 	{CUBE_TYPE_DEFUUIDARRAY,&defuuidarray_convert_ops,ELEM_ATTR_POINTER|ELEM_ATTR_ARRAY|ELEM_ATTR_DEFINE,0},
-	{CUBE_TYPE_DEFNAMELIST,&defnamelist_convert_ops,ELEM_ATTR_POINTER|ELEM_ATTR_DEFINE,sizeof(void *)+sizeof(int)},
+	{CUBE_TYPE_DEFNAMELIST,&defnamelist_convert_ops,ELEM_ATTR_POINTER|ELEM_ATTR_DEFINE|ELEM_ATTR_ARRAY,sizeof(void *)+sizeof(int)},
 	{CUBE_TYPE_INT,&int_convert_ops,ELEM_ATTR_VALUE|ELEM_ATTR_NUM,sizeof(int)},
 	{CUBE_TYPE_UCHAR,&int_convert_ops,ELEM_ATTR_VALUE|ELEM_ATTR_NUM,sizeof(char)},
 	{CUBE_TYPE_USHORT,&int_convert_ops,ELEM_ATTR_VALUE|ELEM_ATTR_NUM,sizeof(short)},
@@ -210,8 +210,6 @@ int _elem_get_defvalue(void * elem,void * addr)
 	if(elem_ops==NULL)
 		return NULL;
 
-	if(elem_ops->get_int_value == NULL)
-		return -EINVAL;
 
 	// now compute the define elem's offset
 
@@ -224,7 +222,14 @@ int _elem_get_defvalue(void * elem,void * addr)
 
 	def_addr=_elem_get_addr(temp_elem,addr);
 	// if define elem is an elem in curr_elem's father subset
-	define_value=elem_ops->get_int_value(def_addr,temp_elem);
+	if(elem_ops->get_int_value == NULL)
+	{
+		define_value = *(int *)def_addr;
+	}
+	else
+	{
+		define_value=elem_ops->get_int_value(def_addr,temp_elem);
+	}
 	if((define_value<0) || (define_value >=1024))
 		return -EINVAL;
 	return define_value;

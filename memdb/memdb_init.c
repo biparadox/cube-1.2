@@ -989,6 +989,7 @@ int memdb_print(void * data,char * json_str)
 		return ret;
 	offset+=ret;
 	json_str[offset++]='}';
+	json_str[offset++]=0;
 	
 	return offset;
 }

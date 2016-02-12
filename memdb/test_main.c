@@ -121,6 +121,8 @@ int main() {
 	}
 
 	void * record;
+
+
 	record=memdb_get_first(DB_NAMELIST,0);
 	while(record!=NULL)
 	{
@@ -129,6 +131,16 @@ int main() {
 			return -EINVAL;
 		printf("%s\n",print_buffer);
 		record=memdb_get_next(DB_NAMELIST,0);
+	}
+
+	record=memdb_get_first(DB_TYPELIST,0);
+	while(record!=NULL)
+	{
+		ret=memdb_print(record,print_buffer);
+		if(ret<0)
+			return -EINVAL;
+		printf("%s\n",print_buffer);
+		record=memdb_get_next(DB_TYPELIST,0);
 	}
 // test struct desc reading start
 
