@@ -186,9 +186,6 @@ void * _clone_namelist(void * list1)
 	return newnamelist;
 }
 
-
-
-
 void * _merge_namelist(void * list1, void * list2)
 {
 	struct struct_namelist * namelist1 = list1;
@@ -798,6 +795,10 @@ int memdb_init()
 	if(record==NULL)
 		return -EINVAL;
 
+	record = memdb_store(elemenumlist,DB_NAMELIST,0,"baseelemlist");
+	if(record==NULL)
+		return -EINVAL;
+
 	record = memdb_store(typeenumlist,DB_NAMELIST,0,"typeenumlist");
 	if(record==NULL)
 		return -EINVAL;
@@ -835,6 +836,7 @@ void *  memdb_store(void * data,int type,int subtype,char * name)
 	struct memdb_desc * db_list;
 	UUID_HEAD * head;
 	DB_RECORD * record;
+	DB_RECORD * oldrecord;
 	db_list=memdb_get_dblist(type,subtype);
 	if(db_list==NULL)
 		return NULL;
@@ -857,10 +859,28 @@ void *  memdb_store(void * data,int type,int subtype,char * name)
 	if(ret<0)
 		return NULL;
 
-	ret=hashlist_add_elem(db_list->record_db,record);
-	if(ret<0)
-		return NULL;
-
+	oldrecord=hashlist_find_elem(db_list->record_db,record);
+	if(oldrecord==NULL)
+	{
+		void * struct_template=memdb_get_template(type,subtype);
+		if(struct_template==NULL)
+		{
+			Free(record);
+			return NULL;
+		}
+		record->record=clone_struct(data,struct_template);
+		ret=hashlist_add_elem(db_list->record_db,record);
+		if(ret<0)
+			return NULL;
+	}
+	else
+	{
+		Free(record);
+//		ret=_memdb_record_add_name(oldrecord,name);
+//		if(ret<0)
+//			return NULL;
+		return oldrecord;				
+	}
 	return record;
 }
 

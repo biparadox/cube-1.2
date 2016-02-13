@@ -220,7 +220,14 @@ int main() {
 	ret=json_2_struct(root,recover_struct1,struct_template);
 	printf("read %d size to json!",ret);
 
-	ret=struct_2_json(recover_struct1,text1,struct_template);
+	void * recover_struct2=clone_struct(recover_struct1,struct_template);
+	if(recover_struct2==NULL)
+	{
+		printf("clone struct failed!\n");
+		return -1;
+	}
+
+	ret=struct_2_json(recover_struct2,text1,struct_template);
 	printf("recover struct %d size to json %s!\n",ret,text1);
 
 //	ret=struct_read_elem_text("login_info.passwd",&test_login,text,struct_template);

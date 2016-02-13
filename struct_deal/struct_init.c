@@ -424,6 +424,341 @@ int get_fixed_elemsize(int type)
 	
 }
 
+
+int _elem_get_bin_length(void * value,void * elem,void * addr)
+{
+	int ret;
+	struct elem_template * curr_elem=elem;
+	if(_ispointerelem(curr_elem->elem_desc->type))
+	{
+		if(_isdefineelem(curr_elem->elem_desc->type))
+		{
+			if(addr==NULL)
+				return -EINVAL;
+			ret=_elem_get_defvalue(curr_elem,addr);
+			if(ret<0)
+				return ret;
+			if(_isarrayelem(curr_elem->elem_desc->type))
+				ret*=curr_elem->elem_desc->size;
+		}
+		else 
+		{ 
+			if(_isarrayelem(curr_elem->elem_desc->type))
+			{
+				ret=curr_elem->elem_desc->size*(int)curr_elem->elem_desc->ref;
+				if((ret<0) ||(ret>DIGEST_SIZE*32))
+					return -EINVAL;
+			}
+			else
+			{
+				ret=strnlen(value,DIGEST_SIZE*32);
+				if(ret<DIGEST_SIZE*32)
+						ret+=1;
+			}
+		}
+	}
+	else
+	{
+		if( (ret=get_fixed_elemsize(curr_elem->elem_desc->type))<0)
+			ret=curr_elem->size;
+	}
+	return ret;
+}
+
+struct elem_deal_ops
+{
+	int (*default_func)(void * addr,void * data,void * elem);
+	int (*elem_ops)(void * addr,void * data,void * elem);		
+	int (*def_array)(void * addr,void * data,void * elem,int def_value);		
+	
+};
+
+
+
+int  _elem_process_func(void * addr,void * data,void * elem,
+	struct elem_deal_ops * funcs)
+{
+	int ret;
+	void * elem_addr;
+	
+	// get this elem's addr
+
+	elem_addr=_elem_get_addr(elem,addr);
+	struct elem_template * curr_elem=elem;
+//	ELEM_OPS * elem_ops=_elem_get_ops(curr_elem);
+	
+	// judge if this func is empty
+
+	if(funcs->elem_ops==NULL)
+	{
+		ret=funcs->default_func(addr,data,elem);
+		return ret;
+
+	}
+	else
+	{
+		// judge if this elem is a define elem	
+		if(_isdefineelem(curr_elem->elem_desc->type))
+		{
+			int offset=0;
+			int i;
+			int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
+			if(addroffset<0)
+				return addroffset;
+		
+			// define + array elem means we need to repeat 
+			// def_value times 	
+			if(_isarrayelem(curr_elem->elem_desc->type))
+			{
+				int def_value=_elem_get_defvalue(curr_elem,addr);
+				if(def_value<0)
+					return def_value;
+
+				if(funcs->def_array!=NULL)
+				{
+					ret=funcs->def_array(elem_addr,data,curr_elem,def_value);
+					if(ret<0)
+						return ret;
+				}
+				curr_elem->index=0;
+				for(i=0;i<def_value;i++)
+				{
+					ret=funcs->elem_ops(*(void **)elem_addr+addroffset*i,data+offset,curr_elem);
+					if(ret<0)
+						return ret;
+					offset+=ret-1;
+				}
+//				*(char *)(data+offset-1)=0;
+				return offset;
+			}
+			else
+			{
+				// or we should use the normal process func,
+				// let the function deal the defvale itself
+				ret=funcs->elem_ops(elem_addr,data,curr_elem);
+				if(ret<0)
+					return ret;
+					
+			}
+		}
+		else
+		{
+			// use the normal process func 
+			ret=funcs->elem_ops(elem_addr,data,curr_elem);
+			if(ret<0)
+				return ret;
+		}
+	}
+	return ret;
+}
+
+int _elem_get_bin_deffunc(void * addr,void * data,void * elem)
+{
+	int ret;
+	void * elem_addr;
+	struct elem_template * curr_elem=elem;
+	
+	// get this elem's addr
+
+	elem_addr=_elem_get_addr(elem,addr);
+	// if this func is empty, we use default func
+	if((ret=_elem_get_bin_length(*(char **)elem_addr,elem,addr))<0)
+		return ret;
+	if(_ispointerelem(curr_elem->elem_desc->type))
+		Memcpy(data,*(char **)elem_addr,ret);
+	else
+		Memcpy(data,elem_addr,ret);
+	return ret;
+
+}
+int  _elem_get_bin_value(void * addr,void * data,void * elem)
+{
+	struct elem_deal_ops myfuncs;
+	ELEM_OPS * elem_ops=_elem_get_ops(elem);
+	myfuncs.default_func=&_elem_get_bin_deffunc;
+	myfuncs.elem_ops=elem_ops->get_bin_value;
+	myfuncs.def_array=NULL;
+
+	return _elem_process_func(addr,data,elem,&myfuncs);
+}
+
+int _elem_set_bin_deffunc(void * addr,void * data,void * elem)
+{
+	int ret;
+	void * elem_addr;
+	struct elem_template * curr_elem=elem;
+	
+	// get this elem's addr
+
+	elem_addr=_elem_get_addr(elem,addr);
+	// if this func is empty, we use default func
+	if((ret=_elem_get_bin_length(data,elem,addr))<0)
+		return ret;
+	if(_ispointerelem(curr_elem->elem_desc->type))
+	{
+		int tempret=Palloc0(elem_addr,ret);
+		if(tempret<0)
+			return tempret;
+		Memcpy(*(char **)elem_addr,data,ret);
+	}
+	else
+		Memcpy(elem_addr,data,ret);
+	return ret;
+
+}
+
+int _elem_set_bin_defarray(void * addr,void * text,void * elem,int def_value)
+{
+	int ret;
+	struct elem_template * curr_elem=elem;
+	int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
+	if(addroffset<0)
+		return addroffset;
+	ret=Palloc0(addr,addroffset*def_value);
+	return ret;
+	
+}
+
+int  _elem_set_bin_value(void * addr,void * data,void * elem)
+{
+	struct elem_deal_ops myfuncs;
+	ELEM_OPS * elem_ops=_elem_get_ops(elem);
+	myfuncs.default_func=&_elem_set_bin_deffunc;
+	myfuncs.elem_ops=elem_ops->set_bin_value;
+	myfuncs.def_array=_elem_set_bin_defarray;
+
+	return _elem_process_func(addr,data,elem,&myfuncs);
+}
+
+int _elem_clone_deffunc(void * addr, void * data,void * elem)
+{
+	int ret;
+	void * elem_addr;
+	void * elem_src;
+	struct elem_template * curr_elem=elem;
+	
+	// get this elem's addr
+
+	elem_addr=_elem_get_addr(elem,addr);
+	elem_src=_elem_get_addr(elem,data);
+	// if this func is empty, we use default func
+	if((ret=_elem_get_bin_length(elem_src,elem,addr))<0)
+		return ret;
+	if(_ispointerelem(curr_elem->elem_desc->type))
+	{
+		int tempret=Palloc0(elem_addr,ret);
+		if(tempret<0)
+			return tempret;
+		
+		Strncpy(*(char **)elem_addr,*(char **)elem_src,DIGEST_SIZE*32);
+	}
+	else
+		Memcpy(elem_addr,elem_src,ret);
+	return ret;
+}
+
+int  _elem_clone_value(void * addr,void * data,void * elem)
+{
+	struct elem_deal_ops myfuncs;
+	ELEM_OPS * elem_ops=_elem_get_ops(elem);
+	myfuncs.default_func=&_elem_clone_deffunc;
+	myfuncs.elem_ops=elem_ops->clone_elem;
+	myfuncs.def_array=_elem_set_bin_defarray;
+
+	return _elem_process_func(addr,data,elem,&myfuncs);
+}
+	
+int _elem_get_text_deffunc(void * addr,void * data,void * elem)
+{
+	int ret;
+	void * elem_addr;
+	struct elem_template * curr_elem=elem;
+	
+	// get this elem's addr
+
+	elem_addr=_elem_get_addr(elem,addr);
+	// if this func is empty, we use default func
+	if((ret=_elem_get_bin_length(*(char **)elem_addr,elem,addr))<0)
+		return ret;
+	if(_ispointerelem(curr_elem->elem_desc->type))
+		Memcpy(data,*(char **)elem_addr,ret);
+	else
+		Memcpy(data,elem_addr,ret);
+	return ret;
+
+}
+int  _elem_get_text_value(void * addr,char * text,void * elem)
+{
+	struct elem_deal_ops myfuncs;
+	ELEM_OPS * elem_ops=_elem_get_ops(elem);
+	myfuncs.default_func=&_elem_get_text_deffunc;
+	myfuncs.elem_ops=elem_ops->get_text_value;
+	myfuncs.def_array=NULL;
+
+	return _elem_process_func(addr,text,elem,&myfuncs);
+}
+
+int _elem_set_text_deffunc(void * addr,void * data,void * elem)
+{
+	int ret;
+	void * elem_addr;
+	struct elem_template * curr_elem=elem;
+	char * text=(char *)data;
+	
+	// get this elem's addr
+
+	elem_addr=_elem_get_addr(elem,addr);
+	// if this func is empty, we use default func
+	if((ret=_elem_get_bin_length(text,elem,addr))<0)
+		return ret;
+	if(_ispointerelem(curr_elem->elem_desc->type))
+	{
+		int tempret=Palloc0(elem_addr,ret);
+		if(tempret<0)
+			return tempret;
+		Memcpy(*(char **)elem_addr,text,ret);
+	}
+	else
+	{
+		int str_len=strlen(text);
+		if(str_len>=ret)
+		{
+			Memcpy(elem_addr,text,ret);
+		}
+		else
+		{
+			Memcpy(elem_addr,text,str_len);
+			Memset(elem_addr+str_len,0,ret-str_len);	
+		}
+	}
+	return ret;
+
+}
+
+int _elem_set_text_defarray(void * addr,void * text,void * elem,int def_value)
+{
+	int ret;
+	struct elem_template * curr_elem=elem;
+	int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
+	if(addroffset<0)
+		return addroffset;
+	ret=Palloc0(addr,addroffset*def_value);
+	return ret;
+	
+}
+
+int    _elem_set_text_value(void * addr,char * text,void * elem)
+{
+	struct elem_deal_ops myfuncs;
+	ELEM_OPS * elem_ops=_elem_get_ops(elem);
+	myfuncs.default_func=&_elem_set_text_deffunc;
+	myfuncs.elem_ops=elem_ops->set_text_value;
+	myfuncs.def_array=&_elem_set_text_defarray;
+
+	return _elem_process_func(addr,text,elem,&myfuncs);
+
+}
+
 int _getelemjsontype(int type)
 {
 	if((type<0)|| (type>CUBE_TYPE_ENDDATA))
@@ -441,55 +776,7 @@ int _getelemjsontype(int type)
 	return JSON_ELEM_STRING;
 		
 }
-/*
-int _getelemjsontype(int type)
-{
-	switch(type)
-	{
-		case CUBE_TYPE_STRING:
-		case CUBE_TYPE_UUID:
-		case CUBE_TYPE_ENUM:
-		case CUBE_TYPE_FLAG:
-		case CUBE_TYPE_DEFENUM:
-		case CUBE_TYPE_DEFFLAG:
-		case CUBE_TYPE_TIME:
-		case CUBE_TYPE_BINDATA: 
-		case CUBE_TYPE_HEXDATA:	 
-		case CUBE_TYPE_ESTRING:
-		case CUBE_TYPE_JSONSTRING:
-		case CUBE_TYPE_DEFINE:
-		case CUBE_TYPE_DEFSTR:	
-			return JSON_ELEM_STRING;
-		case CUBE_TYPE_DEFSTRARRAY:
-		case CUBE_TYPE_BINARRAY:
-		case CUBE_TYPE_UUIDARRAY:
-		case CUBE_TYPE_DEFUUIDARRAY:
-		case CUBE_TYPE_DEFNAMELIST:
-		case CUBE_TYPE_BITMAP:	 
-			return JSON_ELEM_ARRAY;
-		case CUBE_TYPE_INT:
-		case CUBE_TYPE_UCHAR:    
-		case CUBE_TYPE_USHORT:   
-		case CUBE_TYPE_LONGLONG: 
-		case TPM_TYPE_UINT64:
-		case TPM_TYPE_UINT32:
-		case TPM_TYPE_UINT16:
-			return JSON_ELEM_NUM;
-		case CUBE_TYPE_BOOL:
-			return JSON_ELEM_BOOL;
-		case CUBE_TYPE_NODATA:
-        	case CUBE_TYPE_CHOICE:
-		case CUBE_TYPE_ENDDATA:
-			return 0;
-		case CUBE_TYPE_SUBSTRUCT:
-			return JSON_ELEM_MAP;
-		
-		default:
-			break;
-	}
-	return -EINVAL;
-}
-*/
+
 void * _elem_get_ref(void * elem)
 {
 	struct elem_template *  curr_elem=elem;

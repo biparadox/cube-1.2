@@ -430,292 +430,6 @@ struct default_para
 	int offset;
 };
 
-int _elem_get_bin_length(void * value,void * elem,void * addr)
-{
-	int ret;
-	struct elem_template * curr_elem=elem;
-	if(_ispointerelem(curr_elem->elem_desc->type))
-	{
-		if(_isdefineelem(curr_elem->elem_desc->type))
-		{
-			if(addr==NULL)
-				return -EINVAL;
-			ret=_elem_get_defvalue(curr_elem,addr);
-			if(ret<0)
-				return ret;
-			if(_isarrayelem(curr_elem->elem_desc->type))
-				ret*=curr_elem->elem_desc->size;
-		}
-		else 
-		{ 
-			if(_isarrayelem(curr_elem->elem_desc->type))
-			{
-				ret=curr_elem->elem_desc->size*(int)curr_elem->elem_desc->ref;
-				if((ret<0) ||(ret>DIGEST_SIZE*16))
-					return -EINVAL;
-			}
-			else
-			{
-				ret=strnlen(value,DIGEST_SIZE*16);
-				if(ret<DIGEST_SIZE*16)
-						ret+=1;
-			}
-		}
-	}
-	else
-	{
-		if( (ret=get_fixed_elemsize(curr_elem->elem_desc->type))<0)
-			ret=curr_elem->size;
-	}
-	return ret;
-}
-		
-int    _elem_get_bin_value(void * addr,void * data,void * elem)
-{
-	int ret;
-	struct elem_template * curr_elem=elem;
-	ELEM_OPS * elem_ops=_elem_get_ops(curr_elem);
-	void * elem_addr;
-	elem_addr=_elem_get_addr(elem,addr);
-	
-	
-	if(elem_ops->get_bin_value==NULL)
-	{
-		
-		if((ret=_elem_get_bin_length(*(char **)elem_addr,elem,addr))<0)
-			return ret;
-		if(_ispointerelem(curr_elem->elem_desc->type))
-			Memcpy(data,*(char **)elem_addr,ret);
-		else
-			Memcpy(data,elem_addr,ret);
-	}
-	else
-	{
-		if(_isdefineelem(curr_elem->elem_desc->type))
-		{
-			int def_value=_elem_get_defvalue(curr_elem,addr);
-			if(def_value<0)
-				return def_value;
-			int offset=0;
-			int i;
-			int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
-			if(addroffset<0)
-				return addroffset;
-			curr_elem->index=0;
-			
-			for(i=0;i<def_value;i++)
-			{
-				ret=elem_ops->get_bin_value(*(void **)elem_addr+addroffset*i,data+offset,curr_elem);
-				if(ret<0)
-					return ret;
-				offset+=ret;
-			}
-			return offset;
-		}
-		else
-		{
-			ret=elem_ops->get_bin_value(elem_addr,
-				data,curr_elem);
-			if(ret<0)
-				return ret;
-		}
-	}
-	return ret;
-} 
-
-int    _elem_set_bin_value(void * addr,void * data,void * elem)
-{
-	int ret;
-	struct elem_template * curr_elem=elem;
-	ELEM_OPS * elem_ops=_elem_get_ops(curr_elem);
-	void * elem_addr;
-	elem_addr=_elem_get_addr(elem,addr);
-	
-	if(elem_ops->set_bin_value==NULL)
-	{
-		if((ret=_elem_get_bin_length(data,elem,addr))<0)
-			return ret;
-		if(_ispointerelem(curr_elem->elem_desc->type))
-		{
-			int tempret=Palloc0(elem_addr,ret);
-			if(tempret<0)
-				return tempret;
-			Memcpy(*(char **)elem_addr,data,ret);
-		}
-		else
-			Memcpy(elem_addr,data,ret);
-	}
-	else
-	{
-		if(_isdefineelem(curr_elem->elem_desc->type))
-		{
-			int def_value=_elem_get_defvalue(curr_elem,addr);
-			if(def_value<0)
-				return def_value;
-			int offset=0;
-			int i;
-			int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
-			if(addroffset<0)
-				return addroffset;
-			ret=Palloc0(elem_addr,addroffset*def_value);
-			if(ret<0)
-				return ret;
-			curr_elem->index=0;
-	
-			for(i=0;i<def_value;i++)
-			{
-				ret=elem_ops->set_bin_value(*(void **)elem_addr+addroffset*i,data+offset,curr_elem);
-				if(ret<0)
-					return ret;
-				offset+=ret;
-			}
-			return offset;
-		}
-		else
-		{
-
-			ret=elem_ops->set_bin_value(elem_addr,data,curr_elem);
-			if(ret<0)
-				return ret;
-		}
-	}
-	return ret;
-} 
-
-int    _elem_get_text_value(void * addr,char * text,void * elem)
-{
-	int ret;
-	void * elem_addr;
-	elem_addr=_elem_get_addr(elem,addr);
-	struct elem_template * curr_elem=elem;
-	ELEM_OPS * elem_ops=_elem_get_ops(curr_elem);
-	
-	if(elem_ops->get_text_value==NULL)
-	{
-		if((ret=_elem_get_bin_length(*(char **)elem_addr,elem,addr))<0)
-			return ret;
-		if(_ispointerelem(curr_elem->elem_desc->type))
-			Memcpy(text,*(char **)elem_addr,ret);
-		else
-			Memcpy(text,elem_addr,ret);
-	}
-	else
-	{
-		if(_isdefineelem(curr_elem->elem_desc->type))
-		{
-			int offset=0;
-			int i;
-			int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
-			if(addroffset<0)
-				return addroffset;
-			
-			if(_isarrayelem(curr_elem->elem_desc->type))
-			{
-				int def_value=_elem_get_defvalue(curr_elem,addr);
-				if(def_value<0)
-					return def_value;
-				curr_elem->index=0;
-				for(i=0;i<def_value;i++)
-				{
-					ret=elem_ops->get_text_value(*(void **)elem_addr+addroffset*i,text+offset,curr_elem);
-					if(ret<0)
-						return ret;
-					offset+=ret-1;
-				}
-				*(text+offset-1)=0;
-				return offset;
-			}
-			else
-			{
-				ret=elem_ops->get_text_value(elem_addr,
-					text,curr_elem);
-				if(ret<0)
-					return ret;
-					
-			}
-		}
-		else
-		{
-			ret=elem_ops->get_text_value(elem_addr,
-				text,curr_elem);
-			if(ret<0)
-				return ret;
-		}
-	}
-	return ret;
-} 
-
-int    _elem_set_text_value(void * addr,char * text,void * elem)
-{
-	int ret;
-	struct elem_template * curr_elem=elem;
-	ELEM_OPS * elem_ops=_elem_get_ops(curr_elem);
-	
-	void * elem_addr;
-	elem_addr=_elem_get_addr(elem,addr);
-	
-	if(elem_ops->set_text_value==NULL)
-	{
-		if((ret=_elem_get_bin_length(text,elem,addr))<0)
-			return ret;
-		if(_ispointerelem(curr_elem->elem_desc->type))
-		{
-			int tempret=Palloc0(elem_addr,ret);
-			if(tempret<0)
-				return tempret;
-			Memcpy(*(char **)elem_addr,text,ret);
-		}
-		else
-		{
-			int str_len=strlen(text);
-			if(str_len>=ret)
-			{
-				Memcpy(elem_addr,text,ret);
-			}
-			else
-			{
-				Memcpy(elem_addr,text,str_len);
-				Memset(elem_addr+str_len,0,ret-str_len);	
-			}
-		}
-	}
-	else
-	{
-		if(_isdefineelem(curr_elem->elem_desc->type))
-		{
-			int def_value=_elem_get_defvalue(curr_elem,addr);
-			if(def_value<0)
-				return def_value;
-			int offset=0;
-			int i;
-			int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
-			if(addroffset<0)
-				return addroffset;
-			ret=Palloc0(elem_addr,addroffset*def_value);
-			if(ret<0)
-				return ret;
-			curr_elem->index=0;
-	
-			for(i=0;i<def_value;i++)
-			{
-				ret=elem_ops->set_text_value(*(void **)elem_addr+addroffset*i,text+offset,curr_elem);
-				if(ret<0)
-					return ret;
-				offset+=ret;
-			}
-			return offset;
-		}
-		else
-		{
-			ret=elem_ops->set_text_value(elem_addr,text,curr_elem);
-			if(ret<0)
-				return ret;
-		}
-	}
-	return ret;
-} 
-
-
 int struct_2_blob_enterstruct(void * addr, void * data, void * elem,void * para)
 {
 	struct default_para  * my_para = para;
@@ -783,11 +497,6 @@ int part_deal_test(void * addr,void * data,void * elem,void *para)
 {
 	struct part_deal_para * my_para=para;
 	struct elem_template * curr_elem=elem;
-//	if(curr_elem->elem_desc->type == CUBE_TYPE_SUBSTRUCT)
-//	{
-//		STRUCT_NODE * temp_node=curr_elem->ref;
-//		return temp_node->flag & my_para->flag;
-//	}
 	return curr_elem->flag & my_para->flag;	
 }
 
@@ -882,6 +591,95 @@ int blob_2_part_struct(void * blob,void * addr, void * struct_template,int flag)
 	my_para.flag=flag;
 	my_para.offset=0;
 	ret= _convert_frame_func(addr,blob,struct_template,&blob_2_struct_ops,		&my_para);
+	if(ret<0)
+		return ret;
+	return my_para.offset;
+}
+// clone struct area
+int clone_struct_enterstruct(void * addr, void * data, void * elem,void * para)
+{
+	int ret;
+	struct default_para  * my_para = para;
+	struct elem_template	* curr_elem=elem;
+	void * elem_addr;
+	if(curr_elem->limit==0)
+	{
+		curr_elem->index=0;
+		if(_isarrayelem(curr_elem->elem_desc->type))
+		{
+			curr_elem->limit=_elem_get_defvalue(curr_elem,addr);
+			if(curr_elem->father==NULL)
+				elem_addr=addr;
+			else
+				elem_addr=_elem_get_addr(curr_elem->father,addr);
+			elem_addr+=curr_elem->offset;
+			
+			if(curr_elem->limit>0)
+				ret=Palloc0(elem_addr,curr_elem->size*curr_elem->limit);
+		}
+		else 
+		{
+			curr_elem->limit=curr_elem->elem_desc->size;
+			if(curr_elem->limit==0)
+				curr_elem->limit=1;
+		}
+	}
+	return 0;		
+}
+int proc_clone_struct(void * addr,void * data,void * elem,void * para)
+{
+	struct default_para  * my_para = para;
+	struct elem_template	* curr_elem=elem;
+	int ret;
+	ret = _elem_clone_value(addr,data,elem);
+	return ret;
+} 
+
+int struct_clone(void * src, void * destr, void * struct_template)
+{
+	int ret;
+	void * dest;
+	struct struct_deal_ops clone_struct_ops =
+	{
+		.enterstruct=&clone_struct_enterstruct,
+		.proc_func=&proc_clone_struct,
+	};	
+	static struct default_para my_para;
+	my_para.offset=0;
+
+	ret = _convert_frame_func(destr,src,struct_template,&clone_struct_ops,		&my_para);
+	if(ret<0)
+		return ret;
+	return my_para.offset;
+}
+
+void * clone_struct(void * addr,void * struct_template)
+{
+	int ret;
+	void * new_struct;
+	
+	ret=Galloc0(&new_struct,struct_size(struct_template));
+	if(ret<0)
+		return NULL;
+	ret=struct_clone(addr,new_struct,struct_template);
+	if(ret<0)
+		return NULL;
+	return new_struct;
+}
+
+int struct_part_clone(void * src,void *destr, void * struct_template,int flag)
+{
+	int ret;
+	struct struct_deal_ops clone_struct_ops =
+	{
+		.testelem=part_deal_test,
+		.enterstruct=&clone_struct_enterstruct,
+		.proc_func=&proc_clone_struct,
+	};	
+	static struct part_deal_para my_para;
+	my_para.flag=flag;
+	my_para.offset=0;
+	ret= _convert_frame_func(destr,src,struct_template,&clone_struct_ops,		&my_para);
 	if(ret<0)
 		return ret;
 	return my_para.offset;
