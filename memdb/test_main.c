@@ -100,7 +100,7 @@ int main() {
 	{
 //		"baseflag.json",
 		"typelist.json",
-//		"subtypelist.json",
+		"subtypelist.json",
 //		"msghead.json",
 //		"headrecord.json",
 		NULL
@@ -144,7 +144,7 @@ int main() {
 	}
 // test struct desc reading start
 
-/*	
+	
 	int msg_type = memdb_get_typeno("MESSAGE");
 	if(msg_type<=0)
 		return -EINVAL;
@@ -152,7 +152,8 @@ int main() {
 	int subtype=memdb_get_subtypeno(msg_type,"HEAD");
 	if(subtype<=0)
 		return -EINVAL;
-
+	printf(" type MESSAGE value %d, subtype HEAD value %d",msg_type,subtype);
+/*
 	void * record;
 	record=memdb_get_first(msg_type,subtype);
 	while(record!=NULL)

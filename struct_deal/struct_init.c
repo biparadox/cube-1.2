@@ -852,7 +852,7 @@ int    _elem_set_text_value(void * addr,char * text,void * elem)
 	myfuncs.default_func=&_elem_set_text_deffunc;
 	myfuncs.elem_ops=elem_ops->set_text_value;
 	myfuncs.def_array_init=&_elem_set_text_defarray;
-	myfuncs.def_array=_elem_to_text_defarray;
+	myfuncs.def_array=NULL;
 
 	return _elem_process_func(addr,text,elem,&myfuncs);
 

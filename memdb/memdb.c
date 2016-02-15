@@ -118,12 +118,84 @@ int read_typelist_json_desc(void * root,void * record)
 		return -EINVAL;
 	
 	memdb_store(baselist,DB_NAMELIST,0,"typeenumlist");
+	typeenumlist=baselist;
+
+	return ret;	
+}
+		
+int read_subtypelist_json_desc(void * root,void * record)
+{
+	int ret;
+	struct struct_namelist * namelist;
+	struct struct_subtypelist * subtypelist;
+
+	int * temp_node;
+	void * namelist_template;
+	void * subtypelist_template;
+	DB_RECORD * db_record=record;
+	DB_RECORD * namelist_record;
+
+
+	ret=Galloc0(&subtypelist,sizeof(struct struct_subtypelist));
+	if(ret<0)
+		return ret;
+	if(db_record->head.type!=DB_SUBTYPELIST)
+		return -EINVAL;
+	
+//      store the namelist (if exists) and compute the uuid
+
+	temp_node=json_find_elem("uuid",root);
+	if(temp_node == NULL)
+	{
+		// this typelist use namelist describe, 
+		// we should finish namelist store first	
+		ret=Galloc0(&namelist_record,sizeof(DB_RECORD));
+		if(ret<0)
+			return ret;
+		namelist_record->head.type=DB_NAMELIST;
+		ret=read_namelist_json_desc(root,namelist_record);
+		if(ret<0)
+		{
+			Free0(namelist_record);
+			return ret;
+		}
+		Memcpy(subtypelist->uuid,namelist_record->head.uuid,DIGEST_SIZE);
+		namelist=namelist_record->record;
+		subtypelist->elem_no=namelist->elem_no;			
+		temp_node=json_find_elem("type",root);
+		if(temp_node==NULL)
+		{
+			return -EINVAL;
+		}
+		subtypelist->type=memdb_get_typeno(json_get_valuestr(temp_node));
+		if(subtypelist->type<0)
+		{
+			return -EINVAL;
+		}
+	
+	}
+	else
+	{
+		subtypelist_template=memdb_get_template(DB_SUBTYPELIST,0);
+		if(subtypelist_template==NULL)
+			return -EINVAL;
+
+		ret=json_2_struct(root,subtypelist,subtypelist_template);
+		namelist_record=memdb_find(subtypelist->uuid,DB_NAMELIST,0);
+		if(namelist_record==NULL)
+			return -EINVAL;
+		namelist=namelist_record->record;
+		if(subtypelist->elem_no==0)
+			subtypelist->elem_no=namelist->elem_no;
+	}
+
+	db_record->record=subtypelist;
+	ret=memdb_store_record(db_record);
 
 	return ret;	
 }
 		
 /*
-int read_subtypelist_json_desc(void * root,BYTE * uuid)
 {
 	int ret;
 	struct struct_namelist * namelist;
@@ -723,6 +795,8 @@ int memdb_read_desc(void * root, BYTE * uuid)
 				ret=read_typelist_json_desc(record_node,db_record);
 				break;
 			case DB_SUBTYPELIST:
+				ret=read_subtypelist_json_desc(record_node,db_record);
+				break;
 			case DB_CONVERTLIST:
 			case DB_RECORDTYPE:
 			default:

@@ -2,7 +2,7 @@
 	"head":
 	{
 		"name":"internal_type",
-		"type":"TYPELIST",
+		"type":"TYPELIST"
 	},
 	"record":
 	{

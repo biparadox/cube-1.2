@@ -1138,15 +1138,17 @@ void * memdb_get_subtypelist(int type)
 	DB_RECORD * record;
 	struct struct_subtypelist * subtypelist;	
 	record=memdb_get_first(DB_SUBTYPELIST,0);
-	subtypelist=record->record;
 
-	while(subtypelist!=NULL)
+	while(record!=NULL)
 	{
+		subtypelist=record->record;
 		if(subtypelist->type==type)
-			return subtypelist;
-		subtypelist=memdb_get_next(DB_SUBTYPELIST,0);
+			break;
+		record=memdb_get_next(DB_SUBTYPELIST,0);
 	}
-	return NULL;
+	if(record==NULL)
+		return NULL;
+	return record->tail;
 }
 
 int memdb_print(void * data,char * json_str)
@@ -1179,15 +1181,12 @@ int memdb_print(void * data,char * json_str)
 	return offset;
 }
 
-/*
+
 int memdb_get_typeno(char * typestr)
 {
-	struct struct_typelist * baselist=memdb_find_byname("baselist",DB_TYPELIST,0);
-	if(baselist==NULL)
+	if(typeenumlist==NULL)
 		return -EINVAL;
-	if(baselist->tail_desc==NULL)
-		return -EINVAL;
-	return _get_value_namelist(typestr,baselist->tail_desc);
+	return _get_value_namelist(typestr,typeenumlist);
 
 }
 
@@ -1196,10 +1195,10 @@ int memdb_get_subtypeno(int typeno,char * typestr)
 	struct struct_subtypelist  * subtypelist=memdb_get_subtypelist(typeno);
 	if(subtypelist==NULL)
 		return -EINVAL;
-	return _get_value_namelist(typestr,subtypelist->tail_desc);
+	return _get_value_namelist(typestr,subtypelist);
 
 }
-
+/*
 int memdb_print(void * data,char * json_str)
 {
 	struct struct_desc_record * struct_record=data;

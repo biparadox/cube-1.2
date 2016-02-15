@@ -112,7 +112,7 @@ int recordtype_get_text_value(void * addr,char * text,void * elem_template)
 	if(enum_value<0)
 		return -EINVAL;
 
-	for(i=0;enum_list[i].name!=NULL;i++)
+	for(i=0;i<typeenumlist->elem_no;i++)
 	{
 		if(enum_list[i].value==enum_value)
 		{
@@ -157,7 +157,7 @@ int recordtype_set_text_value(void * addr,void * text,void * elem_template){
 	}
 	else
 	{
-		for(i=0;enum_list[i].name!=NULL;i++)
+		for(i=0;i<typeenumlist->elem_no;i++)
 		{
 			if(!strcmp(enum_list[i].name,text))
 			{
@@ -174,6 +174,7 @@ int subtype_get_text_value(void * addr,char * text,void * elem){
 	struct elem_template * elem_attr=elem;
 	struct struct_elem_attr * elem_desc = elem_attr->elem_desc;
 	int enum_value;
+	struct struct_namelist * subtypelist;
 	NAME2VALUE * enum_list;
 	int len;
 	int offset=0;
@@ -197,15 +198,16 @@ int subtype_get_text_value(void * addr,char * text,void * elem){
 		return -EINVAL;
 
 	
-	enum_list=memdb_get_subtypelist(defvalue);
+	subtypelist=memdb_get_subtypelist(defvalue);
 
-	if(enum_list==NULL)
+	if(subtypelist==NULL)
 	{
 		len=Itoa(enum_value,text);
 		return len;
 	}
+	enum_list=subtypelist->elemlist;
 	
-	for(i=0;enum_list[i].name!=NULL;i++)
+	for(i=0;i<subtypelist->elem_no;i++)
 	{
 		if(enum_list[i].value==enum_value)
 		{
@@ -222,6 +224,7 @@ int subtype_set_text_value(void * addr,void * text,void * elem){
 	struct elem_template * elem_attr=elem;
 	struct struct_elem_attr * elem_desc = elem_attr->elem_desc;
 	int enum_value;
+	struct struct_namelist * subtypelist;
 	NAME2VALUE * enum_list;
 	int len;
 	int offset=0;
@@ -239,7 +242,10 @@ int subtype_set_text_value(void * addr,void * text,void * elem){
 	if(defvalue<0)
 		return -EINVAL;
 
-	enum_list=memdb_get_subtypelist(defvalue);
+	subtypelist=memdb_get_subtypelist(defvalue);
+	if(subtypelist==NULL)
+		return -EINVAL;
+	enum_list=subtypelist->elemlist;
 	if(enum_list==NULL)
 	{
 		enum_value=Atoi(text,DIGEST_SIZE);
@@ -251,7 +257,7 @@ int subtype_set_text_value(void * addr,void * text,void * elem){
 	}
 	else
 	{
-		for(i=0;enum_list[i].name!=NULL;i++)
+		for(i=0;i<subtypelist->elem_no;i++)
 		{
 			if(!strcmp(enum_list[i].name,text))
 			{
