@@ -582,8 +582,33 @@ int _elem_to_serial_defarray(void * addr,void * data, void * elem,void * ops,int
 		ret=elem_ops(*(void **)addr+addroffset*i,data+offset,curr_elem);
 		if(ret<0)
 			return ret;
+//		offset+=ret-1;
+		offset+=ret;
+	}
+	curr_elem->index=0;
+	return offset;
+}
+
+int _elem_to_text_defarray(void * addr,void * data, void * elem,void * ops,int def_value)
+{
+	int (*elem_ops)(void * addr,void * data,void * elem)=ops;		
+	int offset=0;
+	int i;
+	int ret;
+	struct elem_template * curr_elem=elem;
+	int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
+	if(addroffset<0)
+		return addroffset;
+		
+	
+	for(i=0;i<def_value;i++)
+	{
+		ret=elem_ops(*(void **)addr+addroffset*i,data+offset,curr_elem);
+		if(ret<0)
+			return ret;
 		offset+=ret-1;
 	}
+	curr_elem->index=0;
 	return offset;
 }
 
@@ -694,14 +719,36 @@ int _elem_clone_deffunc(void * addr, void * clone,void * elem)
 	return ret;
 }
 
-int _elem_clone_defarray(void * addr,void * clone,void * elem,int def_value)
+int _elem_clone_defarray_init(void * addr,void * clone,void * elem,int def_value)
 {
 	int ret;
 	struct elem_template * curr_elem=elem;
 	int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
 	if(addroffset<0)
 		return addroffset;
-	ret=Palloc0(clone,addroffset*def_value);
+	void * clone_addr= _elem_get_addr(elem,clone);
+	ret=Palloc0(clone_addr,addroffset*def_value);
+	return ret;
+}
+
+int _elem_clone_defarray(void * addr,void * clone, void * elem,void * ops,int def_value)
+{
+	int (*elem_ops)(void * addr,void * data,void * elem)=ops;		
+	int offset=0;
+	int i;
+	int ret;
+	struct elem_template * curr_elem=elem;
+	int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
+	if(addroffset<0)
+		return addroffset;
+	void * clone_addr= _elem_get_addr(elem,clone);
+	
+	for(i=0;i<def_value;i++)
+	{
+		ret=elem_ops(*(void **)addr+addroffset*i,*(void **)clone_addr+addroffset*i,curr_elem);
+		if(ret<0)
+			return ret;
+	}
 	return ret;
 }
 
@@ -712,6 +759,7 @@ int  _elem_clone_value(void * addr,void * clone,void * elem)
 	ELEM_OPS * elem_ops=_elem_get_ops(elem);
 	myfuncs.default_func=&_elem_clone_deffunc;
 	myfuncs.elem_ops=elem_ops->clone_elem;
+	myfuncs.def_array_init=_elem_clone_defarray_init;
 	myfuncs.def_array=_elem_clone_defarray;
 
 	return _elem_process_func(addr,clone,elem,&myfuncs);
@@ -743,7 +791,7 @@ int  _elem_get_text_value(void * addr,char * text,void * elem)
 	myfuncs.default_func=&_elem_get_text_deffunc;
 	myfuncs.elem_ops=elem_ops->get_text_value;
 	myfuncs.def_array_init=NULL;
-	myfuncs.def_array=NULL;
+	myfuncs.def_array=_elem_to_text_defarray;
 
 	return _elem_process_func(addr,text,elem,&myfuncs);
 }
@@ -804,7 +852,7 @@ int    _elem_set_text_value(void * addr,char * text,void * elem)
 	myfuncs.default_func=&_elem_set_text_deffunc;
 	myfuncs.elem_ops=elem_ops->set_text_value;
 	myfuncs.def_array_init=&_elem_set_text_defarray;
-	myfuncs.def_array=NULL;
+	myfuncs.def_array=_elem_to_text_defarray;
 
 	return _elem_process_func(addr,text,elem,&myfuncs);
 

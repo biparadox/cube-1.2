@@ -280,6 +280,10 @@ int _memdb_record_add_name(void * record,char * name)
 	len=Strnlen(name,DIGEST_SIZE);
 	if(len<DIGEST_SIZE)
 		len++;
+
+	ret=Galloc0(&new_name,len);
+	if(ret<0)
+		return -ENOMEM;
 	Strncpy(new_name,name,DIGEST_SIZE);
 	
 	if(record_db->names==NULL)
@@ -288,7 +292,7 @@ int _memdb_record_add_name(void * record,char * name)
 		if(ret<0)
 			return -ENOMEM;
 		record_db->names[0]=new_name;
-		record_db->name_no=1;
+		record_db->name_no++;
 		return 2;
 	}
 
@@ -304,7 +308,7 @@ int _memdb_record_add_name(void * record,char * name)
 	Memcpy(new_namearray,record_db->names,sizeof(char *)*(namelist_no-1));
 	new_namearray[namelist_no-1]=new_name;
 
-	Free(record_db->names);
+	Free0(record_db->names);
 	record_db->names=new_namearray;	
 
 	return namelist_no+2;	
@@ -351,11 +355,11 @@ int _memdb_record_remove_name(void * record,char * name)
 		return -EINVAL;
 	if(namelist_no<namesite_no)
 		return -EINVAL;
-	Free(record_db->names[namesite_no-1]);
+	Free0(record_db->names[namesite_no-1]);
 	Memcpy(new_namearray,record_db->names,sizeof(char *)*(namesite_no-1));
 	Memcpy(new_namearray+namesite_no-1,record_db->names+namesite_no,
 		sizeof(char *)*(namelist_no-namesite_no));
-	Free(record_db->names);
+	Free0(record_db->names);
 	record_db->names=new_namearray;	
 
 	return namesite_no;		
@@ -431,7 +435,7 @@ int _typelist_tail_func(void * memdb,void * record)
 	DB_RECORD * db_record=record;
 	struct struct_typelist * typelist=db_record->record;
 	DB_RECORD * temp_record;
-	temp_record=memdb_find(DB_NAMELIST,0,typelist->uuid);
+	temp_record=memdb_find(typelist->uuid,DB_NAMELIST,0);
 	if(temp_record==NULL)
 		return NULL;
 
@@ -446,7 +450,7 @@ int _subtypelist_tail_func(void * memdb,void * record)
 	DB_RECORD * db_record=record;
 	struct struct_subtypelist * subtypelist=db_record->record;
 	DB_RECORD * temp_record;
-	temp_record=memdb_find(DB_NAMELIST,0,subtypelist->uuid);
+	temp_record=memdb_find(subtypelist->uuid,DB_NAMELIST,0);
 	if(temp_record==NULL)
 		return NULL;
 
@@ -464,7 +468,7 @@ int _recordtype_tail_func(void * memdb,void * record)
 	void * struct_template;
 	int i;
 	char * index_elems=NULL;
-	temp_record=memdb_find(DB_STRUCT_DESC,0,recordtype->uuid);
+	temp_record=memdb_find(recordtype->uuid,DB_STRUCT_DESC,0);
 	if(temp_record==NULL)
 		return -EINVAL;
 
@@ -738,7 +742,7 @@ int memdb_store_index(void * record, char * name,int flag)
 		db_template=memdb_get_template(head->type,head->subtype);
 		if(db_template==NULL)
 		{
-			Free(index);
+			Free0(index);
 			return -EINVAL;
 		}
 		ret=struct_2_part_blob(record,buffer,db_template,flag);
@@ -754,7 +758,7 @@ int memdb_store_index(void * record, char * name,int flag)
 	{
 		if(!memcmp(findindex->head.uuid,index->head.uuid,DIGEST_SIZE))
 			return -EINVAL;
-		Free(findindex);	
+		Free0(findindex);	
 	}
 	return hashlist_add_elem(db_list,index);
 }
@@ -902,11 +906,11 @@ int memdb_init()
 	if(record==NULL)
 		return -EINVAL;
 
-	record = memdb_store(elemenumlist,DB_NAMELIST,0,"baseelemlist");
+	record = memdb_store(typeenumlist,DB_NAMELIST,0,"typeenumlist");
 	if(record==NULL)
 		return -EINVAL;
 
-	record = memdb_store(typeenumlist,DB_NAMELIST,0,"typeenumlist");
+	record = memdb_store(typeenumlist,DB_NAMELIST,0,"baseenumlist");
 	if(record==NULL)
 		return -EINVAL;
 
@@ -965,7 +969,11 @@ void *  memdb_store(void * data,int type,int subtype,char * name)
 	if(oldrecord==NULL)
 	{
 		// if there is no old record, build a new one;
-		Strncpy(record->head.name,name,DIGEST_SIZE);
+		if(name!=NULL)
+		{
+			Strncpy(record->head.name,name,DIGEST_SIZE);
+			record->name_no=1;
+		}
 		if(db_list->tail_func!=NULL)
 		{
 			ret=db_list->tail_func(db_list,record);	
@@ -975,7 +983,7 @@ void *  memdb_store(void * data,int type,int subtype,char * name)
 		void * struct_template=memdb_get_template(type,subtype);
 		if(struct_template==NULL)
 		{
-			Free(record);
+			Free0(record);
 			return NULL;
 		}
 		record->record=clone_struct(data,struct_template);
@@ -986,7 +994,7 @@ void *  memdb_store(void * data,int type,int subtype,char * name)
 	else
 	{
 		
-		Free(record);
+		Free0(record);
 		ret=_memdb_record_add_name(oldrecord,name);
 		if(ret<0)
 			return NULL;
@@ -1029,7 +1037,7 @@ int memdb_store_record(void * record)
 			db_record->head.subtype);
 		if(struct_template==NULL)
 		{
-			Free(record);
+			Free0(record);
 			return -EINVAL;
 		}
 		ret=hashlist_add_elem(db_list->record_db,record);
@@ -1090,7 +1098,7 @@ int memdb_free_record(void * record)
 	ret=struct_free(db_record->record,struct_template);
 	if(ret<0)
 		return -EINVAL;	
-	Free(db_record);
+	Free0(db_record);
 	return 0;
 }
 
@@ -1292,6 +1300,6 @@ int memdb_comp_uuid(void * record)
 	{
 		calculate_context_sm3(buf,blob_size,&db_record->head.uuid);
 	}
-	Free(buf);
+	Free0(buf);
 	return blob_size;
 }

@@ -101,6 +101,24 @@ int read_typelist_json_desc(void * root,void * record)
 
 	db_record->record=typelist;
 	ret=memdb_store_record(db_record);
+
+	// merge the typelist 
+
+	namelist_record=memdb_find_byname("typeenumlist",DB_NAMELIST,0);
+	
+	if(namelist_record==NULL)
+		return -EINVAL;
+
+	baselist=_merge_namelist(namelist_record->record,db_record->tail);
+	if(baselist==NULL)
+		return -EINVAL;
+
+	ret=memdb_remove_byname("typeenumlist",DB_NAMELIST,0);
+	if(ret<0)
+		return -EINVAL;
+	
+	memdb_store(baselist,DB_NAMELIST,0,"typeenumlist");
+
 	return ret;	
 }
 		
@@ -551,7 +569,7 @@ UUID_HEAD * _read_one_record(int type,int subtype,void * temp_node,void * record
 	ret=json_2_struct(temp_node,record,record_template);
 	if(ret<0)
 	{
-		Free(head);
+		Free0(head);
 		return NULL;
 	}
 	
@@ -560,7 +578,7 @@ UUID_HEAD * _read_one_record(int type,int subtype,void * temp_node,void * record
 	ret=memdb_comp_uuid(head);
 	if(ret<0)
 	{
-		Free(head);
+		Free0(head);
 		return NULL;
 	}
 	memdb_store(head,type,subtype);

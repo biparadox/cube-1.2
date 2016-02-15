@@ -76,6 +76,7 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 		}
 
 		curr_elem=&curr_node->elem_list[curr_node->temp_var];
+//		curr_elem->index=0;
 		if(funcs->testelem!=NULL)
 		{
 			if(!funcs->testelem(addr,data,curr_elem,para))
@@ -445,7 +446,7 @@ int struct_free_exitstruct(void * addr,void * data,void * elem,void * para)
 	if(_ispointerelem(curr_elem->elem_desc->type))
 	{
 		void * elem_addr=_elem_get_addr(elem,addr);
-		Free(*(void **)elem_addr);
+		Free0(*(void **)elem_addr);
 	}
 
 	return 0;
@@ -458,7 +459,7 @@ int proc_struct_free(void * addr,void * data,void * elem,void * para)
 	if(_ispointerelem(curr_elem->elem_desc->type))
 	{
 		void * elem_addr=_elem_get_addr(elem,addr);
-		Free(*(void **)elem_addr);
+		Free0(*(void **)elem_addr);
 	}
 	return 0;	
 }
