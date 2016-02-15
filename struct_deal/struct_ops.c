@@ -224,6 +224,26 @@ int namelist_set_bin_value(void * addr, void * data,void * elem_template)
 	return offset;
 }
 
+int namelist_clone(void * addr, void * clone,void * elem_template)
+{
+	int retval;
+	NAME2VALUE * namelist=addr;
+	
+
+	NAME2VALUE * clonelist=clone;
+	struct elem_template * curr_elem=elem_template;
+	int textlen=0;
+	textlen=Strlen(*(char **)namelist);
+	if(textlen>DIGEST_SIZE)
+		return -EINVAL;
+	retval=Palloc0(clone,textlen+1);
+	if(retval<0)
+		return -ENOMEM;
+	Memcpy(*(char **)clone,*(char **)namelist,textlen+1);
+	clonelist->value=namelist->value;
+	return 0;
+}
+
 int namelist_get_text_value(void * addr, void * data,void * elem_template)
 {
 	NAME2VALUE * namelist=addr;
@@ -530,6 +550,7 @@ ELEM_OPS int_convert_ops =
 };
 ELEM_OPS defnamelist_convert_ops =
 {
+	.clone_elem= namelist_clone,
 	.get_bin_value= namelist_get_bin_value,
 	.set_bin_value= namelist_set_bin_value,
 	.get_text_value= namelist_get_text_value,

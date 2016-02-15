@@ -469,11 +469,12 @@ struct elem_deal_ops
 {
 	int (*default_func)(void * addr,void * data,void * elem);
 	int (*elem_ops)(void * addr,void * data,void * elem);		
-	int (*def_array)(void * addr,void * data,void * elem,int def_value);		
-	
+	int (*def_array_init)(void * addr,void * data,void * elem,int def_value);		
+	int (*def_array)(void * addr,void * data,void * elem,void * ops,int def_value);		
 };
 
 
+int _elem_to_serial_defarray(void * addr,void * data, void * elem,void * ops,int def_value);
 
 int  _elem_process_func(void * addr,void * data,void * elem,
 	struct elem_deal_ops * funcs)
@@ -500,8 +501,6 @@ int  _elem_process_func(void * addr,void * data,void * elem,
 		// judge if this elem is a define elem	
 		if(_isdefineelem(curr_elem->elem_desc->type))
 		{
-			int offset=0;
-			int i;
 			int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
 			if(addroffset<0)
 				return addroffset;
@@ -514,12 +513,25 @@ int  _elem_process_func(void * addr,void * data,void * elem,
 				if(def_value<0)
 					return def_value;
 
-				if(funcs->def_array!=NULL)
+				if(funcs->def_array_init!=NULL)
 				{
-					ret=funcs->def_array(elem_addr,data,curr_elem,def_value);
+					ret=funcs->def_array_init(elem_addr,data,curr_elem,def_value);
 					if(ret<0)
 						return ret;
 				}
+				if(funcs->def_array==NULL)
+				{
+					return _elem_to_serial_defarray(elem_addr,data,curr_elem,funcs->elem_ops,def_value);
+				}
+				else
+				{
+					return funcs->def_array(elem_addr,data,curr_elem,funcs->elem_ops,def_value);
+				}
+			}
+				
+/*
+				int offset=0;
+				int i;
 				curr_elem->index=0;
 				for(i=0;i<def_value;i++)
 				{
@@ -531,6 +543,7 @@ int  _elem_process_func(void * addr,void * data,void * elem,
 //				*(char *)(data+offset-1)=0;
 				return offset;
 			}
+*/
 			else
 			{
 				// or we should use the normal process func,
@@ -550,6 +563,28 @@ int  _elem_process_func(void * addr,void * data,void * elem,
 		}
 	}
 	return ret;
+}
+
+int _elem_to_serial_defarray(void * addr,void * data, void * elem,void * ops,int def_value)
+{
+	int (*elem_ops)(void * addr,void * data,void * elem)=ops;		
+	int offset=0;
+	int i;
+	int ret;
+	struct elem_template * curr_elem=elem;
+	int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
+	if(addroffset<0)
+		return addroffset;
+		
+	
+	for(i=0;i<def_value;i++)
+	{
+		ret=elem_ops(*(void **)addr+addroffset*i,data+offset,curr_elem);
+		if(ret<0)
+			return ret;
+		offset+=ret-1;
+	}
+	return offset;
 }
 
 int _elem_get_bin_deffunc(void * addr,void * data,void * elem)
@@ -577,6 +612,7 @@ int  _elem_get_bin_value(void * addr,void * data,void * elem)
 	ELEM_OPS * elem_ops=_elem_get_ops(elem);
 	myfuncs.default_func=&_elem_get_bin_deffunc;
 	myfuncs.elem_ops=elem_ops->get_bin_value;
+	myfuncs.def_array_init=NULL;
 	myfuncs.def_array=NULL;
 
 	return _elem_process_func(addr,data,elem,&myfuncs);
@@ -625,47 +661,60 @@ int  _elem_set_bin_value(void * addr,void * data,void * elem)
 	ELEM_OPS * elem_ops=_elem_get_ops(elem);
 	myfuncs.default_func=&_elem_set_bin_deffunc;
 	myfuncs.elem_ops=elem_ops->set_bin_value;
-	myfuncs.def_array=_elem_set_bin_defarray;
+	myfuncs.def_array_init=_elem_set_bin_defarray;
+	myfuncs.def_array=NULL;
 
 	return _elem_process_func(addr,data,elem,&myfuncs);
 }
 
-int _elem_clone_deffunc(void * addr, void * data,void * elem)
+int _elem_clone_deffunc(void * addr, void * clone,void * elem)
 {
 	int ret;
-	void * elem_addr;
+	void * elem_clone;
 	void * elem_src;
 	struct elem_template * curr_elem=elem;
 	
 	// get this elem's addr
 
-	elem_addr=_elem_get_addr(elem,addr);
-	elem_src=_elem_get_addr(elem,data);
+	elem_src=_elem_get_addr(elem,addr);
+	elem_clone=_elem_get_addr(elem,clone);
 	// if this func is empty, we use default func
 	if((ret=_elem_get_bin_length(elem_src,elem,addr))<0)
 		return ret;
 	if(_ispointerelem(curr_elem->elem_desc->type))
 	{
-		int tempret=Palloc0(elem_addr,ret);
+		int tempret=Palloc0(elem_clone,ret);
 		if(tempret<0)
 			return tempret;
 		
-		Strncpy(*(char **)elem_addr,*(char **)elem_src,DIGEST_SIZE*32);
+		Strncpy(*(char **)elem_clone,*(char **)elem_src,DIGEST_SIZE*32);
 	}
 	else
-		Memcpy(elem_addr,elem_src,ret);
+		Memcpy(elem_clone,elem_src,ret);
 	return ret;
 }
 
-int  _elem_clone_value(void * addr,void * data,void * elem)
+int _elem_clone_defarray(void * addr,void * clone,void * elem,int def_value)
+{
+	int ret;
+	struct elem_template * curr_elem=elem;
+	int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
+	if(addroffset<0)
+		return addroffset;
+	ret=Palloc0(clone,addroffset*def_value);
+	return ret;
+}
+
+
+int  _elem_clone_value(void * addr,void * clone,void * elem)
 {
 	struct elem_deal_ops myfuncs;
 	ELEM_OPS * elem_ops=_elem_get_ops(elem);
 	myfuncs.default_func=&_elem_clone_deffunc;
 	myfuncs.elem_ops=elem_ops->clone_elem;
-	myfuncs.def_array=_elem_set_bin_defarray;
+	myfuncs.def_array=_elem_clone_defarray;
 
-	return _elem_process_func(addr,data,elem,&myfuncs);
+	return _elem_process_func(addr,clone,elem,&myfuncs);
 }
 	
 int _elem_get_text_deffunc(void * addr,void * data,void * elem)
@@ -693,6 +742,7 @@ int  _elem_get_text_value(void * addr,char * text,void * elem)
 	ELEM_OPS * elem_ops=_elem_get_ops(elem);
 	myfuncs.default_func=&_elem_get_text_deffunc;
 	myfuncs.elem_ops=elem_ops->get_text_value;
+	myfuncs.def_array_init=NULL;
 	myfuncs.def_array=NULL;
 
 	return _elem_process_func(addr,text,elem,&myfuncs);
@@ -753,7 +803,8 @@ int    _elem_set_text_value(void * addr,char * text,void * elem)
 	ELEM_OPS * elem_ops=_elem_get_ops(elem);
 	myfuncs.default_func=&_elem_set_text_deffunc;
 	myfuncs.elem_ops=elem_ops->set_text_value;
-	myfuncs.def_array=&_elem_set_text_defarray;
+	myfuncs.def_array_init=&_elem_set_text_defarray;
+	myfuncs.def_array=NULL;
 
 	return _elem_process_func(addr,text,elem,&myfuncs);
 

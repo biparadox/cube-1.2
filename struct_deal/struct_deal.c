@@ -430,6 +430,53 @@ struct default_para
 	int offset;
 };
 
+int struct_free_enterstruct(void * addr,void * data,void * elem,void * para)
+{
+	struct default_para  * my_para = para;
+	struct elem_template	* curr_elem=elem;
+
+	return 0;
+}
+
+int struct_free_exitstruct(void * addr,void * data,void * elem,void * para)
+{
+	struct default_para  * my_para = para;
+	struct elem_template	* curr_elem=elem;
+	if(_ispointerelem(curr_elem->elem_desc->type))
+	{
+		void * elem_addr=_elem_get_addr(elem,addr);
+		Free(*(void **)elem_addr);
+	}
+
+	return 0;
+}
+
+int proc_struct_free(void * addr,void * data,void * elem,void * para)
+{
+	struct default_para  * my_para = para;
+	struct elem_template	* curr_elem=elem;
+	if(_ispointerelem(curr_elem->elem_desc->type))
+	{
+		void * elem_addr=_elem_get_addr(elem,addr);
+		Free(*(void **)elem_addr);
+	}
+	return 0;	
+}
+
+int struct_free(void * addr, void * struct_template)
+{
+	int ret;
+	struct struct_deal_ops struct_free_ops =
+	{
+		.enterstruct=&struct_free_enterstruct,
+		.exitstruct=&struct_free_exitstruct,
+		.proc_func=&proc_struct_free,
+	};	
+	ret = _convert_frame_func(addr,NULL,struct_template,&struct_free_ops,		NULL);
+	Free(addr);
+	return ret;
+}
+
 int struct_2_blob_enterstruct(void * addr, void * data, void * elem,void * para)
 {
 	struct default_para  * my_para = para;
@@ -596,7 +643,7 @@ int blob_2_part_struct(void * blob,void * addr, void * struct_template,int flag)
 	return my_para.offset;
 }
 // clone struct area
-int clone_struct_enterstruct(void * addr, void * data, void * elem,void * para)
+int clone_struct_enterstruct(void * src, void * destr, void * elem,void * para)
 {
 	int ret;
 	struct default_para  * my_para = para;
@@ -607,11 +654,11 @@ int clone_struct_enterstruct(void * addr, void * data, void * elem,void * para)
 		curr_elem->index=0;
 		if(_isarrayelem(curr_elem->elem_desc->type))
 		{
-			curr_elem->limit=_elem_get_defvalue(curr_elem,addr);
+			curr_elem->limit=_elem_get_defvalue(curr_elem,destr);
 			if(curr_elem->father==NULL)
-				elem_addr=addr;
+				elem_addr=destr;
 			else
-				elem_addr=_elem_get_addr(curr_elem->father,addr);
+				elem_addr=_elem_get_addr(curr_elem->father,destr);
 			elem_addr+=curr_elem->offset;
 			
 			if(curr_elem->limit>0)
@@ -626,12 +673,12 @@ int clone_struct_enterstruct(void * addr, void * data, void * elem,void * para)
 	}
 	return 0;		
 }
-int proc_clone_struct(void * addr,void * data,void * elem,void * para)
+int proc_clone_struct(void * src,void * destr,void * elem,void * para)
 {
 	struct default_para  * my_para = para;
 	struct elem_template	* curr_elem=elem;
 	int ret;
-	ret = _elem_clone_value(addr,data,elem);
+	ret = _elem_clone_value(src,destr,elem);
 	return ret;
 } 
 
@@ -647,7 +694,7 @@ int struct_clone(void * src, void * destr, void * struct_template)
 	static struct default_para my_para;
 	my_para.offset=0;
 
-	ret = _convert_frame_func(destr,src,struct_template,&clone_struct_ops,		&my_para);
+	ret = _convert_frame_func(src,destr,struct_template,&clone_struct_ops,		&my_para);
 	if(ret<0)
 		return ret;
 	return my_para.offset;

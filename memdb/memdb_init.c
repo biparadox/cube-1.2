@@ -1,20 +1,6 @@
-#ifdef KERNEL_MODE
-
-#include <linux/string.h>
-#include <linux/list.h>
-#include <linux/slab.h>
-#include <linux/errno.h>
-
-#else
-
-#include<stdlib.h>
-#include<stdio.h>
-#include<string.h>
-#include<errno.h>
-
-#endif
 
 #include "../include/data_type.h"
+#include"../include/errno.h"
 #include "../include/list.h"
 #include "../include/attrlist.h"
 #include "../include/string.h"
@@ -254,6 +240,127 @@ void * _merge_namelist(void * list1, void * list2)
 	Free0(buf);
 	return newnamelist;
 }
+
+int _memdb_record_find_name(void * record,char * name)
+{
+	int ret;
+	int namelist_no;
+	int i;
+	DB_RECORD * record_db=(DB_RECORD *)record;
+	if(Strncmp(record_db->head.name,name,DIGEST_SIZE)==0)
+		return 1;
+	if(record_db->names==NULL)
+		return 0;
+	namelist_no=record_db->name_no;
+	if(record_db->head.name[0]!=0)
+		namelist_no--;
+	if(namelist_no<1)
+		return -EINVAL;
+	for(i=0;i<namelist_no;i++)
+	{
+		if(Strncmp(record_db->names[i],name,DIGEST_SIZE)==0)
+			return i+2;
+	}
+	return 0;	
+}
+
+int _memdb_record_add_name(void * record,char * name)
+{
+	int ret;
+	int len;
+	int namelist_no;
+	char * new_name;
+	char ** new_namearray;
+	DB_RECORD * record_db=(DB_RECORD *)record;
+
+	// judge if this name is in the list;
+	if(_memdb_record_find_name(record,name)>0)
+		return 0;
+
+	len=Strnlen(name,DIGEST_SIZE);
+	if(len<DIGEST_SIZE)
+		len++;
+	Strncpy(new_name,name,DIGEST_SIZE);
+	
+	if(record_db->names==NULL)
+	{
+		ret=Galloc0(&(record_db->names),sizeof(char *));
+		if(ret<0)
+			return -ENOMEM;
+		record_db->names[0]=new_name;
+		record_db->name_no=1;
+		return 2;
+	}
+
+	record_db->name_no++;
+	namelist_no=record_db->name_no;
+	if(record_db->head.name[0]!=0)
+		namelist_no--;
+	namelist_no++;
+		
+	ret=Galloc0(&(new_namearray),sizeof(char *)*namelist_no);
+	if(ret<0)
+		return -EINVAL;
+	Memcpy(new_namearray,record_db->names,sizeof(char *)*(namelist_no-1));
+	new_namearray[namelist_no-1]=new_name;
+
+	Free(record_db->names);
+	record_db->names=new_namearray;	
+
+	return namelist_no+2;	
+}
+
+int _memdb_record_remove_name(void * record,char * name)
+{
+	int ret;
+	int len;
+	int namelist_no;
+	char * new_name;
+	char ** new_namearray;
+	int namesite_no;
+	DB_RECORD * record_db=(DB_RECORD *)record;
+
+	namesite_no=_memdb_record_find_name(record,name);
+	if(namesite_no<0)
+		return namesite_no;
+	// no name in this record
+	if(namesite_no==0)
+	{
+		return 0;
+	}
+	namelist_no=record_db->name_no;
+	if(record_db->head.name[0]!=0)
+		namelist_no--;
+	// name is in the head
+	if(namesite_no==1)
+	{
+		// there is no name in the names list, 
+		// we should remove this record
+		if(record_db->name_no==1)
+		{
+			memdb_remove(record,record_db->head.type,record_db->head.subtype);
+			memdb_free_record(record);	
+			return 1;
+		}
+		// or we should remove the first name in names list to head
+		Strncpy(record_db->head.name,record_db->names[0],DIGEST_SIZE);
+	}
+	
+	ret=Galloc0(&(new_namearray),sizeof(char *)*(namelist_no-1));
+	if(ret<0)
+		return -EINVAL;
+	if(namelist_no<namesite_no)
+		return -EINVAL;
+	Free(record_db->names[namesite_no-1]);
+	Memcpy(new_namearray,record_db->names,sizeof(char *)*(namesite_no-1));
+	Memcpy(new_namearray+namesite_no-1,record_db->names+namesite_no,
+		sizeof(char *)*(namelist_no-namesite_no));
+	Free(record_db->names);
+	record_db->names=new_namearray;	
+
+	return namesite_no;		
+}
+
 
 void * _struct_octet_to_attr(void * octet_array,int elem_no)
 {
@@ -844,24 +951,27 @@ void *  memdb_store(void * data,int type,int subtype,char * name)
 	if(ret<0)
 		return -EINVAL;
 
+	// build a faked record and comp uuid
+
 	record->head.type=type;
 	record->head.subtype=subtype;
-	Strncpy(record->head.name,name,DIGEST_SIZE);
 	record->record=data;
-
-	if(db_list->tail_func!=NULL)
-	{
-		ret=db_list->tail_func(db_list,record);	
-		if(ret<0)
-			return NULL;
-	}
 	ret=memdb_comp_uuid(record);
 	if(ret<0)
 		return NULL;
 
+	// look for the old record with same uuid
 	oldrecord=hashlist_find_elem(db_list->record_db,record);
 	if(oldrecord==NULL)
 	{
+		// if there is no old record, build a new one;
+		Strncpy(record->head.name,name,DIGEST_SIZE);
+		if(db_list->tail_func!=NULL)
+		{
+			ret=db_list->tail_func(db_list,record);	
+			if(ret<0)
+				return NULL;
+		}
 		void * struct_template=memdb_get_template(type,subtype);
 		if(struct_template==NULL)
 		{
@@ -875,10 +985,11 @@ void *  memdb_store(void * data,int type,int subtype,char * name)
 	}
 	else
 	{
+		
 		Free(record);
-//		ret=_memdb_record_add_name(oldrecord,name);
-//		if(ret<0)
-//			return NULL;
+		ret=_memdb_record_add_name(oldrecord,name);
+		if(ret<0)
+			return NULL;
 		return oldrecord;				
 	}
 	return record;
@@ -890,6 +1001,7 @@ int memdb_store_record(void * record)
 	struct memdb_desc * db_list;
 	UUID_HEAD * head;
 	DB_RECORD * db_record=record;
+	DB_RECORD * oldrecord;
 	if(db_record==NULL)
 		return -EINVAL; 
 	if(db_record->record==NULL)
@@ -910,12 +1022,76 @@ int memdb_store_record(void * record)
 	ret=memdb_comp_uuid(db_record);
 	if(ret<0)
 		return ret;
-
-	ret=hashlist_add_elem(db_list->record_db,db_record);
-	if(ret<0)
-		return ret;
-
+	oldrecord=hashlist_find_elem(db_list->record_db,record);
+	if(oldrecord==NULL)
+	{
+		void * struct_template=memdb_get_template(db_record->head.type,
+			db_record->head.subtype);
+		if(struct_template==NULL)
+		{
+			Free(record);
+			return -EINVAL;
+		}
+		ret=hashlist_add_elem(db_list->record_db,record);
+		if(ret<0)
+			return -EINVAL;
+	}
+	else
+	{
+		
+		ret=_memdb_record_add_name(oldrecord,db_record->head.name);
+		if(ret<0)
+			return -EINVAL;
+		return ret;				
+	}
 	return 1;
+}
+
+void * memdb_remove(void * uuid,int type,int subtype)
+{
+	int ret;
+	struct memdb_desc * db_list;
+	UUID_HEAD * head;
+	DB_RECORD * record;
+	db_list=memdb_get_dblist(type,subtype);
+	if(db_list==NULL)
+		return NULL;
+
+	record=hashlist_remove_elem(db_list->record_db,uuid);
+
+	return record;
+}
+
+int memdb_remove_byname(char * name,int type,int subtype)
+{
+	int ret;
+	struct memdb_desc * db_list;
+	UUID_HEAD * head;
+	DB_RECORD * record;
+	db_list=memdb_get_dblist(type,subtype);
+	if(db_list==NULL)
+		return -EINVAL;
+	
+	record=memdb_find_byname(name,type,subtype);
+	if(record==NULL)
+		return 0;
+	ret=_memdb_record_remove_name(record,name);
+	return ret;		
+}
+
+int memdb_free_record(void * record)
+{
+	int ret;
+	void * struct_template;
+	DB_RECORD * db_record=record;
+	struct_template=memdb_get_template(db_record->head.type,db_record->head.subtype);
+	if(struct_template==NULL)
+		return -EINVAL;
+	ret=struct_free(db_record->record,struct_template);
+	if(ret<0)
+		return -EINVAL;	
+	Free(db_record);
+	return 0;
 }
 
 void * memdb_find(void * data,int type,int subtype)
@@ -927,47 +1103,28 @@ void * memdb_find(void * data,int type,int subtype)
 		return NULL;
 	return hashlist_find_elem(db_list->record_db,data);
 }
-/*
+
 void * memdb_find_byname(char * name,int type,int subtype)
 {
 	int ret;
-	void * db_list;
-	db_list=memdb_get_dblist(type,subtype);
-	if(db_list==NULL)
-		return NULL;
-	return hashlist_find_elem_byname(db_list,name);
-}
-void * memdb_remove(void * baselist,int type,int subtype)
-{
-	int ret;
-	void * db_list;
-	db_list=memdb_get_dblist(type,subtype);
-	if(db_list==NULL)
-		return NULL;
-	return hashlist_remove_elem(db_list,baselist);
+	struct memdb_desc * db_list;
+	DB_RECORD * record;
+
+	record=memdb_get_first(type,subtype);	
+	
+	while(record!=NULL)
+	{
+		ret=_memdb_record_find_name(record,name);
+		if(ret<0)
+			return NULL;
+		if(ret>0)
+			return record;
+		record=memdb_get_next(type,subtype);
+	}
+	
+	return NULL;
 }
 
-int memdb_reset_baselist()
-{
-	struct struct_namelist * baselist=memdb_find_byname("baselist",DB_TYPELIST,0);
-	if(baselist==NULL)
-		return -EINVAL;
-	if(baselist->elemlist==NULL)
-		return -EINVAL;
-
-	void * typelist_template=memdb_get_template(DB_TYPELIST,0);
-	if(typelist_template==NULL)
-		return -EINVAL;
-	struct_set_ref(typelist_template,"head.type",baselist->elemlist);
-
-	void * subtypelist_template=memdb_get_template(DB_SUBTYPELIST,0);
-	if(subtypelist_template==NULL)
-		return -EINVAL;
-	struct_set_ref(subtypelist_template,"head.type",baselist->elemlist);
-	struct_set_ref(subtypelist_template,"type",baselist->elemlist);
-	return 0;
-}
-*/
 void * memdb_get_subtypelist(int type)
 {
 	DB_RECORD * record;

@@ -61,7 +61,7 @@ int _elem_set_ref(void * elem,void * ref);
 int _elem_get_bin_length(void * value,void * elem,void * addr);
 int _elem_get_bin_value(void * addr,void * data,void * elem);
 int _elem_set_bin_value(void * addr,void * data,void * elem);
-int _elem_clone_value(void * addr,void * data,void * elem);
+int _elem_clone_value(void * addr,void * clone,void * elem);
 int _elem_get_text_value(void * addr,char * text,void * elem);
 int _elem_set_text_value(void * addr,char * text,void * elem);
 
