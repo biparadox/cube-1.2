@@ -101,7 +101,7 @@ int main() {
 //		"baseflag.json",
 		"typelist.json",
 		"subtypelist.json",
-//		"msghead.json",
+		"msghead.json",
 //		"headrecord.json",
 		NULL
 	};

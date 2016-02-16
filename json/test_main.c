@@ -38,6 +38,7 @@ int main() {
 	int ret;
 	char text[1024];
 	void * root;
+	void * temp_node;
 	
   	mem_init();
 	fd=open("login.json",O_RDONLY);
@@ -63,5 +64,20 @@ int main() {
 		return ret;
 	}
 	printf("%s\n",text);
+
+	temp_node=json_find_elem("KEY_ELEM",root);
+	if(temp_node==NULL)
+		return -EINVAL;
+	ret=json_remove_node(temp_node);
+	ret=json_print_str(root,text);
+	if(ret<0)
+	{
+		printf("print  json str error!\n");
+		return ret;
+	}
+	printf("%s\n",text);
+
+
+
 	return 0;
 }

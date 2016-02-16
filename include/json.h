@@ -35,10 +35,12 @@ int json_print_str(void * root, char *str);
 int json_get_type(void * node);
 int json_get_elemno(void * node);
 char * json_get_valuestr(void * node);
+char * json_set_valuestr(void * node,char * str);
 int json_set_type(void * node,int datatype,int isvalue);
 
 int  json_node_set_no(void * node,int no);
 int  json_node_get_no(void * node);
 int  json_node_set_pointer(void * node,void * pointer);
 void * json_node_get_pointer(void * node);
+int json_remove_node(void * node);
 #endif

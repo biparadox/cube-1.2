@@ -29,4 +29,6 @@ static inline int  Ischarinset(BYTE char_value,char * set)
 	}	
 	return 0;
 }
+
+int   Isvaliduuid(char * uuid);
 #endif
