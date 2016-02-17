@@ -102,7 +102,7 @@ int main() {
 		"typelist.json",
 		"subtypelist.json",
 		"msghead.json",
-//		"headrecord.json",
+		"headrecord.json",
 		NULL
 	};
 
@@ -142,6 +142,16 @@ int main() {
 		printf("%s\n",print_buffer);
 		record=memdb_get_next(DB_TYPELIST,0);
 	}
+
+	record=memdb_get_first(DB_STRUCT_DESC,0);
+	while(record!=NULL)
+	{
+		ret=memdb_print(record,print_buffer);
+		if(ret<0)
+			return -EINVAL;
+		printf("%s\n",print_buffer);
+		record=memdb_get_next(DB_STRUCT_DESC,0);
+	}
 // test struct desc reading start
 
 	
@@ -152,7 +162,16 @@ int main() {
 	int subtype=memdb_get_subtypeno(msg_type,"HEAD");
 	if(subtype<=0)
 		return -EINVAL;
-	printf(" type MESSAGE value %d, subtype HEAD value %d",msg_type,subtype);
+
+	record=memdb_get_first(msg_type,subtype);
+	while(record!=NULL)
+	{
+		ret=memdb_print(record,print_buffer);
+		if(ret<0)
+			return -EINVAL;
+		printf("%s\n",print_buffer);
+		record=memdb_get_next(msg_type,subtype);
+	}
 /*
 	void * record;
 	record=memdb_get_first(msg_type,subtype);

@@ -69,7 +69,7 @@ int enumtype_set_text_value(void * addr,void * text,void * elem_template){
 
 	enum_list=elemenumlist->elemlist;
 
-	if(!strcmp(nulstring,text))
+	if(!Strcmp(nulstring,text))
 	{
 		enum_value=0;
 		*(int *)addr=enum_value;
@@ -79,7 +79,7 @@ int enumtype_set_text_value(void * addr,void * text,void * elem_template){
 	{
 		for(i=0;enum_list[i].name!=NULL;i++)
 		{
-			if(!strcmp(enum_list[i].name,text))
+			if(!Strcmp(enum_list[i].name,text))
 			{
 				enum_value=enum_list[i].value;
 				*(int *)addr=enum_value;
@@ -149,7 +149,7 @@ int recordtype_set_text_value(void * addr,void * text,void * elem_template){
 
 	enum_list=typeenumlist->elemlist;
 
-	if(!strcmp(nulstring,text))
+	if(!Strcmp(nulstring,text))
 	{
 		enum_value=0;
 		*(int *)addr=enum_value;
@@ -159,7 +159,7 @@ int recordtype_set_text_value(void * addr,void * text,void * elem_template){
 	{
 		for(i=0;i<typeenumlist->elem_no;i++)
 		{
-			if(!strcmp(enum_list[i].name,text))
+			if(!Strcmp(enum_list[i].name,text))
 			{
 				enum_value=enum_list[i].value;
 				*(int *)addr=enum_value;
@@ -193,7 +193,7 @@ int subtype_get_text_value(void * addr,char * text,void * elem){
 	}
 
 
-	defvalue=_elem_get_defvalue(elem,addr);
+	defvalue=elem_attr->index;
 	if(defvalue<0)
 		return -EINVAL;
 
@@ -231,14 +231,14 @@ int subtype_set_text_value(void * addr,void * text,void * elem){
 	int i;
 	int defvalue;
 
-	if(!strcmp(nulstring,text))
+	if(!Strcmp(nulstring,text))
 	{
 		enum_value=0;
 		*(int *)addr=enum_value;
 		return 0;
 	}
 
-	defvalue=_elem_get_defvalue(elem,addr);
+	defvalue=elem_attr->index;
 	if(defvalue<0)
 		return -EINVAL;
 
@@ -259,7 +259,7 @@ int subtype_set_text_value(void * addr,void * text,void * elem){
 	{
 		for(i=0;i<subtypelist->elem_no;i++)
 		{
-			if(!strcmp(enum_list[i].name,text))
+			if(!Strcmp(enum_list[i].name,text))
 			{
 				enum_value=enum_list[i].value;
 				*(int *)addr=enum_value;

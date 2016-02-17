@@ -501,17 +501,18 @@ int  _elem_process_func(void * addr,void * data,void * elem,
 		// judge if this elem is a define elem	
 		if(_isdefineelem(curr_elem->elem_desc->type))
 		{
-			int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
-			if(addroffset<0)
-				return addroffset;
+			int def_value=_elem_get_defvalue(curr_elem,addr);
+			if(def_value<0)
+				return def_value;
+
 		
 			// define + array elem means we need to repeat 
 			// def_value times 	
 			if(_isarrayelem(curr_elem->elem_desc->type))
 			{
-				int def_value=_elem_get_defvalue(curr_elem,addr);
-				if(def_value<0)
-					return def_value;
+				int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
+				if(addroffset<0)
+					return addroffset;
 
 				if(funcs->def_array_init!=NULL)
 				{
@@ -529,25 +530,11 @@ int  _elem_process_func(void * addr,void * data,void * elem,
 				}
 			}
 				
-/*
-				int offset=0;
-				int i;
-				curr_elem->index=0;
-				for(i=0;i<def_value;i++)
-				{
-					ret=funcs->elem_ops(*(void **)elem_addr+addroffset*i,data+offset,curr_elem);
-					if(ret<0)
-						return ret;
-					offset+=ret-1;
-				}
-//				*(char *)(data+offset-1)=0;
-				return offset;
-			}
-*/
 			else
 			{
 				// or we should use the normal process func,
 				// let the function deal the defvale itself
+				curr_elem->index=def_value;
 				ret=funcs->elem_ops(elem_addr,data,curr_elem);
 				if(ret<0)
 					return ret;

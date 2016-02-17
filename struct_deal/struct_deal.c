@@ -264,7 +264,15 @@ int _create_template_proc_func(void * addr,void * data,void * elem, void * para)
 			return -EINVAL;
 		curr_elem->def=temp_elem;
 		curr_elem->offset=my_para->curr_offset;
-		curr_elem->size=sizeof(void *);
+		if(_ispointerelem(curr_elem->elem_desc->type)&&
+			_isarrayelem(curr_elem->elem_desc->type))
+			curr_elem->size=sizeof(void *);
+		else
+		{
+			curr_elem->size=get_fixed_elemsize(curr_elem->elem_desc->type);
+			if(curr_elem->size<0)
+				return -EINVAL;	
+		}
 		my_para->curr_offset+=curr_elem->size;
 	}
 	else

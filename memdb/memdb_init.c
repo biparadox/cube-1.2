@@ -30,64 +30,6 @@ static struct InitElemInfo_struct MemdbElemInfo[] =
 };
 
 /*
-struct struct_elem_attr index_list_desc[] =
-{
-	{"flag",CUBE_TYPE_FLAG,sizeof(int),&elem_attr_flaglist_array,NULL},
-	{"elemlist",CUBE_TYPE_ESTRING,sizeof(void *),NULL,NULL},
-	{NULL,CUBE_TYPE_ENDDATA,0,NULL,NULL}
-};
-
-struct struct_elem_attr struct_namelist_desc[] =
-{
-	{"elem_no",CUBE_TYPE_INT,sizeof(int),NULL,NULL},
-	{"elemlist",CUBE_TYPE_DEFNAMELIST,sizeof(void *),NULL,"elem_no"},
-	{NULL,CUBE_TYPE_ENDDATA,0,NULL,NULL}
-};
-struct struct_elem_attr struct_typelist_desc[] =
-{
-	{"head",CUBE_TYPE_SUBSTRUCT,1,&uuid_head_desc,NULL},
-	{"elem_no",CUBE_TYPE_INT,sizeof(int),NULL,NULL},
-	{"uuid",CUBE_TYPE_UUID,DIGEST_SIZE,NULL,NULL},
-	{NULL,CUBE_TYPE_ENDDATA,0,NULL,NULL}
-};
-
-struct struct_elem_attr struct_subtypelist_desc[] =
-{
-	{"head",CUBE_TYPE_SUBSTRUCT,1,&uuid_head_desc,NULL},
-	{"type",CUBE_TYPE_ENUM,sizeof(int),NULL},
-	{"elem_no",CUBE_TYPE_INT,sizeof(int),NULL,NULL},
-	{"uuid",CUBE_TYPE_UUID,DIGEST_SIZE,NULL,NULL},
-	{NULL,CUBE_TYPE_ENDDATA,0,NULL,NULL}
-};
-
-struct struct_elem_attr struct_define_desc[] =
-{
-	{"head",CUBE_TYPE_SUBSTRUCT,1,&uuid_head_desc,NULL},
-	{"elem_no",CUBE_TYPE_INT,sizeof(int),NULL,NULL},
-	{"elem_desc",CUBE_TYPE_ARRAY,sizeof(void *),&elem_attr_octet_desc,"elem_no"},
-	{NULL,CUBE_TYPE_ENDDATA,0,NULL,NULL}
-};
-
-struct struct_elem_attr struct_record__desc[] =
-{
-	{"head",CUBE_TYPE_SUBSTRUCT,1,&uuid_head_desc,NULL},
-	{"elem_no",CUBE_TYPE_INT,sizeof(int),NULL,NULL},
-	{"elemlist",CUBE_TYPE_DEFNAMELIST,sizeof(void *),&elem_attr_octet_desc,"elem_no"},
-	{NULL,CUBE_TYPE_ENDDATA,0,NULL,NULL}
-};
-
-struct struct_elem_attr struct_recordtype_desc[] =
-{
-	{"head",CUBE_TYPE_SUBSTRUCT,1,&uuid_head_desc,NULL},
-	{"type",CUBE_TYPE_ENUM,sizeof(int),NULL},
-	{"subtype",CUBE_TYPE_ENUM,sizeof(int),NULL},
-	{"uuid",CUBE_TYPE_UUID,DIGEST_SIZE,NULL,NULL},
-	{"flag_no",CUBE_TYPE_INT,sizeof(int),NULL,NULL},
-	{"index",CUBE_TYPE_ARRAY,sizeof(void *),&index_list_desc,"flag_no"},
-	{NULL,CUBE_TYPE_ENDDATA,0,NULL,NULL}
-};
-
-
 struct struct_elem_attr struct_index_desc[] =
 {
 	{"head",CUBE_TYPE_SUBSTRUCT,1,&uuid_head_desc,NULL},
@@ -95,24 +37,10 @@ struct struct_elem_attr struct_index_desc[] =
 	{"uuid",CUBE_TYPE_UUID,DIGEST_SIZE,NULL,NULL},
 	{NULL,CUBE_TYPE_ENDDATA,0,NULL,NULL}
 };
-struct struct_elem_attr namelist_attr_desc[] =
-{
-	{"uuid",CUBE_TYPE_UUID,DIGEST_SIZE,NULL},
-	{"name",CUBE_TYPE_STRING,DIGEST_SIZE,NULL},
-	{"num",CUBE_TYPE_INT,sizeof(int),NULL},
-	{"namelist",CUBE_TYPE_DEFNAMELIST,sizeof(void *),"num"},
-	{NULL,CUBE_TYPE_ENDDATA,0,NULL}
-};
 
-
-struct struct_elem_attr struct_record_head_desc[] = 
-{
-	{"head",CUBE_TYPE_SUBSTRUCT,0,&uuid_head_desc},
-	{"elem_no",CUBE_TYPE_INT,sizeof(int),NULL},
-	{NULL,CUBE_TYPE_ENDDATA,0,NULL}
-};
 */
 
+void * _alloc_dynamic_db(int type,int subtype);
 int _namelist_tail_func(void * memdb,void * record)
 {
 	DB_RECORD * db_record=record;
@@ -462,6 +390,7 @@ int _subtypelist_tail_func(void * memdb,void * record)
 
 int _recordtype_tail_func(void * memdb,void * record)
 {
+	int ret;
 	DB_RECORD * db_record=record;
 	struct struct_recordtype * recordtype = db_record->record;
 	DB_RECORD * temp_record;
@@ -472,6 +401,11 @@ int _recordtype_tail_func(void * memdb,void * record)
 	if(temp_record==NULL)
 		return -EINVAL;
 
+	db_record->tail=create_struct_template(temp_record->tail);
+	if(db_record->tail==NULL)
+		return -EINVAL;
+
+
 	for(i=0;i<recordtype->flag_no;i++)
 	{
 		if(recordtype->index[i].flag==CUBE_ELEM_FLAG_INDEX)
@@ -480,24 +414,22 @@ int _recordtype_tail_func(void * memdb,void * record)
 			break;
 		}
 	}
+	if(index_elems==NULL)
+	{
+		ret=struct_set_allflag(db_record->tail,CUBE_ELEM_FLAG_INDEX);
+		if(ret<0)
+			return ret;
+	}
 	
-	temp_record=memdb_register_db(recordtype->type,recordtype->subtype,
-		temp_record->tail,NULL,index_elems);
-	if(temp_record==NULL)
-		return -EINVAL;
-	struct_template=memdb_get_template(recordtype->type,recordtype->subtype);
-	if(struct_template==NULL)
-		return -EINVAL; 
 
 	for(i=0;i<recordtype->flag_no;i++)
 	{
 		if(recordtype->index[i].flag!=CUBE_ELEM_FLAG_INDEX)
 		{
-			struct_set_flag(struct_template,recordtype->index[i].flag,
+			struct_set_flag(db_record->tail,recordtype->index[i].flag,
 				recordtype->index[i].elemlist);		
 		}
 	}
-	db_record->tail=struct_template;
 	return 0;
 }
 
@@ -519,19 +451,10 @@ int memdb_register_db(int type,int subtype,void * struct_desc,void * tail_func,c
 			return -EINVAL;
 		memdb=static_db_list[type];
 	}
-	else if(type==DB_DTYPE_START)
-	{
-		ret=Galloc0(&dynamic_db_list,sizeof(struct memdb_desc));
-		if(ret<0)
-			return -EINVAL;
-		memdb=dynamic_db_list;
-		
-	}
-	else
+	else if(type>=DB_DTYPE_START)
 	{
 		return -EINVAL;
 	}
-		
 	memdb->record_db=init_hash_list(8,type,subtype);
 	memdb->struct_template=create_struct_template(struct_desc);
 	memdb->type=type;
@@ -552,6 +475,59 @@ int memdb_register_db(int type,int subtype,void * struct_desc,void * tail_func,c
 	return 0;
 }
 
+
+void * memdb_get_recordtype(int type, int subtype)
+{
+	DB_RECORD * db_record;
+	struct struct_recordtype * recordtype;
+	
+	db_record=memdb_get_first(DB_RECORDTYPE,0);
+	
+	while(db_record!=NULL)
+	{
+		recordtype=db_record->record;
+		if((recordtype->type==type) &&
+			(recordtype->subtype==subtype))
+		{
+			return db_record;		
+		}
+		db_record=memdb_get_next(DB_RECORDTYPE,0);	
+	}
+	return NULL;
+}
+
+int memdb_register_dynamicdb(int type,int subtype)
+{
+	struct memdb_desc * memdb;
+	int ret;
+	DB_RECORD * db_record;
+	struct struct_recordtype * record_define;
+	
+	if(type<=DB_DTYPE_START)
+		return -EINVAL;
+
+	memdb=memdb_get_dblist(type,subtype);
+	if(memdb!=NULL)
+		return -EINVAL;
+
+	db_record=memdb_get_recordtype(type,subtype);
+	if(db_record==NULL)
+		return -EINVAL;
+
+	record_define=db_record->record;
+
+	memdb=_alloc_dynamic_db(type,subtype);
+	if(memdb==NULL)
+		return -EINVAL;
+	Memcpy(memdb->uuid,record_define->uuid,DIGEST_SIZE);
+	ret=hashlist_add_elem(dynamic_db_list,memdb);
+	if(ret<0)
+		return ret;
+	memdb->struct_template=db_record->tail;
+	memdb->tail_func=NULL;
+	return 0;
+}
+		
 int memdb_get_elem_type(void * elem)
 {
 	UUID_HEAD * head=elem;
@@ -596,24 +572,19 @@ void * memdb_get_next(int type,int subtype)
 }
 
 
-int _comp_struct_digest(BYTE * digest,void * record);
-int _comp_db_digest(BYTE * digest,void * record);
-int _comp_namelist_digest(BYTE * digest,void * namelist);
 
 void *  _get_dynamic_db_bytype(int type,int subtype)
 {
-	void * db_list;
-	DB_DESC * memdb;
-	db_list=hashlist_get_first(dynamic_db_list);
-	while(db_list!=NULL)
+	struct memdb_desc * memdb;
+	memdb=hashlist_get_first(dynamic_db_list);
+	while(memdb!=NULL)
 	{
-		memdb=hashlist_get_desc(db_list);
-		if(memdb->head.type == type)
+		if(memdb->type == type)
 		{
-			if(memdb->head.subtype == subtype)
-				return db_list;
+			if(memdb->subtype == subtype)
+				return memdb;
 		}
-		db_list=hashlist_get_next(dynamic_db_list);
+		memdb=hashlist_get_next(dynamic_db_list);
 	}	 
 	return NULL;
 }
@@ -634,8 +605,25 @@ void * memdb_get_dblist(int type, int subtype)
 	return db_list;
 }
 
+
+void * _alloc_dynamic_db(int type,int subtype)
+{
+	int ret;
+	struct memdb_desc * memdb;
+	void * db_list=init_hash_list(8,type,subtype);
+	if(db_list==NULL)
+		return NULL;
+	ret=Galloc0(&memdb,sizeof(DB_DESC));
+	if(ret<0)
+		return NULL;
+	memdb->type=type;
+	memdb->subtype=subtype;
+	memdb->record_db=db_list;
+	return memdb;
+
+
+}
 /*
-void * _set_dynamic_db_bytype(int type,int subtype,void * record_def)
 {
 	int ret;
 	DB_DESC * memdb;
@@ -653,14 +641,8 @@ void * _set_dynamic_db_bytype(int type,int subtype,void * record_def)
 	memdb->head.subtype=record_type->subtype;
 	hashlist_set_desc(db_list,memdb);
 	hashlist_add_elem(dynamic_db_list,db_list);
-	memdb_set_template(record_type->type,record_type->subtype,record_type->tail_desc);
 	return db_list;
 
-}
-
-int memdb_is_elem_namelist(void * elem)
-{
-	return _is_type_namelist(memdb_get_elem_type(elem));
 }
 
 
@@ -779,49 +761,6 @@ INDEX_ELEM * memdb_find_index_byuuid(BYTE * uuid)
 	
 }
 
-
-void * _build_struct_desc(void ** elem_attr,int type,int subtype,char * name)
-{
-	int ret;
-	struct struct_desc_record * record;
-	int len;
-	if(name!=NULL)
-	{
-		len=strlen(name);
-		if(len>DIGEST_SIZE)
-			return -EINVAL;
-	}
-	ret=Galloc(&record,sizeof(struct struct_desc_record));
-	if(ret<0)
-		return NULL;
-	record->head.type=type;		
-	record->head.subtype=subtype;		
-	memset(record->head.uuid,0,DIGEST_SIZE);
-	memset(record->head.name,0,DIGEST_SIZE);
-	ret=_comp_struct_digest(record->head.uuid,record);
-	if(ret<0)
-		return ret;
-	if(name!=NULL)
-	{
-		memcpy(record->head.name,name,len);
-	}
-	return record;
-}
-
-
-int memdb_register_struct(void ** elem_attr,char * name,BYTE * uuid)
-{
-	struct struct_desc_record * record;
-	int ret;
-
-	record=_build_struct_desc(elem_attr,0,0,name);
-	if(record==NULL)
-		return -EINVAL;
-	memcpy(uuid,record->head.uuid,DIGEST_SIZE);
-	ret=memdb_store(record,DB_STRUCT_DESC,0);
-	ret=memdb_store_index(record,NULL,0);
-	return ret;
-}
 */
 int memdb_init()
 {
@@ -1198,87 +1137,6 @@ int memdb_get_subtypeno(int typeno,char * typestr)
 	return _get_value_namelist(typestr,subtypelist);
 
 }
-/*
-int memdb_print(void * data,char * json_str)
-{
-	struct struct_desc_record * struct_record=data;
-	void * struct_template ; 
-	int ret;
-	int offset;
-
-	struct_template=memdb_get_template(struct_record->head.type,struct_record->head.subtype);
-	
-	if(memdb_is_dynamic(struct_record->head.type))
-	{
-		offset=struct_2_json(data+sizeof(UUID_HEAD),json_str,struct_template);
-	}
-	else
-	{
-		offset=struct_2_json(struct_record,json_str,struct_template);
-	}
-	if(offset<0)
-		return offset;
-	return offset;
-}
-
-int memdb_print_namelist(void * namelist,char * json_str)
-{
-	int ret;
-	UUID_HEAD * head=namelist;
-	void * namelist_template;
-	if(head==NULL)
-		return -EINVAL;
-	if(json_str==NULL)
-		return -EINVAL;
-	namelist_template = memdb_get_template(head->type,head->subtype);
-	if(namelist_template == NULL)
-		return -EINVAL;
-	ret=struct_2_json(namelist,json_str,namelist_template);
-	return ret;	
-}
-
-int memdb_print_index(void * index,char * json_str)
-{
-	int ret;
-	UUID_HEAD * head=index;
-	void * index_template;
-	if(head==NULL)
-		return -EINVAL;
-	if(json_str==NULL)
-		return -EINVAL;
-	index_template = memdb_get_template(DB_INDEX,0);
-	if(index_template == NULL)
-		return -EINVAL;
-	ret=struct_2_json(index,json_str,index_template);
-	return ret;	
-}
-
-int _comp_namelist_digest(BYTE * digest,void * namelist)
-{
-	int ret;
-	struct struct_namelist * list=namelist;
-	int type = list->head.type;
-	BYTE buffer[4096];
-	if( ! _is_type_namelist(type))
-		return -EINVAL;
-
-	void * namelist_template;
-
-	namelist_template=memdb_get_template(type,0);
-	if(namelist_template==NULL)
-		return -EINVAL;
-
-	ret=struct_2_part_blob(namelist,buffer,namelist_template,CUBE_ELEM_FLAG_KEY);
-
-	if(ret<0)
-		return ret;	
-
-	ret=calculate_context_sm3(buffer,ret,digest);
-	if(ret<0)
-		return ret;	
-	return 0;
-}
-*/
 
 int memdb_comp_uuid(void * record)
 {
