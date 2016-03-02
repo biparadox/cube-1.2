@@ -24,16 +24,6 @@ struct proc_context * myproc_context;
 
 int routine_setuuid(void * proc);
 
-struct routine_ops
-{
-	struct struct_elem_attr * init_para_desc;	
-	struct struct_elem_attr * start_para_desc;	
-
-	int (*init)(void * proc,void * para);
-	int (*start)(void * proc,void * para);
-	int (*exit)(void * proc,void * para);
-
-};
 
 typedef struct routine_struct
 {
@@ -69,18 +59,17 @@ do {				\
 	}						\
 	else						\
 	{						\
-		this->entry = &&CONCAT02(ENTRY,__LINE);	\
+		this->entry = &&CONCAT02(ENTRY,__LINE__);	\
 		return this;				\
 	}						\
-}while(0)						\
+}while(0);						\
 	
 
 #define SUBROUTINE_INIT			\
 	ROUTINE * this = proc;		\
 	if(this)			\
 	{				\
-		goto this->entry;	\
-	}				
+		goto *this->entry;	\
+	};				\
 	
-
 #endif

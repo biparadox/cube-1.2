@@ -33,7 +33,10 @@
 #include "../include/struct_deal.h"
 #include "../include/memdb.h"
 #include "../include/message.h"
+#include "../include/routine.h"
 
+struct routine_ops sub1_ops;
+struct routine_ops sub2_ops;
 
 int read_json_file(char * file_name)
 {
@@ -124,61 +127,14 @@ int main() {
 	void * record;
 
 // test struct desc reading start
-	
-	int msg_type = memdb_get_typeno("MESSAGE");
-	if(msg_type<=0)
-		return -EINVAL;
-
-	int subtype=memdb_get_subtypeno(msg_type,"HEAD");
-	if(subtype<=0)
-		return -EINVAL;
-
-	record=memdb_get_first(msg_type,subtype);
-	while(record!=NULL)
-	{
-		ret=memdb_print(record,print_buffer);
-		if(ret<0)
-			return -EINVAL;
-		printf("%s\n",print_buffer);
-		record=memdb_get_next(msg_type,subtype);
-	}
 
 	msgfunc_init();
 	
 	void * message;
+	routine_init();
 
-	message=message_create(512,1,NULL);	
-
-	ret=Galloc0(&msg_head,sizeof(MSG_HEAD));
-	if(msg_head==NULL)
-		return -EINVAL;
-	Strcpy(msg_head->sender_uuid,"Test sender");	
-	Strcpy(msg_head->receiver_uuid,"Test receiver");
-	ret=message_add_record(message,msg_head);
-	if(ret<0)
-	{
-		printf("add message head record failed!\n");
-		return ret;
-	}	
-
-	ret=message_record_struct2blob(message);
-	if(ret<0)
-	{
-		printf("message struct2blob failed!\n");
-		return ret;
-	}	
-
-	BYTE * blob;
-	
-	message_output_blob(message,&blob);
-	ret=message_output_json(message,json_buffer);
-	if(ret<0)
-	{
-		printf("message output json failed!\n");
-		return ret;
-	}
-
-	printf("%s\n",json_buffer);
+	routine_register("sub1",ROUTINE_SOURCE,&sub1_ops,NULL);
+	routine_register("sub2",ROUTINE_SOURCE,&sub2_ops,NULL);
 	
 	return 0;
 

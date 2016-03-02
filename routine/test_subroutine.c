@@ -81,6 +81,20 @@ int sub1_start(void * proc,void * para)
 	return 0;	
 }
 
+int sub1_exit(void * proc,void * para)
+{
+	ROUTINE * this=(ROUTINE *)proc;
+	int ret;
+	
+	struct sub1_context * context;
+	
+	context=this->context;
+	context->a=0;
+	context->b=0;
+	Free(context);
+	return 0;
+}
+
 int sub2_init(void * proc,void * para)
 {
 	
@@ -104,7 +118,7 @@ int sub2_start(void * proc,void * para)
 {
 	SUBROUTINE_INIT
 	
-	struct sub1_context * context= this->context;	
+	struct sub2_context * context= this->context;	
 
 	context->a++;
 	WAIT()
@@ -113,3 +127,32 @@ int sub2_start(void * proc,void * para)
 	context->c=context->a+context->b;
 	return 0;	
 }
+
+int sub2_exit(void * proc,void * para)
+{
+	ROUTINE * this=(ROUTINE *)proc;
+	int ret;
+	
+	struct sub2_context * context;
+	
+	context=this->context;
+	context->a=0;
+	context->b=0;
+	context->c=0;
+	Free(context);
+	return 0;
+}
+
+struct routine_ops sub1_ops =
+{
+	.init=&sub1_init,
+	.start=&sub1_start,
+	.exit=&sub1_exit,
+};
+
+struct routine_ops sub2_ops =
+{
+	.init=&sub2_init,
+	.start=&sub2_start,
+	.exit=&sub2_exit,
+};
