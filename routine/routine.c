@@ -12,10 +12,4 @@
 #include "../include/basefunc.h"
 #include "../include/memdb.h"
 #include "../include/message.h"
-
-
-int routine_start()
-{
-
-}
-
+#include "../include/routine.h"

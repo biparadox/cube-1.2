@@ -13,6 +13,7 @@
 #include "../include/memdb.h"
 #include "../include/message.h"
 #include "../include/routine.h"
+#include "../include/channel.h"
 
 #include "routine_internal.h"
 
@@ -26,6 +27,18 @@ int routine_setuuid(void * proc)
 	if(routine==NULL)
 		return -EINVAL;
 	ret=comp_proc_uuid(myproc_context->uuid,routine->name,routine->uuid);
+	if(ret<0)
+		return -EINVAL;
+	return 0;
+}
+
+int channel_setuuid(void * channel)
+{
+	int ret;
+	CHANNEL * my_channel=(CHANNEL *)channel;
+	if(channel==NULL)
+		return -EINVAL;
+	ret=comp_proc_uuid(myproc_context->uuid,my_channel->name,my_channel->uuid);
 	if(ret<0)
 		return -EINVAL;
 	return 0;
@@ -51,14 +64,41 @@ void * routine_register(char * name,int type,void * routine_ops, void * state_li
 
 }
 
-void * subroutine_getfirst()
+void * channel_register(char * name,int type)
+{
+	int ret;
+	CHANNEL * new_channel;
+	ret=Galloc0(&new_channel,sizeof(CHANNEL));
+	if(ret<0)
+		return NULL;
+	
+	new_channel=channel_create(name,type);
+	if(new_channel==NULL)
+		return NULL;
+	channel_setuuid(new_channel);		
+	
+	hashlist_add_elem(channel_list,new_channel);
+	return new_channel;
+}
+
+void * _subroutine_getfirst()
 {
 	return hashlist_get_first(subroutine_list);
 }
 
-void * subroutine_getnext()
+void * _subroutine_getnext()
 {
 	return hashlist_get_next(subroutine_list);
+}
+
+void * _channel_getfirst()
+{
+	return hashlist_get_first(channel_list);
+}
+
+void * _channel_getnext()
+{
+	return hashlist_get_next(channel_list);
 }
 
 int routine_init()
@@ -69,6 +109,17 @@ int routine_init()
 	ret=Galloc0(&myproc_context,sizeof(struct proc_context));
 	if(ret<0)
 		return ret;
+	ret=_routine_switch_init();
 	return 0;	
 }
 
+int routine_start()
+{
+	int ret;
+	do
+	{
+		ret=_routine_manage_start();
+		ret=_routine_switch_start();	
+	}while(ret>0);
+
+}

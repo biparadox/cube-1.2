@@ -136,6 +136,8 @@ int main() {
 	routine_register("sub1",ROUTINE_SOURCE,&sub1_ops,NULL);
 	routine_register("sub2",ROUTINE_SOURCE,&sub2_ops,NULL);
 	
+	routine_start();
+	
 	return 0;
 
 }

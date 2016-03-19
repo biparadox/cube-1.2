@@ -55,21 +55,51 @@ CONCAT02(ENTRY,__LINE__):	\
 do {				\
 	if(this->entry== && CONCAT02(ENTRY,__LINE__))	\
 	{						\
-		this->entry=ROUTINE_RESUMED;		\
+		this->entry=NULL;			\
+		this->state=ROUTINE_RUNNING;		\
 	}						\
 	else						\
 	{						\
 		this->entry = &&CONCAT02(ENTRY,__LINE__);	\
+		this->state=ROUTINE_SLEEP;		\
 		return this;				\
 	}						\
 }while(0);						\
 	
 
-#define SUBROUTINE_INIT			\
-	ROUTINE * this = proc;		\
-	if(this)			\
-	{				\
-		goto *this->entry;	\
-	};				\
+#define SUBROUTINE_INIT_BEGIN			\
+	ROUTINE * this = proc;			
+
+#define SUBROUTINE_INIT_END			\
+	if(this)				\
+	{					\
+		this->state=ROUTINE_RUNNING;	\
+		if(this->entry)			\
+		{				\
+			goto *this->entry;	\
+		}				\
+	}					\
+	else					\
+	{					\
+		return -EINVAL;			\
+	};					
+
+#define EXIT( ret )					\
+	if(this)				\
+	{					\
+		this->state=ROUTINE_STOP;	\
+		return ret;			\
+	}					\
+	else					\
+	{					\
+		return -EINVAL;			\
+	};					\
+	
+
+int _routine_switch_init();
+int _routine_switch_start();
+
+int _routine_manage_init();
+int _routine_manage_start();
 	
 #endif

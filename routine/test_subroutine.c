@@ -71,14 +71,15 @@ int sub1_init(void * proc,void * para)
 
 int sub1_start(void * proc,void * para)
 {
-	SUBROUTINE_INIT
+	SUBROUTINE_INIT_BEGIN
 	
 	struct sub1_context * context= this->context;	
+	SUBROUTINE_INIT_END
 
 	context->a++;
 	WAIT()
 	context->b++;	
-	return 0;	
+	EXIT(0);
 }
 
 int sub1_exit(void * proc,void * para)
@@ -116,16 +117,18 @@ int sub2_init(void * proc,void * para)
 
 int sub2_start(void * proc,void * para)
 {
-	SUBROUTINE_INIT
+	SUBROUTINE_INIT_BEGIN
 	
 	struct sub2_context * context= this->context;	
+	SUBROUTINE_INIT_END
+	
 
 	context->a++;
 	WAIT()
 	context->b++;	
 	WAIT()
 	context->c=context->a+context->b;
-	return 0;	
+	EXIT(0);
 }
 
 int sub2_exit(void * proc,void * para)
