@@ -31,7 +31,10 @@
 #include "../include/alloc.h"
 #include "../include/json.h"
 #include "../include/string.h"
+
 int main() {
+
+   	static unsigned char alloc_buffer[4096*(1+1+4+1+16+1+256)];	
 
 	char json_buffer[1024];
 	int fd;
@@ -40,7 +43,7 @@ int main() {
 	void * root;
 	void * temp_node;
 	
-  	mem_init();
+  	mem_init(alloc_buffer);
 	fd=open("login.json",O_RDONLY);
 	if(fd<0)
 		return fd;

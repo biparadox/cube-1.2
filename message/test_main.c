@@ -1,4 +1,5 @@
 /**
+
  * Copyright [2015] Tianfu Ma (matianfu@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -86,6 +87,7 @@ int read_json_file(char * file_name)
 
 int main() {
 
+  	static unsigned char alloc_buffer[4096*(1+1+4+1+16+1+256)];	
 	char json_buffer[4096];
 	char print_buffer[4096];
 	int ret;
@@ -107,7 +109,7 @@ int main() {
 		NULL
 	};
 
-	mem_init();
+	mem_init(alloc_buffer);
 	struct_deal_init();
 	memdb_init();
 

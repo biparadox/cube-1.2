@@ -113,13 +113,20 @@ int routine_init()
 	return 0;	
 }
 
-int routine_start()
+void * routine_start(void * pointer)
 {
 	int ret;
+	int count=0;
 	do
 	{
 		ret=_routine_manage_start();
+		if(ret<0)
+			break;
 		ret=_routine_switch_start();	
+		if(ret<0)
+			break;
+		count++;
 	}while(ret>0);
+	return count;
 
 }

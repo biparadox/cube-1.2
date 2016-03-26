@@ -35,6 +35,8 @@
 
 int main() {
 
+  	static unsigned char alloc_buffer[4096*(1+1+4+1+16+1+256)];	
+
 	void * channel;
 	char inner_buffer[8192];
 	char extern_buffer[8192];
@@ -44,7 +46,7 @@ int main() {
 	int ex_offset=0;
 	int in_offset=0;
 
-	mem_init();
+	mem_init(alloc_buffer);
 	struct_deal_init();
 
 	channel=channel_create("test_channel",CHANNEL_RDWR);

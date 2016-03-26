@@ -37,9 +37,11 @@ int main() {
 
   BYTE digest[DIGEST_SIZE];
   int ret;
+  static unsigned char alloc_buffer[4096*(1+1+4+1+16+1+256)];	
 
   void * hash_head;
-  mem_init();
+
+  mem_init(alloc_buffer);
 
   test_uuid=Calloc(sizeof(UUID_HEAD));
   memset(test_uuid->uuid,'A',DIGEST_SIZE);  

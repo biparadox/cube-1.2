@@ -57,7 +57,9 @@ void test003() {
 
 int main() {
 
-  mem_init();
+  static unsigned char alloc_buffer[4096*(1+1+4+1+16+1+256)];	
+
+  mem_init(alloc_buffer);
   test001();
   test003();
   Tclear();

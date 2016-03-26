@@ -26,6 +26,8 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <pthread.h>
+
 #include "../include/errno.h"
 #include "../include/data_type.h"
 #include "../include/alloc.h"
@@ -89,6 +91,7 @@ int read_json_file(char * file_name)
 
 int main() {
 
+  	static unsigned char alloc_buffer[4096*(1+1+4+1+16+1+256)];	
 	char json_buffer[4096];
 	char print_buffer[4096];
 	int ret;
@@ -100,6 +103,7 @@ int main() {
 	BYTE uuid[DIGEST_SIZE];
 	int i;
 	MSG_HEAD * msg_head;
+	pthread_t  cube_thread;
 	
 	char * baseconfig[] =
 	{
@@ -110,7 +114,7 @@ int main() {
 		NULL
 	};
 
-	mem_init();
+	mem_init(alloc_buffer);
 	struct_deal_init();
 	memdb_init();
 
@@ -135,8 +139,17 @@ int main() {
 
 	routine_register("sub1",ROUTINE_SOURCE,&sub1_ops,NULL);
 	routine_register("sub2",ROUTINE_SOURCE,&sub2_ops,NULL);
+
+	pthread_create(&cube_thread,NULL,routine_start,NULL);
+
+	int * thread_return;
+
+	ret=pthread_join(cube_thread,&thread_return);
+
+	printf("return value is %d\n",thread_return);
 	
-	routine_start();
+//	routine_start();
+//	sleep(100000);
 	
 	return 0;
 

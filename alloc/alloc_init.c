@@ -16,7 +16,7 @@
  * File: buddy.c
  *
  * Created on: Jun 5, 2015
- * Author: Tianfu Ma (matianfu@gmail.com)
+ * Author: Hu jun (algorist@bjut.edu.cn)
  */
 
 #include "../include/errno.h"
@@ -25,7 +25,7 @@
 #include "../include/memory.h"
 #include "buddy.h"
 
-static unsigned char alloc_buffer[4096*(1+1+4+1+16+1+256)];
+//static unsigned char alloc_buffer[4096*(1+1+4+1+16+1+256)];
 static unsigned char * start_addr ;
 static unsigned char * empty_addr ;
 static int empty_pages=1+4+1+16+1+256;
@@ -34,7 +34,7 @@ const int g_order=20;
 const int t_order=14;
 const int c_order=16;
 
-int mem_init( )
+int mem_init(unsigned char * alloc_buffer )
 {
 	start_addr = alloc_buffer + PAGE_SIZE-(((int)alloc_buffer)&0x0fff);
 	empty_addr = start_addr;
