@@ -10,7 +10,7 @@
 #ifndef _CUBE_ROUTINE_INTERNAL_H
 #define _CUBE_ROUTINE_INTERNAL_H
 
-#include "../include/data_type.h"
+//#include "../include/data_type.h"
 
 struct proc_context
 {
@@ -102,4 +102,9 @@ int _routine_switch_start();
 int _routine_manage_init();
 int _routine_manage_start();
 	
+int _routine_dispatch_init();
+int _routine_dispatch_start();
+
+int _routine_channel_init();
+int _routine_channel_start();
 #endif

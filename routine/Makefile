@@ -3,7 +3,7 @@ CFLAGS= -g -c -DUSER_MODE
 CC=gcc
 LD=ld
 CCP=g++
-STRUCTOBJ= routine.o routine_init.o routine_switch.o routine_manage.o
+STRUCTOBJ= routine.o routine_init.o routine_switch.o routine_manage.o routine_dispatch.o routine_channel.o
 
 main: ../lib/libroutine.a  test_main
 test_main: test_main.c ../lib/libroutine.a  test_subroutine.o
@@ -19,6 +19,10 @@ routine_switch.o:  routine_switch.c ../include/routine.h routine_internal.h
 	$(CC) $(CFLAGS) routine_switch.c
 routine_manage.o:  routine_manage.c ../include/routine.h routine_internal.h 
 	$(CC) $(CFLAGS) routine_manage.c
+routine_dispatch.o:  routine_dispatch.c ../include/routine.h routine_internal.h 
+	$(CC) $(CFLAGS) routine_dispatch.c
+routine_channel.o:  routine_channel.c ../include/routine.h routine_internal.h 
+	$(CC) $(CFLAGS) routine_channel.c
 test_subroutine.o:  test_subroutine.c routine_internal.h
 	$(CC) $(CFLAGS) test_subroutine.c
 clean:

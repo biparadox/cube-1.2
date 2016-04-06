@@ -125,6 +125,12 @@ void * routine_start(void * pointer)
 		ret=_routine_switch_start();	
 		if(ret<0)
 			break;
+		ret=_routine_dispatch_start();
+		if(ret<0)
+			break;
+		ret=_routine_channel_start();
+		if(ret<0)
+			break;
 		count++;
 	}while(ret>0);
 	return count;

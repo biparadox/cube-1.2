@@ -1,7 +1,7 @@
 #ifndef  CUBE_ALLOC_H
 #define  CUBE_ALLOC_H
 
-int mem_init();
+int mem_init(BYTE * buffer);
 void * Calloc(int size);
 void * Calloc0(int size);
 int Cgetfreecount();
