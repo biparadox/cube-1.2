@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "../include/data_type.h"
 #include "../include/alloc.h"
 
 void test001() {

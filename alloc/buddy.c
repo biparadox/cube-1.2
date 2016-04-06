@@ -22,7 +22,7 @@
 #include "../include/errno.h"
 #include "../include/data_type.h"
 #include "../include/alloc.h"
-#include "../include/memory.h"
+#include "../include/string.h"
 #include "buddy.h"
 
 void buddy_clear(buddy_t * buddy) {

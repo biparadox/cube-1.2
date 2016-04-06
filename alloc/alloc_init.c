@@ -22,7 +22,7 @@
 #include "../include/errno.h"
 #include "../include/data_type.h"
 #include "../include/alloc.h"
-#include "../include/memory.h"
+#include "../include/string.h"
 #include "buddy.h"
 
 //static unsigned char alloc_buffer[4096*(1+1+4+1+16+1+256)];
