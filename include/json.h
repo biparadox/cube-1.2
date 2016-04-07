@@ -43,4 +43,5 @@ int  json_node_get_no(void * node);
 int  json_node_set_pointer(void * node,void * pointer);
 void * json_node_get_pointer(void * node);
 int json_remove_node(void * node);
+void * json_add_child(void * node,void * child);
 #endif

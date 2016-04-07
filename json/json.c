@@ -370,13 +370,17 @@ int json_set_type(void * node,int datatype,int isvalue)
     return json_node->elem_type;	
 }
 
-int json_add_child(JSON_NODE * curr_node,void * child)
+void * json_add_child(void * node,void * child)
 {
+    JSON_NODE * curr_node = (JSON_NODE *)node;
+	
     Record_List * newrecord = get_new_Record_List(child);
     if(newrecord == NULL)
         return NULL;
     list_add((struct list_head *)newrecord,&(curr_node->childlist.list));
     curr_node->curr_child=newrecord;
+    return newrecord;
+	
 }
 
 int json_solve_str(void ** root, char *str)
