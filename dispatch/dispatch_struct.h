@@ -1,6 +1,31 @@
 
 #ifndef ROUTER_STRUCT_H
 #define ROUTER_STRUCT_H
+
+enum match_operation
+{
+	DISPATCH_MATCH_PARALLEL,
+	DISPATCH_MATCH_SERIAL,
+};
+
+enum message_area_type
+{
+    MATCH_AREA_HEAD=0x01,
+    MATCH_AREA_RECORD=0x02,
+    MATCH_AREA_EXPAND=0x04,
+    MATCH_AREA_ERR=0xFF,
+};
+
+typedef struct tagmatch_rule
+{
+	int op;
+	int area;
+	int type;
+	int subtype;
+	void * match_template;
+	void * value;
+};
+
 static struct struct_elem_attr match_rule_desc[] =
 {
     {"op",OS210_TYPE_ENUM,sizeof(int),&match_rule_op_valuelist},

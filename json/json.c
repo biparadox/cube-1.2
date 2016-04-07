@@ -40,7 +40,7 @@ void * json_get_first_child(void * father)
 {
     JSON_NODE * father_node = (JSON_NODE *)father;
     father_node->curr_child =(Record_List *) (father_node->childlist.list.next);
-    if(father_node->curr_child == &(father_node->childlist.list))
+    if(father_node->curr_child == &(father_node->childlist))
         return NULL;
     return father_node->curr_child->record;
 }
@@ -48,9 +48,9 @@ void * json_get_first_child(void * father)
 void * json_get_next_child(void * father)
 {
     JSON_NODE * father_node = (JSON_NODE *)father;
-    if(father_node->curr_child == &(father_node->childlist.list))
+    if(father_node->curr_child == &(father_node->childlist))
         return NULL;
-    father_node->curr_child = father_node->curr_child->list.next;
+    father_node->curr_child = (Record_List *)father_node->curr_child->list.next;
     return father_node->curr_child->record;
 }
 
@@ -64,15 +64,15 @@ int json_remove_node(void * node)
 	return -EINVAL;	
     if(father_node->curr_child->record==node)
     {
-	father_node->curr_child=father_node->curr_child->list.next;
+	father_node->curr_child=(Record_List *)(father_node->curr_child->list.next);
     }	
     
-    temp_node=father_node->childlist.list.next;
+    temp_node=(Record_List *)(father_node->childlist.list.next);
     while(temp_node->record!=node)
     {
-	if(temp_node==&(father_node->childlist.list))
+	if(temp_node==&(father_node->childlist))
 		return -EINVAL;
-	temp_node=temp_node->list.next;
+	temp_node=(Record_List *)(temp_node->list.next);
     }		
     temp_node->list.next->prev=temp_node->list.prev;
     temp_node->list.prev->next=temp_node->list.next;
@@ -110,7 +110,7 @@ int json_is_value(void * node)
 char * json_get_valuestr(void * node)
 {
     if(node==NULL)
-		return -EINVAL;
+	return NULL;
     JSON_NODE * json_node = (JSON_NODE *)node;
     return json_node->value_str;
 }
@@ -336,7 +336,7 @@ void * _new_json_node(void * father)
     newnode=Calloc(sizeof(JSON_NODE));
     if(newnode==NULL)
         return NULL;
-    memset(newnode,0,sizeof(JSON_NODE));
+    Memset(newnode,0,sizeof(JSON_NODE));
     INIT_LIST_HEAD(&(newnode->childlist.list));
     newnode->father=father;
     Record_List * newrecord = get_new_Record_List(newnode);
@@ -344,7 +344,7 @@ void * _new_json_node(void * father)
         return NULL;
     if(father_node!=NULL)
     {
-        list_add_tail(newrecord,&(father_node->childlist.list));
+        list_add_tail((struct list_head *)newrecord,&(father_node->childlist.list));
         father_node->curr_child=newrecord;
     }
     return newnode;
@@ -375,7 +375,7 @@ int json_add_child(JSON_NODE * curr_node,void * child)
     Record_List * newrecord = get_new_Record_List(child);
     if(newrecord == NULL)
         return NULL;
-    list_add(newrecord,&(curr_node->childlist.list));
+    list_add((struct list_head *)newrecord,&(curr_node->childlist.list));
     curr_node->curr_child=newrecord;
 }
 
@@ -465,7 +465,7 @@ int json_solve_str(void ** root, char *str)
                     return ret;
                 offset+=ret;
 		{
-		    int len=strlen(value_buffer);
+		    int len=Strlen(value_buffer);
 		    if(len<=DIGEST_SIZE)
                	        Memcpy(child_node->name,value_buffer,len+1);
 		    else
@@ -519,7 +519,7 @@ int json_solve_str(void ** root, char *str)
                 	if(ret>DIGEST_SIZE*8+2)
                     		return -EINVAL;
 			json_set_type(child_node,JSON_ELEM_STRING,0);
-			Palloc(&(child_node->value_str),ret);
+			ret=Palloc((void **)(&(child_node->value_str)),ret);
 			Memcpy(child_node->value_str,value_buffer,ret);
 		}
 		// if this value is a num
@@ -594,7 +594,7 @@ int json_solve_str(void ** root, char *str)
                 	if(ret>DIGEST_SIZE*16+2)
                     		return -EINVAL;
 			json_set_type(child_node,JSON_ELEM_STRING,1);
-			Palloc(&(child_node->value_str),ret);
+			Palloc((void **)(&(child_node->value_str)),ret);
 			Memcpy(child_node->value_str,value_buffer,ret);
 		}
 		// if this value is a num
@@ -712,12 +712,12 @@ int json_print_str(void * root,char * str)
 				case JSON_ELEM_BOOL:
 					if(child_node->value)
 					{
-						Memcpy(str+offset,'true',4);
+						Memcpy(str+offset,"true",4);
 						offset+=4;
 					}	
 					else
 					{
-						Memcpy(str+offset,'false',5);
+						Memcpy(str+offset,"false",5);
 						offset+=5;
 					}
 					break;
@@ -784,12 +784,12 @@ int json_print_str(void * root,char * str)
 				case JSON_ELEM_BOOL:
 					if(child_node->value)
 					{
-						Memcpy(str+offset,'true',4);
+						Memcpy(str+offset,"true",4);
 						offset+=4;
 					}	
 					else
 					{
-						Memcpy(str+offset,'false',5);
+						Memcpy(str+offset,"false",5);
 						offset+=5;
 					}
 					break;
@@ -836,7 +836,7 @@ void * json_node_get_pointer(void * node)
 {
 	JSON_NODE * json_node=node;
 	if(node==NULL)
-		return -EINVAL;
+		return NULL;
 	return json_node->comp_pointer;
 }
 

@@ -1,7 +1,9 @@
 #ifndef  CUBE_MEMORY_H
 #define  CUBE_MEMORY_H
 
-#define NULL 0
+#ifndef NULL
+	#define NULL 0
+#endif
 void * Memcpy(void * dest,void * src, unsigned int count);
 void * Memset(void * s,int c, int n);
 int    Memcmp(const void *s1,const void *s2,int n);
