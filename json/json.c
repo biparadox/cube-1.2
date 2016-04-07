@@ -683,7 +683,7 @@ int json_print_str(void * root,char * str)
 			}
 
 			str[offset++]='"';
-			len=strnlen(child_node->name,DIGEST_SIZE);
+			len=Strnlen(child_node->name,DIGEST_SIZE);
 			Memcpy(str+offset,child_node->name,len);
 			offset+=len;
 			str[offset++]='"';
@@ -698,7 +698,7 @@ int json_print_str(void * root,char * str)
 					break;
 				case JSON_ELEM_STRING:
 					str[offset++]='"';
-					len=strnlen(child_node->value_str,DIGEST_SIZE*16);
+					len=Strnlen(child_node->value_str,DIGEST_SIZE*16);
 					Memcpy(str+offset,child_node->value_str,len);
 					offset+=len;
 					str[offset++]='"';
@@ -770,7 +770,7 @@ int json_print_str(void * root,char * str)
 					break;
 				case JSON_ELEM_STRING:
 					str[offset++]='"';
-					len=strnlen(child_node->value_str,DIGEST_SIZE*16);
+					len=Strnlen(child_node->value_str,DIGEST_SIZE*16);
 					Memcpy(str+offset,child_node->value_str,len);
 					offset+=len;
 					str[offset++]='"';
@@ -863,7 +863,7 @@ int json_node_getname(void * node,char * name)
 		return -EINVAL;
 	if(json_node->name==NULL)
 		return 0;
-	len=strnlen(json_node->name,DIGEST_SIZE);
+	len=Strnlen(json_node->name,DIGEST_SIZE);
 	Memcpy(name,json_node->name,len);
 	if(len<DIGEST_SIZE)
 		name[len]=0;
