@@ -69,7 +69,7 @@ void * bmalloc(int size,buddy_t * buddy) {
 	}
 
   // store order in previous byte
- 	*((uint8_t*) (block - 1)) = order;
+ 	*((BYTE*) (block - 1)) = order;
 	return block;
 }
 void * bmalloc0(int size,buddy_t * buddy) 
@@ -90,7 +90,7 @@ void bfree(void * block,buddy_t * buddy) {
 	void * * p;
 
   // fetch order in previous byte
-	i = *((uint8_t*) (block - 1));
+	i = *((BYTE*) (block - 1));
 
 	for (;; i++) {
     // calculate buddy
@@ -118,7 +118,7 @@ void bfree(void * block,buddy_t * buddy) {
 void bfree0(void * pointer,buddy_t * buddy) 
 {
 	int i;
-	i = *((uint8_t*) (pointer - 1));
+	i = *((BYTE*) (pointer - 1));
 	if(pointer!=NULL)
 	{
 		Memset(pointer,0,BLOCKSIZE(i));

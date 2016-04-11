@@ -37,7 +37,7 @@ typedef struct buddy {
   int order;
   int poolsize;
   void ** freelist;  // one more slot for first block in pool
-  uint8_t * pool;
+  BYTE * pool;
 } buddy_t;
 
 void * T_mem_struct;
@@ -48,7 +48,7 @@ void * C_mem_struct;
 
 /* the address of the buddy of a block from freelists[i]. */
 static inline int offset(void * b,buddy_t * buddy) 
-{return (uint8_t *)b-buddy->pool; };
+{return (BYTE *)b-buddy->pool; };
 static inline void * buddyof(void * b, int i,buddy_t * buddy)
 {
 	int off=offset(b,buddy)^(1<<i);
