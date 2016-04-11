@@ -108,7 +108,7 @@ int main() {
 		NULL
 	};
 
-	mem_init();
+	alloc_init();
 	struct_deal_init();
 	memdb_init();
 

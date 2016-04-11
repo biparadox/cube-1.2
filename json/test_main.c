@@ -43,7 +43,7 @@ int main() {
 	void * root;
 	void * temp_node;
 	
-  	mem_init(alloc_buffer);
+  	alloc_init(alloc_buffer);
 	fd=open("login.json",O_RDONLY);
 	if(fd<0)
 		return fd;

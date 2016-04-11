@@ -46,7 +46,7 @@ int main() {
 	int ex_offset=0;
 	int in_offset=0;
 
-	mem_init(alloc_buffer);
+	alloc_init(alloc_buffer);
 	struct_deal_init();
 
 	channel=channel_create("test_channel",CHANNEL_RDWR);

@@ -138,7 +138,7 @@ int main() {
 	int i;
   	static unsigned char alloc_buffer[4096*(1+1+4+1+16+1+256)];	
 
-  	mem_init(alloc_buffer);
+  	alloc_init(alloc_buffer);
 	struct_deal_init();
 
 

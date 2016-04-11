@@ -109,7 +109,7 @@ int main() {
 		NULL
 	};
 
-	mem_init(alloc_buffer);
+	alloc_init(alloc_buffer);
 	struct_deal_init();
 	memdb_init();
 

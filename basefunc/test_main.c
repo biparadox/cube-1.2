@@ -41,7 +41,7 @@ int main() {
 
   void * hash_head;
 
-  mem_init(alloc_buffer);
+  alloc_init(alloc_buffer);
 
   test_uuid=Calloc(sizeof(UUID_HEAD));
   memset(test_uuid->uuid,'A',DIGEST_SIZE);  
