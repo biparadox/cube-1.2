@@ -1,62 +1,51 @@
-#ifndef USER_MODE
 
-#include <linux/string.h>
-#include <linux/list.h>
-#include <linux/slab.h>
-#include <linux/errno.h>
-
-#else
-
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
-#include<errno.h>
-#include<time.h>
-#include "../include/kernel_comp.h"
-#include "../include/list.h"
-#include "../include/attrlist.h"
-#endif
 
 #include "../include/data_type.h"
+#include "../include/list.h"
+#include "../include/attrlist.h"
+#include "../include/string.h"
+#include "../include/alloc.h"
+#include "../include/json.h"
 #include "../include/struct_deal.h"
-#include "../include/message_struct.h"
-#include "../include/crypto_func.h"
-#include "../include/router.h"
-#include "../include/valuename.h"
-#include "../include/message_struct_desc.h"
-#include "router_struct.h"
+#include "../include/basefunc.h"
+#include "../include/memdb.h"
+#include "../include/message.h"
+#include "../include/dispatch.h"
 
-typedef struct router_policy_list//审计信息结构体
+#include "dispatch_struct.h"
+
+typedef struct policy_list//审计信息结构体
 {	
 	Record_List head;
 	int state;
 	int policy_num;
 	void * curr;
-}ROUTER_POLICY_LIST;
+}POLICY_LIST;
 
-typedef struct tagmessage_policy
+static POLICY_LIST process_policy;
+static POLICY_LIST aspect_policy;
+
+
+static inline int _init_policy_list(void * list)
 {
-    char * sender_proc;
-    ROUTER_POLICY_LIST * match_policy_list;
-    ROUTER_RULE * main_router_rule;
-    ROUTER_POLICY_LIST * dup_router_rule;
-}MESSAGE_POLICY;
+    	POLICY_LIST * policy_list=(POLICY_LIST *)list;
+   	memset(policy_list,0,sizeof(POLICY_LIST));
+   	INIT_LIST_HEAD(&(policy_list->head.list));
+   	policy_list->head.record=NULL;
+	policy_list->policy_num=0;
+	return 0;
 
-static ROUTER_POLICY_LIST local_router_policy;
-static ROUTER_POLICY_LIST main_router_policy;
-static ROUTER_POLICY_LIST aspect_router_policy;
-static ROUTER_POLICY_LIST aspect_local_policy;
+}
 
-
-int __router_policy_init(void * policy_list)
+int dispatch_policy_init( )
 {
 	int ret;
-    	ROUTER_POLICY_LIST * router_policy_list=(ROUTER_POLICY_LIST *)policy_list;
-   	memset(policy_list,0,sizeof(ROUTER_POLICY_LIST));
-   	INIT_LIST_HEAD(&(router_policy_list->head.list));
-   	router_policy_list->head.record=NULL;
+	_init_policy_list(&process_policy);
+	_init_policy_list(&aspect_policy);
 	return 0;
 }
+
+void * dispatch_policy_create( 
 
 int __is_policy_aspectpolicy(void * policy)
 {

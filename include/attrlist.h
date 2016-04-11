@@ -27,28 +27,25 @@ static __inline__ struct list_head * find_elem_in_list(
 				int (*fn)(struct list_head * head1, struct list_head * head2),
 				struct list_head * elem)
 {
-		struct list_head * temp;
-		Record_List * ptr;
-		if(elem==NULL){
-			printk("---------------elem null\n");
-			return NULL;
-}
-		if(head==NULL){
-				
-			printk("---------------head null\n");
-			return NULL;	
-			}	
-		temp=head;
-		do
-		{
-		ptr=list_entry(temp,Record_List,list);
-			if(fn(temp,elem)==0)
-			{
-				return temp;	
-			}
-			temp=temp->next;
-		}while(temp!=head);
+	struct list_head * temp;
+	Record_List * ptr;
+	if(elem==NULL){
 		return NULL;
+	}
+	if(head==NULL){
+		return NULL;	
+	}	
+	temp=head;
+	do
+	{
+		ptr=list_entry(temp,Record_List,list);
+		if(fn(temp,elem)==0)
+		{
+			return temp;	
+		}
+		temp=temp->next;
+	}while(temp!=head);
+	return NULL;
 }
 
 /* *************************************************************
@@ -131,19 +128,6 @@ static __inline__ struct list_head * typefind_elem_with_tag(
 	}while(temp!=head);
 	return NULL;
 }
-/* *************************************************************
- *  名称:  队列偏序极值元素查找 
-/* *************************************************************
- *  名称:  队列偏序极值元素查找 
- *  描述:  在队列查找与特定记录成偏序关系的元素的最小上界,如带目
- *  	   录文件名中最接近该文件的一个
- *  输入:  head:  队列头
- *         fn:    比较函数,比较元素值域是否与tag成偏序关系,0为一致
- *          	  1为大于,2为小于,负值为无关系
- *         elem:  作为比较的元素
- *  输出:  无
- *  返回:  所找到的第一个元素上界,若未找到元素,返回空指针 
- * *************************************************************/
 static __inline__ struct list_head * find_elem_minupper_inlist(
 	struct list_head * head,
 	int (*fn)(struct list_head * head,struct list_head * elem),
