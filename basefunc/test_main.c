@@ -44,13 +44,13 @@ int main() {
   alloc_init(alloc_buffer);
 
   test_uuid=Calloc(sizeof(UUID_HEAD));
-  memset(test_uuid->uuid,'A',DIGEST_SIZE);  
+  Memset(test_uuid->uuid,'A',DIGEST_SIZE);  
 
   hash_head=init_hash_list(8,0,0);
 	
   ret=hashlist_add_elem(hash_head,test_uuid);	
   
-  memset(digest,'A',DIGEST_SIZE);
+  Memset(digest,'A',DIGEST_SIZE);
   test_uuid1=hashlist_find_elem(hash_head,digest);
 
   test_uuid=hashlist_get_first(hash_head);

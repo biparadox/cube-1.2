@@ -25,7 +25,7 @@
 #include "../include/string.h"
 #include "../include/list.h"
 #include "../include/basefunc.h"
-#include "attrlist.h"
+#include "../include/attrlist.h"
 
 const int db_order=10;
 const int hash_num=1024;  // 2^db_order
@@ -129,7 +129,7 @@ int hashlist_add_elem(void * hashlist,void * elem)
 	else
 		return -EINVAL;
 	
-	list_add_tail(&new_record->list,&uuid_list->hash_table[hindex].list);
+	List_add_tail(&new_record->list,&uuid_list->hash_table[hindex].list);
 	return 0;
 }
 
@@ -235,7 +235,7 @@ Record_List  * _hashlist_remove_elem(void * hashlist,void * elem)
 	curr_elem=_hashlist_find_elem(hashlist,elem);
 	if(curr_elem==NULL)
 		return NULL;
-	list_del(curr_elem);
+	List_del(curr_elem);
 	return curr_elem;		
 }
 

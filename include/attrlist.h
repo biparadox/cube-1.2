@@ -17,17 +17,17 @@
 */
 typedef struct tagOs210_Record_List_type
 {
-	struct list_head list;
+	struct List_head list;
 	void * record;
 } __attribute__((packed)) Record_List;  
 
 
-static __inline__ struct list_head * find_elem_in_list(
-				struct list_head * head,
-				int (*fn)(struct list_head * head1, struct list_head * head2),
-				struct list_head * elem)
+static __inline__ struct List_head * find_elem_in_list(
+				struct List_head * head,
+				int (*fn)(struct List_head * head1, struct List_head * head2),
+				struct List_head * elem)
 {
-	struct list_head * temp;
+	struct List_head * temp;
 	Record_List * ptr;
 	if(elem==NULL){
 		return NULL;
@@ -38,7 +38,7 @@ static __inline__ struct list_head * find_elem_in_list(
 	temp=head;
 	do
 	{
-		ptr=list_entry(temp,Record_List,list);
+		ptr=List_entry(temp,Record_List,list);
 		if(fn(temp,elem)==0)
 		{
 			return temp;	
@@ -57,13 +57,13 @@ static __inline__ struct list_head * find_elem_in_list(
  *  输出:  无
  *  返回:  所找到的第一个元素,若未找到元素,返回空指针 
  * *************************************************************/
-static __inline__ struct list_head * find_elem_with_tag(
-	struct list_head * head,
-	int (*fn)(struct list_head * head, void * tag),
+static __inline__ struct List_head * find_elem_with_tag(
+	struct List_head * head,
+	int (*fn)(struct List_head * head, void * tag),
 	void * tag)
 {
 	
-		struct list_head * temp;
+		struct List_head * temp;
 //		Record_List * ptr;
 //		DAC_POLICY * pp;
 	if(tag==NULL){
@@ -93,13 +93,13 @@ static __inline__ struct list_head * find_elem_with_tag(
 	return NULL;
 }
 
-static __inline__ struct list_head * typefind_elem_with_tag(
-	struct list_head * head,
-	int (*fn)(int findtype,struct list_head * head, void * tag),
+static __inline__ struct List_head * typefind_elem_with_tag(
+	struct List_head * head,
+	int (*fn)(int findtype,struct List_head * head, void * tag),
 	int findtype,void * tag)
 {
 	
-		struct list_head * temp;
+		struct List_head * temp;
 //		Record_List * ptr;
 //		DAC_POLICY * pp;
 	if(tag==NULL){
@@ -128,12 +128,12 @@ static __inline__ struct list_head * typefind_elem_with_tag(
 	}while(temp!=head);
 	return NULL;
 }
-static __inline__ struct list_head * find_elem_minupper_inlist(
-	struct list_head * head,
-	int (*fn)(struct list_head * head,struct list_head * elem),
-	struct list_head * elem)
+static __inline__ struct List_head * find_elem_minupper_inlist(
+	struct List_head * head,
+	int (*fn)(struct List_head * head,struct List_head * elem),
+	struct List_head * elem)
 {
-		struct list_head * temp, *curr;
+		struct List_head * temp, *curr;
 		int retval;
 		
 		if(elem == NULL)
@@ -178,10 +178,10 @@ static __inline__ struct list_head * find_elem_minupper_inlist(
  *  输出:  无
  *  返回:  无 
  * *************************************************************/
-static __inline__ void destroy_list(struct list_head * head,
-				void (*fn)(struct list_head * elem))
+static __inline__ void destroy_list(struct List_head * head,
+				void (*fn)(struct List_head * elem))
 {
-		struct list_head * temp, *temp1;
+		struct List_head * temp, *temp1;
 		if(head==NULL)
 			return;
 		
@@ -198,44 +198,44 @@ static __inline__ void destroy_list(struct list_head * head,
 
 
 
-static __inline__ void destroy_record_list_elem (struct list_head * elem)
+static __inline__ void destroy_record_List_elem (struct List_head * elem)
 {
 	Record_List * record_elem;
-	record_elem = list_entry( elem, Record_List,list); 
+	record_elem = List_entry( elem, Record_List,list); 
 //	kfree(record_elem->record);
 //	kfree(record_elem);
 }
 
-static __inline__ void destroy_record_list_elem_only (struct list_head * elem)
+static __inline__ void destroy_record_List_elem_only (struct List_head * elem)
 {
 	Record_List * record_elem;
-	record_elem = list_entry( elem, Record_List,list); 
+	record_elem = List_entry( elem, Record_List,list); 
 //	kfree(record_elem);
 }
-static void destroy_record_list (struct list_head * head)
+static void destroy_record_list (struct List_head * head)
 {
-	destroy_list(head,destroy_record_list_elem);
+	destroy_list(head,destroy_record_List_elem);
 }
-static void destroy_record_list_only (struct list_head * head)
+static void destroy_record_List_only (struct List_head * head)
 {
-	destroy_list(head,destroy_record_list_elem_only);
+	destroy_list(head,destroy_record_List_elem_only);
 }
 
 static __inline__ Record_List * get_record_from_list(Record_List * record,Record_List * Head)
 {
-	struct list_head * list, * head;
+	struct List_head * list, * head;
 	head = &(Head->list);
 	list = &(record->list);
 	if(list == NULL)
 		return NULL;
 	if(list->next == head)
 		return NULL;
-	return list_entry(list->next,Record_List,list);	
+	return List_entry(list->next,Record_List,list);	
 
 }
-static __inline__ int get_record_list_no(Record_List * root)
+static __inline__ int get_record_List_no(Record_List * root)
 {
-	struct list_head * list;
+	struct List_head * list;
 	int no=0;
 	list=root->list.next;
 	while(list!=&(root->list))
