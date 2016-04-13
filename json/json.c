@@ -129,8 +129,8 @@ char * json_set_valuestr(void * node,char * str)
 int json_get_elemno(void * node)
 {
     int no;
-    struct list_head * root;
-    struct list_head * child;
+    struct List_head * root;
+    struct List_head * child;
     if(node==NULL)
 		return -EINVAL;
 	
@@ -145,7 +145,7 @@ int json_comp_elemno(void * node)
     if((type==JSON_ELEM_MAP) ||
     	(type==JSON_ELEM_ARRAY))
     {
-	json_node->elem_no = get_record_list_no(&json_node->childlist);
+	json_node->elem_no = get_record_List_no(&json_node->childlist);
 	return json_node->elem_no;
     }
     return 0;	
@@ -344,7 +344,7 @@ void * _new_json_node(void * father)
         return NULL;
     if(father_node!=NULL)
     {
-        list_add_tail((struct list_head *)newrecord,&(father_node->childlist.list));
+        List_add_tail((struct List_head *)newrecord,&(father_node->childlist.list));
         father_node->curr_child=newrecord;
     }
     return newnode;
@@ -377,7 +377,7 @@ void * json_add_child(void * node,void * child)
     Record_List * newrecord = get_new_Record_List(child);
     if(newrecord == NULL)
         return NULL;
-    list_add((struct list_head *)newrecord,&(curr_node->childlist.list));
+    List_add((struct List_head *)newrecord,&(curr_node->childlist.list));
     curr_node->curr_child=newrecord;
     return newrecord;
 	
