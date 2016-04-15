@@ -101,7 +101,7 @@ typedef struct elem_convert_ops
 	int(*comp_elem_text)(void * elem,char * str,void * struct_template);
 }ELEM_OPS;
 
-int struct_deal_init();
+int struct_deal_init(void );
 
 // alloc and free the struct
 int get_fixed_elemsize(int type);

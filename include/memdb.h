@@ -20,7 +20,7 @@
 
 //struct struct_elem_attr * elem_attr_desc; 
 
-int memdb_init();
+int memdb_init(void);
 int read_json_desc(void * root, BYTE * uuid);
 
 enum new_struct_elem_type

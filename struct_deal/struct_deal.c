@@ -1,13 +1,10 @@
-#include<stdlib.h>
-#include<stdio.h>
-#include<string.h>
-#include<errno.h>
 
 #include "../include/data_type.h"
 #include "../include/alloc.h"
 #include "../include/struct_deal.h"
 #include "../include/string.h"
 #include "../include/json.h"
+#include "../include/errno.h"
 #include "struct_ops.h"
 #include "struct_attr.h"
 
