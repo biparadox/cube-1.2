@@ -39,9 +39,9 @@ typedef struct buddy {
   BYTE * pool;
 } buddy_t;
 
-void * T_mem_struct;
-void * G_mem_struct;
-void * C_mem_struct;
+extern void * T_mem_struct;
+extern void * G_mem_struct;
+extern void * C_mem_struct;
 
 #define BLOCKSIZE(i)    (1 << (i))
 
