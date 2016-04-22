@@ -228,9 +228,9 @@ int Atoi(char * string,int maxlen)
 	int temp_value;
 	int str_len;
 	if(maxlen==0)
-		str_len=strnlen(string,DIGEST_SIZE);
+		str_len=Strnlen(string,DIGEST_SIZE);
 	else
-		str_len=strnlen(string,maxlen);
+		str_len=Strnlen(string,maxlen);
 
 	// process the head
 	for(i=0;i<str_len;i++)
@@ -322,7 +322,7 @@ int    Getlowestbit(BYTE  * addr,int size,int bit)
 		return 0;
 	if(size<=8)
 	{
-		memcpy(&test,addr,size);	
+		Memcpy(&test,addr,size);	
 		if(bit)
 			return _get_lowest_bit(test);	
 		else
@@ -332,9 +332,9 @@ int    Getlowestbit(BYTE  * addr,int size,int bit)
 	{
 		test=0;
 		if(i+8>size)
-			memcpy(&test,addr+i,size-i);
+			Memcpy(&test,addr+i,size-i);
 		else
-			memcpy(&test,addr+i,8);
+			Memcpy(&test,addr+i,8);
 		if(bit)
 		{
 			if(test==0)
