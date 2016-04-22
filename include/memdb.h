@@ -51,7 +51,6 @@ typedef struct index_elem
 }INDEX_ELEM;
 
 void * memdb_get_dblist(int type,int subtype);
-int  memdb_init();
 
 void * memdb_store(void * data,int type,int subtype,char * name);
 void * memdb_get_first(int type,int subtype);

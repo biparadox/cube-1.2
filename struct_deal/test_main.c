@@ -76,7 +76,7 @@ static struct struct_elem_attr login_db_desc[] =
     	{"head",CUBE_TYPE_SUBSTRUCT,0,&uuid_head_desc,NULL},
    	{"record_no",CUBE_TYPE_INT,sizeof(int),NULL,NULL},
     	{"login_list2",CUBE_TYPE_ARRAY,0,&connect_login_desc,"record_no"},
-    	{"login_list1",CUBE_TYPE_SUBSTRUCT,3,&connect_login_desc,NULL},
+ //   	{"login_list1",CUBE_TYPE_SUBSTRUCT,3,&connect_login_desc,NULL},
 	{NULL,CUBE_TYPE_ENDDATA,0,NULL}
 	
 };
@@ -86,7 +86,7 @@ struct login_db
 	UUID_HEAD head;
 	int record_no;
 	struct connect_login * login_list2;
-	struct connect_login login_list1[3];
+//	struct connect_login login_list1[3];
 }__attribute__((packed));
 
 
@@ -151,13 +151,13 @@ int main() {
 	init_struct.record_no=i;
 
 	ret=Galloc0(&init_struct.login_list2,sizeof(struct connect_login)*init_struct.record_no);
-	for(i=0;i<init_struct.record_no;i++)
-	{
-		Strncpy(init_struct.login_list1[i].user,name_list[i],DIGEST_SIZE);
-		init_struct.login_list1[i].passwd=passwd_list[i];
-		Memset(init_struct.login_list1[i].nonce, 'A'+(char)i,DIGEST_SIZE);
+//	for(i=0;i<init_struct.record_no;i++)
+//	{
+//		Strncpy(init_struct.login_list1[i].user,name_list[i],DIGEST_SIZE);
+//		init_struct.login_list1[i].passwd=passwd_list[i];
+//		Memset(init_struct.login_list1[i].nonce, 'A'+(char)i,DIGEST_SIZE);
 		
-	}
+//	}
 	for(i=0;i<init_struct.record_no;i++)
 	{
 		Strncpy(init_struct.login_list2[i].user,name_list[i],DIGEST_SIZE);

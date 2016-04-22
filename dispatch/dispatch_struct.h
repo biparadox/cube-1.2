@@ -25,8 +25,8 @@ typedef struct tagrouter_rule
 typedef struct tagdispatch_rule
 {
 	char proc[DIGEST_SIZE];
-	void * match_policy;
-	void * router_rule;
-}  DISPATCH_POLICY;
+	void * match_list;
+	void * router_list;
+}  DISPATCH_RULE;
 
 #endif // ROUTER_STRUCT_H

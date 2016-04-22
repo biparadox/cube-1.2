@@ -3,22 +3,22 @@
 #ifndef _SM3_
 #define _SM3_
 
-#include <inttypes.h>
+
 
 //#define DEBUG
 
 typedef struct
 {
-  uint32_t total_bytes_High;
-  uint32_t total_bytes_Low;
-  uint32_t vector[8];
-  uint8_t  buffer[64];     /* 64 byte buffer                            */
+  UINT32 total_bytes_High;
+  UINT32 total_bytes_Low;
+  UINT32 vector[8];
+  BYTE  buffer[64];     /* 64 byte buffer                            */
 } SM3_context;
 
 
 #define rol(x,n) ((x << n) | ((x & 0xFFFFFFFF) >> (32 - n)))
 /*
-inline int rol(uint32_t operand, uint8_t width){ 
+inline int rol(UINT32 operand, BYTE width){ 
 	 asm volatile("rol %%cl, %%eax" 
                : "=a" (operand) 
                : "a" (operand), "c" (width) 
@@ -30,26 +30,26 @@ inline int rol(uint32_t operand, uint8_t width){
 
 #define CONCAT_4_BYTES( w32, w8, w8_i)            \
 {                                                 \
-    (w32) = ( (uint32_t) (w8)[(w8_i)    ] << 24 ) |  \
-            ( (uint32_t) (w8)[(w8_i) + 1] << 16 ) |  \
-            ( (uint32_t) (w8)[(w8_i) + 2] <<  8 ) |  \
-            ( (uint32_t) (w8)[(w8_i) + 3]       );   \
+    (w32) = ( (UINT32) (w8)[(w8_i)    ] << 24 ) |  \
+            ( (UINT32) (w8)[(w8_i) + 1] << 16 ) |  \
+            ( (UINT32) (w8)[(w8_i) + 2] <<  8 ) |  \
+            ( (UINT32) (w8)[(w8_i) + 3]       );   \
 }
 
 #define SPLIT_INTO_4_BYTES( w32, w8, w8_i)        \
 {                                                 \
-    (w8)[(w8_i)] = (uint8_t) ( (w32) >> 24 );    \
-    (w8)[(w8_i) + 1] = (uint8_t) ( (w32) >> 16 );    \
-    (w8)[(w8_i) + 2] = (uint8_t) ( (w32) >>  8 );    \
-    (w8)[(w8_i) + 3] = (uint8_t) ( (w32)       );    \
+    (w8)[(w8_i)] = (BYTE) ( (w32) >> 24 );    \
+    (w8)[(w8_i) + 1] = (BYTE) ( (w32) >> 16 );    \
+    (w8)[(w8_i) + 2] = (BYTE) ( (w32) >>  8 );    \
+    (w8)[(w8_i) + 3] = (BYTE) ( (w32)       );    \
 }
 
-static uint8_t SM3_padding[64] =
+static BYTE SM3_padding[64] =
 {
- (uint8_t) 0x80, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0,
- (uint8_t)    0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0,
- (uint8_t)    0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0,
- (uint8_t)    0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0, (uint8_t) 0
+ (BYTE) 0x80, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0,
+ (BYTE)    0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0,
+ (BYTE)    0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0,
+ (BYTE)    0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0, (BYTE) 0
 };
 
 #endif

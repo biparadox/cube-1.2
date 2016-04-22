@@ -37,7 +37,7 @@ struct memdb_desc * dynamic_db_list;
 
 
 void * elem_template;
-void * head_template;
+extern void * head_template;
 void * index_template;
 
 // static type define

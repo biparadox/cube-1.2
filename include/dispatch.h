@@ -31,34 +31,35 @@ enum router_target_type
     ROUTER_TARGET_ERROR=0xFFFF,
 };
 
-int dispatch_policy_init();
-void * match_policy_init();
-void * router_policy_init();
-
-int match_policy_read(char * policy_str,void * policy);
-int match_policy_add(void * dispatch_policy,void * match_policy);
-
-int router_policy_read(char * policy_str,void * policy);
-int router_policy_add(void * dispatch_policy,void * match_policy);
-
-int dispatch_policy_read(char * policy_str,void * policy);
-int dispatch_policy_add(void * dispatch_policy);
-
-void * match_policy_getfirst(void * dispatch_policy);
-void * match_policy_getnext(void * dispatch_policy);
+int dispatch_policy_init(void * object);
+void * dispatch_create_rule(void * object);
+void * dispatch_create_match_list(void);
+void * dispatch_create_route_list(void);
 
 
-void * router_policy_getfirst(void * dispatch_policy);
-void * router_policy_getnext(void * dispatch_policy);
+void * dispatch_read_match_policy(void * policy_node);
+int dispatch_add_match_policy(void * list,void * policy);
+
+void * dispatch_read_route_policy(void * policy_node);
+int dispatch_add_route_policy(void * list,void * policy);
+
+void * dispatch_read_rule_policy(void * policy_node);
+int dispatch_add_rule_policy(void * list,void * policy);
+
+void * match_policy_getfirst(void * list);
+void * match_policy_getnext(void * list);
+
+
+void * _router_policy_getfirst(void * list);
+void * _router_policy_getnext(void * list);
 
 void * dispatch_policy_getfirst();
 void * dispatch_policy_getnext();
 
+int match_message(void * match_rule,void * message);
 
-int match_message(void * dispatch_policy,void * message);
-
-int router_policy_getfirst(void ** policy);
-int router_policy_getnext(void ** policy);
+void * dispatch_route_rule_getfirst(void * rule);
+void * dispatch_route_rule_getnext(void * policy);
 int aspect_policy_getfirst(void ** policy);
 int aspect_policy_getnext(void ** policy);
 

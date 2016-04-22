@@ -12,6 +12,8 @@
 
 #include "memdb_internal.h"
 
+void * head_template;
+
 int read_namelist_json_desc(void * root,void * record)
 {
 	int ret;

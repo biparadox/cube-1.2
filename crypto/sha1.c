@@ -9,13 +9,8 @@
  */
 
 //#include </byteorder.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
+#include "../include/data_type.h"
+#include "../include/string.h"
 #include "sha1.h"
 
 #if defined(rol)
@@ -47,18 +42,18 @@
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
 
-void SHA1Transform(uint32_t state[5], uint8_t buffer[64])
+void SHA1Transform(UINT32 state[5], BYTE buffer[64])
 {
-uint32_t a, b, c, d, e;
+UINT32 a, b, c, d, e;
 typedef union {
-    unsigned char c[64];
-    uint32_t l[16];
+    BYTE c[64];
+    UINT32 l[16];
 } CHAR64LONG16;
 CHAR64LONG16* block;
 #ifdef SHA1HANDSOFF
-static unsigned char workspace[64];
+static BYTE workspace[64];
     block = (CHAR64LONG16*)workspace;
-    memcpy(block, buffer, 64);
+    Memcpy(block, buffer, 64);
 #else
     block = (CHAR64LONG16*)buffer;
 #endif
@@ -118,10 +113,10 @@ void SHA1Init(void *vcontext)
 
 /* Run your data through this. */
 
-void SHA1Update(void *vcontext, unsigned char* data, uint32_t len)
+void SHA1Update(void *vcontext, BYTE* data, UINT32 len)
 {
     SHA1_CTX* context = vcontext;
-    uint32_t i, j;
+    UINT32 i, j;
 
     j = context->count[0];
     if ((context->count[0] += len << 3) < j)
@@ -129,7 +124,7 @@ void SHA1Update(void *vcontext, unsigned char* data, uint32_t len)
     context->count[1] += (len>>29);
     j = (j >> 3) & 63;
     if ((j + len) > 63) {
-        memcpy(&context->buffer[j], data, (i = 64-j));
+        Memcpy(&context->buffer[j], data, (i = 64-j));
         SHA1Transform(context->state, context->buffer);
         for ( ; i + 63 < len; i += 64) {
             SHA1Transform(context->state, &data[i]);
@@ -137,132 +132,49 @@ void SHA1Update(void *vcontext, unsigned char* data, uint32_t len)
         j = 0;
     }
     else i = 0;
-    memcpy(&context->buffer[j], &data[i], len - i);
+    Memcpy(&context->buffer[j], &data[i], len - i);
 }
 
 
 /* Add padding and return the message digest. */
 
-void SHA1Final(unsigned char digest[20], void *vcontext)
+void SHA1Final(BYTE digest[20], void *vcontext)
 {
-  uint32_t i, j;
-  unsigned char finalcount[8];
+  UINT32 i, j;
+  BYTE finalcount[8];
   SHA1_CTX* context = vcontext;
     
     for (i = 0; i < 8; i++) {
-        finalcount[i] = (unsigned char)((context->count[(i >= 4 ? 0 : 1)]
+        finalcount[i] = (BYTE)((context->count[(i >= 4 ? 0 : 1)]
          >> ((3-(i & 3)) * 8) ) & 255);  /* Endian independent */
     }
-    SHA1Update(context, (unsigned char *)"\200", 1);
+    SHA1Update(context, (BYTE *)"\200", 1);
     while ((context->count[0] & 504) != 448) {
-        SHA1Update(context, (unsigned char *)"\0", 1);
+        SHA1Update(context, (BYTE *)"\0", 1);
     }
     SHA1Update(context, finalcount, 8);  /* Should cause a SHA1Transform() */
     for (i = 0; i < 20; i++) {
-        digest[i] = (unsigned char)
+        digest[i] = (BYTE)
          ((context->state[i>>2] >> ((3-(i & 3)) * 8) ) & 255);
     }
     /* Wipe variables */
     i = j = 0;
-    memset(context->buffer, 0, 64);
-    memset(context->state, 0, 20);
-    memset(context->count, 0, 8);
-    memset(&finalcount, 0, 8);
+    Memset(context->buffer, 0, 64);
+    Memset(context->state, 0, 20);
+    Memset(context->count, 0, 8);
+    Memset(&finalcount, 0, 8);
 #ifdef SHA1HANDSOFF  /* make SHA1Transform overwrite its own static vars */
     SHA1Transform(context->state, context->buffer);
 #endif
 }
 
-int calculate_sha1(char* filename,unsigned char *digest)
-{
-	int fd1;
-	int result;
-	int bytes_to_copy = 0;
-	int filesize = 0;
-	struct stat attribute;
-	SHA1_CTX  index;
-	char *sha1buffer;
-	sha1buffer = (char *) malloc(4096);
-	fd1=open(filename,O_RDONLY);
-
-	if(fd1 < 0)
-	{
-		printf("Error opening file\n");
-		return -1;
-	}
-	stat(filename,&attribute);
-	filesize = attribute.st_size;
-	/*result =*/
-	SHA1Init(&index);
-/*	if(result)
-	{
-		close(fd1);
-		free(sha1buffer);
-		return -1;
-	}
-*/
-	bytes_to_copy = filesize;
-	while(bytes_to_copy > 4096)
-	{
-		read(fd1,sha1buffer,4096);
-		/*result =*/
-		 SHA1Update(&index,sha1buffer,4096);
-		/*if(result)
-		{
-			close(fd1);
-			free(sha1buffer);
-			return -1;
-		}
-		*/
-		bytes_to_copy = bytes_to_copy - 4096;
-	}
-	memset(sha1buffer,0,4096);
-	read(fd1,sha1buffer,bytes_to_copy);
-	/*result =*/
-	SHA1Update(&index,sha1buffer,bytes_to_copy);
-/*	if(result)
-	{
-		close(fd1);
-		free(sha1buffer);
-		return -1;
-	}
-*/
-	close(fd1);
-	free(sha1buffer);
-	/*result =*/ 
-	SHA1Final(digest,&index);
-/*	if(result)
-		return -1;
-	return 0;
-*/
-
-	
-}
-int calculate_context_sha1(char *context,int context_size,uint32_t *SM3_hash)
+int calculate_context_sha1(char *context,int context_size,UINT32 *SM3_hash)
 {
 	int result;
 	SHA1_CTX index;
 	SHA1Init(&index);
 	SHA1Update(&index,context,context_size);
 	SHA1Final(SM3_hash,&index);
-	return 0;
-}
-int calculate_pathsha1(char* filepath,unsigned char *digest)
-{
-	int result;
-	SHA1_CTX index;
-	//result = 
-	SHA1Init(&index);
-	//if(result)
-	//	return -1;
-	//result = 
-	SHA1Update(&index,filepath,strlen(filepath));
-	//if(result)
-	//	return -1;
-	//result = 
-	SHA1Final(digest,&index);
-	//if(result)
-	//	return -1;
 	return 0;
 }
 /*

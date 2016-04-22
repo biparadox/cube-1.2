@@ -1,13 +1,6 @@
 #define _GNU_SOURCE
 
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
+#include "../include/data_type.h"
 #include "sm3.h"
 #define DIGEST_SIZE 32
 
@@ -32,17 +25,11 @@ int SM3_init(SM3_context *index)
   return 0;
 }
 
-static void SM3_CF(SM3_context *index, uint8_t *byte_64_block )
+static void SM3_CF(SM3_context *index, BYTE *byte_64_block )
 {
-uint32_t j,temp,W[68];
+UINT32 j,temp,W[68];
 
-#ifdef DEBUG
-  for(j=0;j<64;j++)
-	printf("%d:%8x\n",j,byte_64_block[j]);
-  printf("\n--------------------\n");
-#endif
-
-uint32_t A,B,C,D,E,F,G,H,SS1,SS2,TT1,TT2;
+UINT32 A,B,C,D,E,F,G,H,SS1,SS2,TT1,TT2;
   CONCAT_4_BYTES( W[0],  byte_64_block,  0 );
   CONCAT_4_BYTES( W[1],  byte_64_block,  4 );
   CONCAT_4_BYTES( W[2],  byte_64_block,  8 );
@@ -59,27 +46,15 @@ uint32_t A,B,C,D,E,F,G,H,SS1,SS2,TT1,TT2;
   CONCAT_4_BYTES( W[13], byte_64_block, 52 );
   CONCAT_4_BYTES( W[14], byte_64_block, 56 );
   CONCAT_4_BYTES( W[15], byte_64_block, 60 );
-#ifdef DEBUG
-  for(j=0;j<16;j++)
-	{
-	printf("%d:%8x\n",j,W[j]);
-	}
-#endif
+
   for(j=16;j<68;j++)
-	{
+   {
 // waitting to modified 
 // there is something strange here,"P1(W[j-16]^W[j-9]^rol(W[j-3],15))" will get a error result
 	temp = W[j-16]^W[j-9]^rol(W[j-3],15);
 	W[j] = P1(temp)^rol(W[j-13],7)^(W[j-6]);
 //	W[j] = P1((W[j-16]^W[j-9]^rol(W[j-3],15)))^rol(W[j-13],7)^(W[j-6]);
-
-#ifdef DEBUG
-
-	printf("%d::(*)=%8x :temp=%8x :P1((*))=%8x :P1(*)=%8x :p1(temp)=%8x\n",
-		j,(W[j-16]^W[j-9]^rol(W[j-3],15)),P1((W[j-16]^W[j-9]^rol(W[j-3],15))),temp,P1(W[j-16]^W[j-9]^rol(W[j-3],15)),P1(temp));
-
-#endif
-	}
+   }
   A = index->vector[0];
   B = index->vector[1];
   C = index->vector[2];
@@ -88,9 +63,6 @@ uint32_t A,B,C,D,E,F,G,H,SS1,SS2,TT1,TT2;
   F = index->vector[5];
   G = index->vector[6];
   H = index->vector[7];
-#ifdef DEBUG
-	printf(" :A:%08x,B:%08x,C:%08x,D:%08x,E:%08x,F:%08x,G:%08x,H:%08x\n",A,B,C,D,E,F,G,H);
-#endif
 
 #define T 0x79cc4519
 #define FF(X,Y,Z) (X^Y^Z)
@@ -110,9 +82,6 @@ uint32_t A,B,C,D,E,F,G,H,SS1,SS2,TT1,TT2;
 	G = rol(F,19);
 	F = E;
 	E = P0(TT2);
-#ifdef DEBUG
-	printf("%d: A:%08x,B:%08x,C:%08x,D:%08x,E:%08x,F:%08x,G:%08x,H:%08x\n",j,A,B,C,D,E,F,G,H);
-#endif
 	}
 
 #undef T
@@ -139,9 +108,6 @@ uint32_t A,B,C,D,E,F,G,H,SS1,SS2,TT1,TT2;
 	G = rol(F,19);
 	F = E;
 	E = P0(TT2);
-#ifdef DEBUG
-	printf("%d: A:%08x,B:%08x,C:%08x,D:%08x,E:%08x,F:%08x,G:%08x,H:%08x\n",j,A,B,C,D,E,F,G,H);
-#endif
 	}
 #undef T
 #undef FF 
@@ -158,11 +124,11 @@ index->vector[7] ^= H;
 
 }
 
-int SM3_update(SM3_context *index, uint8_t *chunk_data, uint32_t chunk_length)
+int SM3_update(SM3_context *index, BYTE *chunk_data, UINT32 chunk_length)
 {
 
-  uint32_t left, fill;
-  uint32_t i;
+  UINT32 left, fill;
+  UINT32 i;
 
 
   if ( (index == NULL) || (chunk_data == NULL) || (chunk_length < 1) )
@@ -210,12 +176,12 @@ int SM3_update(SM3_context *index, uint8_t *chunk_data, uint32_t chunk_length)
   }
 
 
-int SM3_final(SM3_context *index, uint32_t *SM3_hash)
+int SM3_final(SM3_context *index, UINT32 *SM3_hash)
 {
 
-  uint32_t last, padn;
-  uint32_t high, low;
-  uint8_t  msglen[8];
+  UINT32 last, padn;
+  UINT32 high, low;
+  BYTE  msglen[8];
   int   ret;
   if ( (index == NULL) || (SM3_hash == NULL) )
        {
@@ -244,172 +210,46 @@ int SM3_final(SM3_context *index, uint32_t *SM3_hash)
 
 }
 
-//int calculate_by_context(char buffer[][DIGEST_SIZE],int countline,uint32_t *SM3_hash)
-int calculate_sm3(char* filename, uint32_t *SM3_hash)
+//int calculate_sm3(char* filename, UINT32 *SM3_hash)
+//int calculate_by_context(char buffer[][DIGEST_SIZE],int countline,UINT32 *SM3_hash)
+int calculate_by_context(char **buffer,int countline,UINT32 *SM3_hash)
 {
     int fd1;
     int result;
     int bytes_to_copy = 0;
     int filesize = 0;
-    struct stat attribute;
-        SM3_context index;
-    char *sm3buffer;
-    sm3buffer = (char*) malloc(4096);
-
-    /* Open the input file */
-    fd1 = open(filename,O_RDONLY);
-
-    if (fd1 < 0)
-    {
-        printf("Error opening file %s\n",filename);
-        return -1;
-    }
-    stat(filename,&attribute);
-    filesize = attribute.st_size;
-        //printf("filesize:%d\n",filesize);
-
-    /* Initialise sm3-Context */
-    result = SM3_init(&index);
-    if (result)
-    {
-        close (fd1);
-        free(sm3buffer);
-        return -1;
-    }
-
-
-	 bytes_to_copy = filesize;
-	    while (bytes_to_copy > 4096)
-	    {
-
-		read(fd1,sm3buffer,4096);
-    		result = SM3_update(&index,sm3buffer,4096);
-		if (result)
-	        {
-		    close (fd1);
-		    free(sm3buffer);
-    		    return -1;
-		}
-    		bytes_to_copy = bytes_to_copy - 4096;
-		
-	    }
-
-	
-
-
-
-            // And the last one
-            memset(sm3buffer,0,4096);
-            read(fd1,sm3buffer,bytes_to_copy);
-            result = SM3_update(&index,sm3buffer,bytes_to_copy);
-            if (result)
-            {
-                close (fd1);
-                free(sm3buffer);
-                return -1;
-            }
-
-    close (fd1);
-    free(sm3buffer);
-    result = SM3_final(&index,SM3_hash);
-    if (result)
-        return -1;
-    return 0;
-}
-
-//int calculate_sm3(char* filename, uint32_t *SM3_hash)
-//int calculate_by_context(char buffer[][DIGEST_SIZE],int countline,uint32_t *SM3_hash)
-int calculate_by_context(char **buffer,int countline,uint32_t *SM3_hash)
-{
-    int fd1;
-    int result;
-    int bytes_to_copy = 0;
-    int filesize = 0;
-    struct stat attribute;
 	SM3_context index;
-    char *sm3buffer;
-    sm3buffer = (char*) malloc(4096);
-
-    /* Open the input file */
-    /*fd1 = open(filename,O_RDONLY);
-
-    if (fd1 < 0)
-    {
-	printf("Error opening file\n");
-	return -1;
-    }
-    stat(filename,&attribute);
-    filesize = attribute.st_size;*/
-	//printf("filesize:%d\n",filesize);
+    char sm3buffer[4096];
 
     /* Initialise sm3-Context */
     result = SM3_init(&index);
     if (result)
     {
-	close (fd1);
-	free(sm3buffer);
         return -1;
     }
 
        // bytes_to_copy = filesize;
-	int i=0;
-	    while (i < countline)
-	    {
+     int i=0;
+     while (i < countline)
+     {
 
-		//read(fd1,sm3buffer,4096);
     		result = SM3_update(&index,buffer[i],DIGEST_SIZE);
 		if (result)
 	        {
-		    //close (fd1);
-		    //free(sm3buffer);
     		    return -1;
 		}
     		//bytes_to_copy = bytes_to_copy - 4096;
 		i++;
 		
-	    }
+    }
 
-	    // And the last one
-	    //memset(sm3buffer,0,4096);
-	    //read(fd1,sm3buffer,bytes_to_copy);
-    	    /*result = SM3_update(&index,sm3buffer,bytes_to_copy);
-    	    if (result)
-	    {
-		close (fd1);
-		free(sm3buffer);
-    		return -1;
-	    }
-
-    close (fd1);
-    free(sm3buffer);*/
     result = SM3_final(&index,SM3_hash);
     if (result)
 	return -1;
     return 0;
 }
-#ifdef calculate_pathsm3
-int calculate_pathsm3(char* filepath, uint32_t *SM3_hash)
-{
-   
-    int result;
-	 SM3_context index;
-	 result = SM3_init(&index);
-    if (result)
-    	 {
-      return -1;
-    	 }
-    result = SM3_update(&index,filepath,strlen(filepath));
-    if (result)
-	   {
-    	return -1;
-	   }
-    result = SM3_final(&index,SM3_hash);
-    if (result)
-		return -1;
-    return 0;
-}
-#endif
-int calculate_context_sm3(char* context, int context_size, uint32_t *SM3_hash)
+
+int calculate_context_sm3(char* context, int context_size, UINT32 *SM3_hash)
 {
    
     int result;
