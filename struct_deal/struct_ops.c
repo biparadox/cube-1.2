@@ -10,6 +10,72 @@
 
 //const int deftag=0x00FFF000;
 
+UINT16
+Decode_UINT16(BYTE * in)
+{
+	UINT16 temp = 0;
+	temp = (in[1] & 0xFF);
+	temp |= (in[0] << 8);
+	return temp;
+}
+
+void
+UINT32ToArray(UINT32 i, BYTE * out)
+{
+	out[0] = (BYTE) ((i >> 24) & 0xFF);
+	out[1] = (BYTE) ((i >> 16) & 0xFF);
+	out[2] = (BYTE) ((i >> 8) & 0xFF);
+	out[3] = (BYTE) i & 0xFF;
+}
+
+void
+UINT64ToArray(UINT64 i, BYTE *out)
+{
+	out[0] = (BYTE) ((i >> 56) & 0xFF);
+	out[1] = (BYTE) ((i >> 48) & 0xFF);
+	out[2] = (BYTE) ((i >> 40) & 0xFF);
+	out[3] = (BYTE) ((i >> 32) & 0xFF);
+	out[4] = (BYTE) ((i >> 24) & 0xFF);
+	out[5] = (BYTE) ((i >> 16) & 0xFF);
+	out[6] = (BYTE) ((i >> 8) & 0xFF);
+	out[7] = (BYTE) i & 0xFF;
+}
+
+void
+UINT16ToArray(UINT16 i, BYTE * out)
+{
+	out[0] = ((i >> 8) & 0xFF);
+	out[1] = i & 0xFF;
+}
+
+UINT64
+Decode_UINT64(BYTE *y)
+{
+	UINT64 x = 0;
+
+	x = y[0];
+	x = ((x << 8) | (y[1] & 0xFF));
+	x = ((x << 8) | (y[2] & 0xFF));
+	x = ((x << 8) | (y[3] & 0xFF));
+	x = ((x << 8) | (y[4] & 0xFF));
+	x = ((x << 8) | (y[5] & 0xFF));
+	x = ((x << 8) | (y[6] & 0xFF));
+	x = ((x << 8) | (y[7] & 0xFF));
+
+	return x;
+}
+
+UINT32
+Decode_UINT32(BYTE * y)
+{
+	UINT32 x = 0;
+
+	x = y[0];
+	x = ((x << 8) | (y[1] & 0xFF));
+	x = ((x << 8) | (y[2] & 0xFF));
+	x = ((x << 8) | (y[3] & 0xFF));
+}
+
 int dup_str(char ** dest,char * src, int size)
 {
 	int len;
@@ -510,6 +576,41 @@ int int_set_text_value(void * addr,char * text,void * elem_attr)
 	return str_len+1;
 }
 
+int tpm64_get_bin_value(void * elem,void * addr,void * elem_attr)
+{
+	UINT64ToArray(*(int *)addr,elem);
+	return sizeof(UINT64);
+}
+
+int tpm64_set_bin_value(void * elem,void * addr,void * elem_attr)
+{
+	*(UINT64 *)elem=Decode_UINT64(addr);
+	return sizeof(UINT64);
+}
+
+int tpm32_get_bin_value(void * elem,void * addr,void * elem_attr)
+{
+	UINT32ToArray(*(int *)addr,elem);
+	return sizeof(UINT32);
+}
+
+int tpm32_set_bin_value(void * elem,void * addr,void * elem_attr)
+{
+	*(UINT32 *)elem=Decode_UINT32(addr);
+	return sizeof(UINT32);
+}
+
+int tpm16_get_bin_value(void * elem,void * addr,void * elem_attr)
+{
+	UINT16ToArray(*(int *)addr,elem);
+	return sizeof(UINT16);
+}
+
+int tpm16_set_bin_value(void * elem,void * addr,void * elem_attr)
+{
+	*(UINT16 *)elem=Decode_UINT16(addr);
+	return sizeof(UINT16);
+}
 ELEM_OPS string_convert_ops =
 {
 	.get_int_value=get_string_value,
@@ -557,3 +658,25 @@ ELEM_OPS defnamelist_convert_ops =
 	.set_text_value= namelist_set_text_value,
 };
 
+ELEM_OPS tpm_uint64_convert_ops =
+{
+	.get_bin_value= tpm64_get_bin_value,
+	.set_bin_value= tpm64_set_bin_value,
+	.get_text_value= int_get_text_value,
+	.set_text_value= int_set_text_value,
+};
+
+ELEM_OPS tpm_uint32_convert_ops =
+{
+	.get_bin_value= tpm32_get_bin_value,
+	.set_bin_value= tpm32_set_bin_value,
+	.get_text_value= int_get_text_value,
+	.set_text_value= int_set_text_value,
+};
+ELEM_OPS tpm_uint16_convert_ops =
+{
+	.get_bin_value= tpm16_get_bin_value,
+	.set_bin_value= tpm16_set_bin_value,
+	.get_text_value= int_get_text_value,
+	.set_text_value= int_set_text_value,
+};

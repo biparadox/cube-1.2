@@ -60,7 +60,7 @@ int match_message(void * match_rule,void * message);
 
 void * dispatch_route_rule_getfirst(void * rule);
 void * dispatch_route_rule_getnext(void * policy);
-int aspect_policy_getfirst(void ** policy);
+int  	aspect_policy_getfirst(void ** policy);
 int aspect_policy_getnext(void ** policy);
 
 int router_find_local_policy(void * message,void **msg_policy,char * sender_proc);

@@ -215,9 +215,9 @@ static inline int _get_char_value(char c)
 	if(_isdigit(c))
 		return c-'0';
 	if((c>='a') && (c<='f'))
-		return c-'a'+9;
+		return c-'a'+10;
 	if((c>='A') && (c<='F'))
-		return c-'a'+9;
+		return c-'A'+10;
 	return -EINVAL;
 }
 int Atoi(char * string,int maxlen)

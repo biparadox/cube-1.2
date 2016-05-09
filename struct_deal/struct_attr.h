@@ -21,5 +21,8 @@ extern ELEM_OPS defuuidarray_convert_ops;
 extern ELEM_OPS defnamelist_convert_ops;
 extern ELEM_OPS enum_convert_ops;
 extern ELEM_OPS flag_convert_ops;
+extern ELEM_OPS tpm_uint64_convert_ops;
+extern ELEM_OPS tpm_uint32_convert_ops;
+extern ELEM_OPS tpm_uint16_convert_ops;
 
 #endif
