@@ -34,6 +34,10 @@ const int g_order=20;
 const int t_order=14;
 const int c_order=16;
 
+void * T_mem_struct;
+void * G_mem_struct;
+void * C_mem_struct;
+
 int alloc_init(unsigned char * alloc_buffer )
 {
 	start_addr = alloc_buffer + PAGE_SIZE-(((int)alloc_buffer)&0x0fff);
