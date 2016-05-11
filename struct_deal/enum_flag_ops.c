@@ -23,7 +23,21 @@ int enum_get_text_value(void * addr,char * text,void * elem_template){
 	if(enum_list==NULL)
 		enum_list=elem_desc->ref;
 
-	enum_value=*(int *)addr;
+	switch(elem_desc->type)
+	{
+		case 	CUBE_TYPE_ENUM:
+			enum_value=*(int *)addr;
+			break;
+		case 	CUBE_TYPE_SENUM:
+			enum_value=*(UINT16 *)addr;
+			break;
+		case 	CUBE_TYPE_BENUM:
+			enum_value=*(BYTE *)addr;
+			break;
+		default:
+			return -EINVAL;
+	}
+
 	if(enum_value<0)
 		return -EINVAL;
 
@@ -78,7 +92,6 @@ int enum_set_text_value(void * addr,void * text,void * elem_template){
 		if(enum_value<0)
 			return enum_value;
 		*(int *)addr=enum_value;
-		return enum_value;
 		
 	}
 	else
@@ -88,12 +101,29 @@ int enum_set_text_value(void * addr,void * text,void * elem_template){
 			if(!strcmp(enum_list[i].name,text))
 			{
 				enum_value=enum_list[i].value;
-				*(int *)addr=enum_value;
-				return enum_value;
 			}
 		}
 	}
-	return -EINVAL;
+	switch(elem_desc->type)
+	{
+		case 	CUBE_TYPE_ENUM:
+			*(int *)addr=enum_value;
+			break;
+		case 	CUBE_TYPE_SENUM:
+			if(enum_value>32767)
+				return -EINVAL;
+			*(UINT16 *)addr=enum_value;
+			break;
+		case 	CUBE_TYPE_BENUM:
+			if(enum_value>127)
+				return -EINVAL;
+			*(BYTE *)addr=enum_value;
+			break;
+		default:
+			return -EINVAL;
+	}
+
+	return enum_value;
 }
 
 
@@ -115,7 +145,20 @@ int flag_get_text_value(void * addr, char * text, void * elem_template){
 		return -EINVAL;
 	
 
-	flag_value=*(int *)addr;
+	switch(elem_desc->type)
+	{
+		case 	CUBE_TYPE_FLAG:
+			flag_value=*(int *)addr;
+			break;
+		case 	CUBE_TYPE_SFLAG:
+			flag_value=*(UINT16 *)addr;
+			break;
+		case 	CUBE_TYPE_BFLAG:
+			flag_value=*(BYTE *)addr;
+			break;
+		default:
+			return -EINVAL;
+	}
 	
 	for(i=0;flag_list[i].name!=NULL;i++)
 	{
@@ -183,7 +226,21 @@ int flag_set_text_value(void * addr, char * text, void * elem_template){
 		if(flag_list[j].name==NULL)
 			return -EINVAL;
 	}
-	*(int *)addr=flag_value;
+	switch(elem_desc->type)
+	{
+		case 	CUBE_TYPE_FLAG:
+			*(int *)addr=flag_value;
+			break;
+		case 	CUBE_TYPE_SFLAG:
+			*(UINT16 *)addr=flag_value;
+			break;
+		case 	CUBE_TYPE_BFLAG:
+			*(BYTE *)addr=flag_value;
+			break;
+		default:
+			return -EINVAL;
+	}
+
 	return 0;
 }
 

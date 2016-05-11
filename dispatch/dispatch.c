@@ -25,6 +25,8 @@ typedef struct policy_list//审计信息结构体
 static POLICY_LIST process_policy;
 static POLICY_LIST aspect_policy;
 
+static void * match_policy_template;
+static void * route_policy_template;
 
 static inline int _init_policy_list(void * list)
 {
@@ -45,7 +47,7 @@ int dispatch_policy_init( )
 	return 0;
 }
 
-void * dispatch_policy_create( 
+void * dispatch_policy_create()
 
 int __is_policy_aspectpolicy(void * policy)
 {

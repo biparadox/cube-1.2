@@ -6,8 +6,12 @@ NAME2VALUE elem_type_valuelist_array[] =
 	{"STRING",CUBE_TYPE_STRING},
 	{"UUID",CUBE_TYPE_UUID},
 	{"INT",CUBE_TYPE_INT},
-	{"ENUM",CUBE_TYPE_ENUM},      // an 32-bit enum
-	{"FLAG",CUBE_TYPE_FLAG},
+	{"ENUM",CUBE_TYPE_ENUM},      // a 32-bit enum
+	{"SENUM",CUBE_TYPE_SENUM},      // a 16-bit enum
+	{"BENUM",CUBE_TYPE_BENUM},      // an 8-bit enum
+	{"FLAG",CUBE_TYPE_FLAG},	// a 32-bit flag
+	{"SFLAG",CUBE_TYPE_SFLAG},	// a 16-bit flag
+	{"BFLAG",CUBE_TYPE_BFLAG},	// an 8-bit flag	
 	{"TIME",CUBE_TYPE_TIME},
 	{"UCHAR",CUBE_TYPE_UCHAR},
 	{"USHORT",CUBE_TYPE_USHORT},   // a 16-bit unsigned word

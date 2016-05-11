@@ -13,8 +13,12 @@ enum cube_struct_elem_type   // describe types could be used in the struct
 	CUBE_TYPE_STRING=0x01,   // an string with fixed size
 	CUBE_TYPE_UUID,     // an string with fixed size
 	CUBE_TYPE_INT,      // an 32-bit int
-	CUBE_TYPE_ENUM,      // an 32-bit enum
-	CUBE_TYPE_FLAG,      // an 32-bit flag
+	CUBE_TYPE_ENUM,      // a 32-bit enum
+	CUBE_TYPE_SENUM,      // a 16-bit enum
+	CUBE_TYPE_BENUM,      // an 8-bit enum
+	CUBE_TYPE_FLAG,      // a 32-bit flag
+	CUBE_TYPE_SFLAG,      // a 16-bit flag
+	CUBE_TYPE_BFLAG,      // an 8-bit flag
 	CUBE_TYPE_TIME,     // an struct of time_t
 	CUBE_TYPE_UCHAR,    // a unsigned octet
 	CUBE_TYPE_USHORT,   // a 16-bit unsigned word

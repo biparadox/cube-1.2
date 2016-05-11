@@ -11,7 +11,7 @@ enum match_op_type
     DISPATCH_MATCH_ERROR,
 };
 
-enum match_area_type
+enum message_area_type
 {
     MATCH_AREA_HEAD=0x01,
     MATCH_AREA_RECORD=0x02,
@@ -50,8 +50,8 @@ void * match_policy_getfirst(void * list);
 void * match_policy_getnext(void * list);
 
 
-void * _router_policy_getfirst(void * list);
-void * _router_policy_getnext(void * list);
+void * router_policy_getfirst(void * list);
+void * router_policy_getnext(void * list);
 
 void * dispatch_policy_getfirst();
 void * dispatch_policy_getnext();

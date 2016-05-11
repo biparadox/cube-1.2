@@ -4,6 +4,32 @@
 
 #define MATCH_FLAG 0x8000
 
+enum dispatch_match_op
+{
+	MATCH_AND=0x01,
+	MATCH_OR,
+	MATCH_NOT,
+};
+
+enum dispatch_area_op
+{
+	MSG_AREA_HEAD=0x01,
+	MSG_AREA_RECORD,
+	MSG_AREA_EXPAND,
+};
+
+enum dispatch_target_type
+{
+    MSG_TARGET_LOCAL=0x01,
+    MSG_TARGET_NAME,
+    MSG_TARGET_UUID,
+    MSG_TARGET_RECORD,
+    MSG_TARGET_EXPAND,
+    MSG_TARGET_CONN,
+    MSG_TARGET_MIXUUID,
+    MSG_TARGET_ERROR=0xFFFF,
+};
+
 typedef struct tagmatch_rule
 {
 	int op;
@@ -29,4 +55,4 @@ typedef struct tagdispatch_rule
 	void * router_list;
 }  DISPATCH_RULE;
 
-#endif // ROUTER_STRUCT_H
+#endif // DISPATCH_STRUCT_H
