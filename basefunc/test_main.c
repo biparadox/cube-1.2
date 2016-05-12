@@ -59,6 +59,20 @@ int main() {
   test_uuid=hashlist_remove_elem(hash_head,digest);	
   test_uuid1=hashlist_find_elem(hash_head,digest);
 
+  void * list_queue;
+  list_queue=init_list_queue();
+ 
+  list_queue_put(list_queue,test_uuid);	  	
+  list_queue_put(list_queue,test_uuid1);
+ 
+  void * temp;
+	
+  ret=list_queue_get(list_queue,&temp);
+  ret=list_queue_get(list_queue,&temp);
+  ret=list_queue_get(list_queue,&temp);
+
+  free_list_queue(list_queue);
+
   Tclear();
   return 0;
 }

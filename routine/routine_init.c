@@ -19,6 +19,7 @@
 
 static void * subroutine_list;
 static void * channel_list;
+static void * message_list;
 
 int routine_setuuid(void * proc)
 {
@@ -106,6 +107,7 @@ int routine_init()
 	int ret;
 	subroutine_list=init_hash_list(10,0,0);	
 	channel_list=init_hash_list(8,0,0);	
+	message_list=init_hash_list(10,0,0);	
 	ret=Galloc0(&myproc_context,sizeof(struct proc_context));
 	if(ret<0)
 		return ret;

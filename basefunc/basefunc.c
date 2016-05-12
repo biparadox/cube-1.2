@@ -417,3 +417,136 @@ int pointer_queue_get(void * pointer_queue,void **pointer)
 	return 0;
 }
 
+typedef struct taglist_queue
+{
+	Record_List queue_list;
+	int record_num;
+	Record_List * curr;
+}LIST_QUEUE;
+
+void * init_list_queue()
+{
+	LIST_QUEUE * queue;
+	queue=Calloc0(sizeof(LIST_QUEUE));
+	if(queue==NULL)
+		return NULL;
+	INIT_LIST_HEAD(&queue->queue_list.list);
+	queue->curr=NULL;
+	return queue;
+}
+
+void free_list_queue(void * queue)
+{	
+	
+	Free(queue);
+	return;
+}
+
+int list_queue_put(void * list_queue,void * record)
+{
+	LIST_QUEUE * queue;
+	Record_List * slot;
+	queue=(LIST_QUEUE *)list_queue;
+	
+	slot=Calloc0(sizeof(Record_List));
+	if(slot==NULL)
+		return -EINVAL;
+	INIT_LIST_HEAD(&slot->list);
+	slot->record=record;
+	List_add_tail(&slot->list,&queue->queue_list.list);
+	queue->record_num++;
+	return queue->record_num;
+}
+	
+
+int list_queue_get(void * list_queue,void ** record)
+{
+	LIST_QUEUE * queue;
+	Record_List * slot;
+	queue=(LIST_QUEUE *)list_queue;
+	
+	if(queue->record_num==0)
+	{
+		*record=NULL;
+		return 0;
+	}
+	
+
+	slot=(Record_List *) (queue->queue_list.list.next);
+
+	*record=slot->record;
+
+	queue->record_num--;
+	
+	List_del(&slot->list);
+	Free(slot);
+	return queue->record_num;
+}
+
+void * list_queue_getfirst(void * list_queue)
+{
+	LIST_QUEUE * queue;
+	Record_List * slot;
+	queue=(LIST_QUEUE *)list_queue;
+	
+	if(queue->record_num==0)
+	{
+		return NULL;
+	}
+	
+	slot = (Record_List *)queue->queue_list.list.next;
+	queue->curr=slot;
+	return slot->record;
+}
+
+void * list_queue_getnext(void * list_queue)
+{
+	LIST_QUEUE * queue;
+	Record_List * slot;
+	queue=(LIST_QUEUE *)list_queue;
+	
+	if(queue->record_num==0)
+	{
+		return NULL;
+	}
+	slot=(Record_List *)queue->curr;
+	if(slot==NULL)
+		return NULL;
+
+	slot=slot->list.next;
+	if(slot==&queue->queue_list)
+	{
+		queue->curr=NULL;
+		return NULL;
+	}
+	queue->curr=slot;
+	return slot->record;
+}
+
+void * list_queue_removecurr(void * list_queue)
+{
+	LIST_QUEUE * queue;
+	Record_List * slot;
+	queue=(LIST_QUEUE *)list_queue;
+	void * record;
+	
+	
+	if(queue->record_num==0)
+	{
+		return NULL;
+	}
+	slot=(Record_List *)queue->curr;
+	if(slot==NULL)
+		return NULL;
+
+	record=slot->record;
+
+	if(slot->list.next==&queue->queue_list)
+	{
+		queue->curr=NULL;
+	}
+	queue->curr=slot->list.next;
+	Free(slot);
+	return record;
+}
+
