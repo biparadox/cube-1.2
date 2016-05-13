@@ -22,19 +22,20 @@ typedef unsigned int         DWORD;
 
 
 #define BITSTRING (unsigned char *)
-#define OS210_DEBUG  
+#define CUBE_DEBUG  
 
 #define DIGEST_SIZE	32
+#define PAGE_SIZE	4096
 #ifndef NULL
 #define NULL 		0
 #endif
 
 #define IS_ERR(ptr) (ptr-4096 <0)
 
-#ifdef OS210_DEBUG
-#define os210_dbg(format, arg...)		\
+#ifdef CUBE_DEBUG
+#define cube_dbg(format, arg...)		\
 	printk(KERN_DEBUG, format , ## arg)
 #else
-#define os210_dbg(format, arg...)  do { } while (0)
+#define cube_dbg(format, arg...)  do { } while (0)
 #endif
 #endif

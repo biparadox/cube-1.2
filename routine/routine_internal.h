@@ -40,10 +40,13 @@ typedef struct routine_struct
 	void * protect_data;
 	void * context;
 	void * context_template;
+	void * message_list;
 }__attribute__((packed))  ROUTINE;
 
 void * _subroutine_getfirst();
 void * _subroutine_getnext();
+void * _channel_getfirst();
+void * _channel_getnext();
 void * subroutine_register(char * name,int type, void * routine_ops,void * state_list);
 
 #define CONCAT01(a,b)	a##b
@@ -107,4 +110,7 @@ int _routine_dispatch_start();
 
 int _routine_channel_init();
 int _routine_channel_start();
+
+void * _get_message_list();
+
 #endif

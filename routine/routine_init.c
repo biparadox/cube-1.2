@@ -107,7 +107,9 @@ int routine_init()
 	int ret;
 	subroutine_list=init_hash_list(10,0,0);	
 	channel_list=init_hash_list(8,0,0);	
-	message_list=init_hash_list(10,0,0);	
+	message_list=init_list_queue();	
+	if(message_list==NULL)
+		return -EINVAL;
 	ret=Galloc0(&myproc_context,sizeof(struct proc_context));
 	if(ret<0)
 		return ret;
@@ -137,4 +139,11 @@ void * routine_start(void * pointer)
 	}while(ret>0);
 	return count;
 
+}
+
+void * _get_message_list(void * routine)
+{
+	if(routine==NULL)
+		return message_list;
+	return 	((ROUTINE *)routine)->message_list;
 }

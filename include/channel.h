@@ -17,8 +17,15 @@ enum channel_type
     CHANNEL_READ=0x01,
     CHANNEL_WRITE=0x02,   // finishing the msg's loading
     CHANNEL_RDWR=0x03,   // finishing the msg's loading
+    CHANNEL_BIN=0x10,
+    CHANNEL_JSON=0x20,
+    CHANNEL_BLK=0x30,
     CHANNEL_SHUTDOWN=0x1000,   // finishing the msg's loading
 };
+
+
+#define CHANNEL_DIRECT_MASK  0x0F
+#define CHANNEL_STREAM_MASK  0xF0
 
 enum channel_state
 {
@@ -37,6 +44,8 @@ typedef struct tube_channel
 
 	void * read_buf;
 	void * write_buf;
+	void * temp_msg;
+	void * temp_node;
 
 }CHANNEL;
 

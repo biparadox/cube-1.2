@@ -13,6 +13,7 @@
 #include "../include/memdb.h"
 #include "../include/message.h"
 #include "../include/routine.h"
+#include "../include/channel.h"
 
 #include "routine_internal.h"
 
@@ -36,6 +37,59 @@ int _routine_channel_start()
 {
 	int ret;
 	int count=0;
+	int bufsize;
+	int offset=0;
+
+	BYTE buffer[PAGE_SIZE];	
+	
+	CHANNEL * channel;
+	void * message_list;
+	void * new_msg;
+
+	message_list=_get_message_list(NULL);
+	if(message_list==NULL)
+		return -EINVAL;
+
+	channel=_channel_getfirst();
+
+	while(channel!=NULL)
+	{
+		bufsize=channel_inner_read(channel,buffer,PAGE_SIZE);
+		if(bufsize<0)
+			return bufsize;
+		if(bufsize>0)
+		{
+			
+			switch(channel->type&CHANNEL_STREAM_MASK)
+			{
+				// bin message format is the default format
+				case 0x00:		
+				case 0x10:
+					break;
+				case 0x20:
+					break;
+				case 0x30:
+
+					do {
+						ret=json_2_message(buffer+offset,&new_msg);
+						if(ret<=0)
+							break;
+						if(new_msg!=NULL)
+							list_queue_put(message_list,new_msg);
+						if(bufsize-offset-ret<10)
+							break;
+						offset+=ret;
+					}while(1);
+
+					break;
+				default:
+					break;
+			}
+		}
+		
+	}
+	
+		
 
 	return count;
 }

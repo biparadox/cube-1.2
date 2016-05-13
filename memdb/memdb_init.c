@@ -1107,6 +1107,7 @@ int memdb_print(void * data,char * json_str)
 	if(ret<0)
 		return ret;
 	offset+=ret;
+	json_str[offset++]=',';
 	ret=Strlen(buf);
 	Memcpy(json_str+offset,buf,ret);
 	offset+=ret;
