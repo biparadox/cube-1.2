@@ -23,6 +23,18 @@ char text[4096];
 
 static  struct tag_msg_kits * msg_kits;
 
+
+void * message_get_head(void * message)
+{
+	struct message_box * msg_box;
+
+	msg_box=(struct message_box *)message;
+	if(message==NULL)
+		return NULL;
+	return &msg_box->head;
+
+}
+
 int message_get_state(void * message)
 {
 	struct message_box * msg_box;
@@ -1166,7 +1178,7 @@ int message_add_record(void * message,void * record)
     msg_box->box_state=MSG_BOX_ADD;
     return ret;
 }
-
+*/
 int message_add_expand(void * message,void * expand)
 {
 	struct message_box * msg_box;
@@ -1185,6 +1197,7 @@ int message_add_expand(void * message,void * expand)
 
 	return ret;
 }
+/*
 int message_add_expand_blob(void * message,void * expand)
 {
 	struct message_box * msg_box;

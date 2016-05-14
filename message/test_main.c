@@ -182,6 +182,27 @@ int main() {
 
 	printf("%s\n",json_buffer);
 	
+	
+	void * new_msg;
+
+	ret=json_2_message(json_buffer,&new_msg);
+
+	if(ret<0)
+		return ret;
+
+	printf ("read % from json_buffer\n",ret);
+
+	ret=message_output_json(message,json_buffer);
+	if(ret<0)
+	{
+		printf("message output json failed!\n");
+		return ret;
+	}
+
+	printf("%s\n",json_buffer);
+	
+
+	
 	return 0;
 
 }

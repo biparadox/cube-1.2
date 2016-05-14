@@ -7,8 +7,8 @@
 *       content:        this file describe the module's extern struct 
 *       changelog:       
 *************************************************/
-#ifndef _OS210_MESSAGE_H
-#define _OS210_MESSAGE_H
+#ifndef _CUBE_MESSAGE_H
+#define _CUBE_MESSAGE_H
 
 #include "data_type.h"
 
