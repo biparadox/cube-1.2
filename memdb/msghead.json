@@ -29,6 +29,23 @@
 {
 	"head":
 	{
+		"name":"msg_expand",
+		"type":"STRUCT"
+	},
+	"record":
+	{
+		"elem_desc":
+		[
+			{"name":"data_size","type":"INT","size":4},
+			{"name":"type","type":"TYPE"},
+			{"name":"subtype","type":"SUBTYPE","def":"record_type"},
+		]
+	}
+}
+
+{
+	"head":
+	{
 		"name":"msg_head",
 		"type":"RECORDTYPE",
 	},
@@ -41,6 +58,24 @@
 		{
 			"flag":"INDEX",
 			"elemlist":"sender_uuid,receiver_uuid,flow,state,flag,record_type,record_subtype"
+		}
+	}	
+}
+{
+	"head":
+	{
+		"name":"msg_expand",
+		"type":"RECORDTYPE",
+	},
+	"record":
+	{
+		"type":"MESSAGE",
+		"subtype":"EXPAND",
+		"uuid":"msg_expand",
+		"index":
+		{
+			"flag":"INDEX",
+			"elemlist":"data_size,type,subtype"
 		}
 	}	
 }
