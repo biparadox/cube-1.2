@@ -33,6 +33,7 @@ int json_2_message(char * json_str,void ** message)
 
     struct message_box * msg_box;
     MSG_HEAD * msg_head;
+    MSG_EXPAND * msg_expand;
     int record_no;
     int expand_no;
     void * precord;
@@ -42,6 +43,8 @@ int json_2_message(char * json_str,void ** message)
     char buffer[DIGEST_SIZE];
 
     int offset;
+    int type;
+    int subtype;
 
     offset=json_solve_str(&root_node,json_str);
     if(offset<0)
@@ -118,31 +121,42 @@ int json_2_message(char * json_str,void ** message)
     if(expand_node!=NULL)
     {
 	char buf[20];
+	void * curr_expand_template;
 	curr_expand=json_get_first_child(expand_node);
    	for(i=0;i<expand_no;i++)
     	{
         	if(curr_expand==NULL)
             		return -EINVAL;
-		void * expand_tag=json_find_elem("tag",curr_expand);
-		if(expand_tag==NULL)
-			return -EINVAL;
-		if(json_get_type(expand_tag)!=JSON_ELEM_STRING)
-			return -EINVAL;
-		ret=json_node_getvalue(expand_tag,buf,5);
-		if(strnlen(buf,5)!=4)
-			return -EINVAL;
-/*
-		void * curr_template=memdb_get_template(buf);
-		if(curr_template==NULL)
-			return -EINVAL;
+		ret=Galloc0(&msg_expand,struct_size(message_get_expand_template()));
+		if(ret<0)
+			return -ENOMEM;
+
+		ret=json_2_struct(curr_expand,&msg_expand,message_get_expand_template());
+		if(ret<0)
+			return ret;
+
+		void * tempnode;
+		if((tempnode=json_find_elem(curr_expand,"BIN_DATA"))==NULL)
+		{
+
+				
+			curr_expand_template=memdb_get_template(msg_expand->type,msg_expand->subtype);
+			if(curr_expand_template==NULL)
+				return -EINVAL;
+			struct_free(msg_expand,message_get_expand_template());			
+			ret=Galloc(&msg_expand,struct_size(curr_expand_template));
+			if(ret<0)
+				return -ENOMEM;
+			ret=json_2_struct(curr_expand,msg_expand,curr_expand_template);
+			if(ret<0)
+				return ret;
+		}
 		
-        	ret=Galloc0(&pexpand,struct_size(curr_template));
-        	if(ret<=0)
-            		return -EINVAL;
-        	json_2_struct(curr_expand,pexpand,curr_template);
-        	message_add_expand(msg_box,pexpand);
+
+	
+        	message_add_expand(msg_box,msg_expand);
         	curr_expand=json_get_next_child(expand_node);
-*/
+
 	}
     }
 

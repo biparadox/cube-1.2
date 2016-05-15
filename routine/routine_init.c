@@ -20,6 +20,8 @@
 static void * subroutine_list;
 static void * channel_list;
 static void * message_list;
+static void (*sleep_func)(int);
+static int sleep_para;
 
 int routine_setuuid(void * proc)
 {
@@ -102,9 +104,23 @@ void * _channel_getnext()
 	return hashlist_get_next(channel_list);
 }
 
-int routine_init()
+int routine_init(void * para)
 {
 	int ret;
+	struct routine_para * routine_para=para;
+
+	if(para!=NULL)
+	{
+		sleep_func=routine_para->sleep_func;
+		sleep_para=routine_para->sleep_para;
+	}
+	else
+	{
+		sleep_func=NULL;
+		sleep_para=0;
+	}
+
+
 	subroutine_list=init_hash_list(10,0,0);	
 	channel_list=init_hash_list(8,0,0);	
 	message_list=init_list_queue();	
@@ -136,6 +152,8 @@ void * routine_start(void * pointer)
 		if(ret<0)
 			break;
 		count++;
+		if(sleep_func!=NULL)
+			sleep_func(sleep_para);
 	}while(ret>0);
 	return count;
 

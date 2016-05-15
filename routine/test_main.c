@@ -135,7 +135,7 @@ int main() {
 	msgfunc_init();
 	
 	void * message;
-	routine_init();
+	routine_init(NULL);
 
 	routine_register("sub1",ROUTINE_SOURCE,&sub1_ops,NULL);
 	routine_register("sub2",ROUTINE_SOURCE,&sub2_ops,NULL);

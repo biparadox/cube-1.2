@@ -54,6 +54,7 @@ int _routine_channel_start()
 
 	while(channel!=NULL)
 	{
+		count++;
 		bufsize=channel_inner_read(channel,buffer,PAGE_SIZE);
 		if(bufsize<0)
 			return bufsize;
@@ -86,10 +87,8 @@ int _routine_channel_start()
 					break;
 			}
 		}
-		
+		channel=_channel_getnext();
 	}
 	
-		
-
 	return count;
 }

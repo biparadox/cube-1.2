@@ -23,6 +23,10 @@ char text[4096];
 
 static  struct tag_msg_kits * msg_kits;
 
+void * message_get_expand_template()
+{
+	return msg_kits->expand_head_template;
+}
 
 void * message_get_head(void * message)
 {
@@ -104,7 +108,6 @@ void * message_init()
 	Memcpy(msg_box->head.tag,"MESG",4);
 	msg_box->head.version=0x00010001;
 
-//	struct_write_elem("version",&(msg_box->head),&version,msg_kits->head_template);
 	msg_box->box_state=MSG_BOX_INIT;
 	return msg_box;
 }

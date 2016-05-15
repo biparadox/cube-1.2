@@ -76,7 +76,7 @@ typedef struct tagMessage_Expand_Data  //general expand data struct
    int  data_size;   //this expand data's size
    int  type;
    int  subtype;      //expand data's type
-   BYTE data[0];
+   BYTE * BIN_DATA;
 } __attribute__((packed)) MSG_EXPAND;
 
 typedef struct expand_extra_info  //expand data struct to store one or more DIGEST_SIZE info

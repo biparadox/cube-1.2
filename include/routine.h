@@ -41,7 +41,14 @@ struct routine_ops
 	int (*exit)(void * proc,void * para);
 
 };
-int routine_init();
+
+struct routine_para
+{
+	void (*sleep_func)(int);
+	int  sleep_para; 	
+};
+
+int routine_init(void * para);
 void * routine_start(void *);
 void * routine_register(char * name,int type,void * ops,void * state_list);
 int routine_unload();
