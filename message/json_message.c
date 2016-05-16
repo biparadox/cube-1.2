@@ -53,6 +53,8 @@ int json_2_message(char * json_str,void ** message)
     // get json node's head
     head_node=json_find_elem("HEAD",root_node);
     if(head_node==NULL)
+    	head_node=json_find_elem("head",root_node);
+    if(head_node==NULL)
         return -EINVAL;
     tag_node=json_find_elem("tag",head_node);
     if(tag_node!=NULL)   // default tag value is "MESG"
@@ -75,6 +77,8 @@ int json_2_message(char * json_str,void ** message)
         return ret;
 
     record_node=json_find_elem("RECORD",root_node);
+    if(record_node==NULL)
+    	record_node=json_find_elem("record",root_node);
     if(record_node==NULL)
         return -EINVAL;
 
@@ -115,9 +119,11 @@ int json_2_message(char * json_str,void ** message)
     }
 
     // get json_node's expand
-    expand_node=json_find_elem("EXPAND",root_node); 
     expand_no=msg_head->expand_num;
     msg_head->expand_num=0;
+    expand_node=json_find_elem("EXPAND",root_node); 
+    if(expand_node==NULL)
+    	expand_node=json_find_elem("expand",root_node);
     if(expand_node!=NULL)
     {
 	char buf[20];

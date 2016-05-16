@@ -65,11 +65,9 @@ int _routine_channel_start()
 			{
 				// bin message format is the default format
 				case 0x00:		
-				case 0x10:
+				case CHANNEL_BIN:
 					break;
-				case 0x20:
-					break;
-				case 0x30:
+				case CHANNEL_JSON:
 
 					do {
 						ret=json_2_message(buffer+offset,&new_msg);
@@ -82,6 +80,8 @@ int _routine_channel_start()
 						offset+=ret;
 					}while(1);
 
+					break;
+				case CHANNEL_BLK:
 					break;
 				default:
 					break;

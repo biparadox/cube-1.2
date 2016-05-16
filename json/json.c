@@ -850,13 +850,65 @@ int json_node_getvalue(void * node,void * value, int max_len)
 	int len;
 	if(node==NULL)
 		return -EINVAL;
-	if(json_node->value==0)
+	Memset(value,0,max_len);
+	switch(json_node->elem_type)
 	{
-		Memset(value,0,max_len);
-		return 0;
+		case JSON_ELEM_NULL:
+			return 0;
+		case JSON_ELEM_NUM:
+			if(max_len>=sizeof(long long))
+			{
+				len=sizeof(long long);
+				*(long long *)value = json_node->value;
+			}
+			else if (max_len>=sizeof(int))
+			{
+				len=sizeof(int);
+				*(int *)value = json_node->value;
+			}
+			else if (max_len>=sizeof(short))
+			{
+				len=sizeof(short);
+				*(short *)value = json_node->value;
+			}
+			else if (max_len>=sizeof(char))
+			{
+				len=sizeof(char);
+				*(char *)value = json_node->value;
+			}
+			break;
+		case JSON_ELEM_BOOL:
+			if (max_len>=sizeof(int))
+			{
+				len=sizeof(int);
+				*(int *)value = json_node->value;
+			}
+			else if (max_len>=sizeof(short))
+			{
+				len=sizeof(short);
+				*(short *)value = json_node->value;
+			}
+			else if (max_len>=sizeof(char))
+			{
+				len=sizeof(char);
+				*(char *)value = json_node->value;
+			}
+			break;
+		case JSON_ELEM_STRING:
+			if(json_node->value_str==NULL)
+			{
+				len=0;
+				break;
+			}
+			len=Strnlen(json_node->value_str,max_len);
+			Memcpy(value,json_node->value_str,len);
+			break;
+		case JSON_ELEM_MAP:
+		case JSON_ELEM_ARRAY:
+		default:
+			return -EINVAL;
 	}
-	Memcpy(value,&json_node->value,max_len);
-	return 0;
+	return len;
 }
 
 int json_node_getname(void * node,char * name)

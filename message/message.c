@@ -107,6 +107,7 @@ void * message_init()
 		return NULL;
 	Memcpy(msg_box->head.tag,"MESG",4);
 	msg_box->head.version=0x00010001;
+	msg_box->head_template=msg_kits->head_template;
 
 	msg_box->box_state=MSG_BOX_INIT;
 	return msg_box;
