@@ -663,10 +663,19 @@ int memdb_set_template(int type, int subtype,void * struct_template)
 void * memdb_get_template(int type, int subtype)
 {
 	struct memdb_desc * db_list;
-	db_list = memdb_get_dblist(type,subtype);
-	if(db_list == NULL)
+	DB_RECORD * db_record;
+	if(type<=0)
+		return -EINVAL;
+	if(type<DB_BASEEND)
+	{
+		db_list=memdb_get_dblist(type,subtype);
+		return db_list->struct_template;
+	}	
+	
+	db_record = memdb_get_recordtype(type,subtype);
+	if(db_record == NULL)
 		return NULL;
-	return db_list->struct_template;
+	return db_record->tail;
 	
 }
 /*
