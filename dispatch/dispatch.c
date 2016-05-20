@@ -1,6 +1,5 @@
-
-
 #include "../include/data_type.h"
+#include "../include/errno.h"
 #include "../include/list.h"
 #include "../include/attrlist.h"
 #include "../include/string.h"
@@ -14,13 +13,6 @@
 
 #include "dispatch_struct.h"
 
-typedef struct policy_list//审计信息结构体
-{	
-	Record_List head;
-	int state;
-	int policy_num;
-	void * curr;
-}POLICY_LIST;
 
 static POLICY_LIST process_policy;
 static POLICY_LIST aspect_policy;
@@ -39,16 +31,154 @@ static inline int _init_policy_list(void * list)
 
 }
 
-int dispatch_policy_init( )
+int dispatch_policy_init(void * object )
 {
 	int ret;
-	_init_policy_list(&process_policy);
-	_init_policy_list(&aspect_policy);
+	ret=_init_policy_list(&process_policy);
+	ret=_init_policy_list(&aspect_policy);
 	return 0;
 }
 
 void * dispatch_policy_create()
+{
+	int ret;
+	DISPATCH_RULE * rule;
+	ret=Galloc0(&rule,sizeof(DISPATCH_RULE));
+	if(rule==NULL)
+		return NULL;
+	_init_policy_list(&rule->match_list);
+	_init_policy_list(&rule->router_list);
+	return rule;
+	
+}
 
+int read_policy_from_buffer(char * buffer, int max_len)
+{
+	int offset=0;
+	int ret;
+	void * root;
+	int solve_offset;
+	int count=0;
+	void * policy;
+
+	while(offset<max_len)
+	{
+      	        solve_offset=json_solve_str(&root,buffer+offset);
+        	if(solve_offset<=0)
+			break;
+		offset+=solve_offset;
+
+        	policy=dispatch_read_rule_policy(root);
+		if(policy==NULL)
+			break;
+		
+		if(dispatch_policy_is_aspect(policy))
+		{
+			ret=dispatch_add_rule_policy(&aspect_policy,policy);
+		}
+		else
+		{
+			ret=dispatch_add_rule_policy(&process_policy,policy);
+		}
+		if(ret<0)
+			return ret;
+		count++;
+	}
+	return count;
+}
+
+void * dispatch_read_rule_policy(void * policy_node)
+{
+    void * match_rule_template=create_struct_template(&match_rule_desc);
+    void * router_rule_template=create_struct_template(&router_rule_desc);
+    void * match_policy_node;
+    void * router_policy_node;
+    void * match_rule_node;
+    void * router_rule_node;
+    void * temp_node;
+    char buffer[1024];
+    int ret;
+    MATCH_RULE * temp_match_rule;
+    ROUTER_RULE * temp_router_rule;
+
+    MESSAGE_POLICY * policy=malloc(sizeof(MESSAGE_POLICY));
+    if(policy==NULL)
+        return -EINVAL;
+    __message_policy_init(policy);
+
+    // get the match policy json node
+    match_policy_node=find_json_elem("MATCH_POLICY",json_node);
+    if(match_policy_node==NULL)
+        return -EINVAL;
+
+    // get the match policy json node
+    router_policy_node=find_json_elem("ROUTER_POLICY",json_node);
+    if(router_policy_node==NULL)
+        return -EINVAL;
+
+    // read the match policy
+    // first,read the sender proc value
+
+    temp_node=find_json_elem("sender",match_policy_node);
+    if(temp_node==NULL)
+        policy->sender_proc=NULL;
+    else
+    {
+        ret=get_json_value_from_node(temp_node,buffer,1024);
+        if((ret<0) ||(ret>=1024))
+            return -EINVAL;
+        policy->sender_proc=dup_str(buffer,ret+1);
+    }
+
+    // second,read the match rule
+
+    temp_node = find_json_elem("rules",match_policy_node);
+    if(temp_node==NULL)
+        return -EINVAL;
+
+    match_rule_node=get_first_json_child(temp_node);
+    while(match_rule_node!=NULL)
+    {
+        temp_match_rule=malloc(sizeof(MATCH_RULE));
+        ret=json_2_struct(match_rule_node,temp_match_rule,match_rule_template);
+        if(ret<0)
+            return -EINVAL;
+        __router_policy_add(policy->match_policy_list,temp_match_rule);
+        match_rule_node=get_next_json_child(temp_node);
+    }
+
+    // read the router policy
+    // first,read the main router policy
+
+    router_rule_node=find_json_elem("main_policy",router_policy_node);
+    if(router_rule_node==NULL)
+        return -EINVAL;
+    temp_router_rule=malloc(sizeof(ROUTER_RULE));
+    ret=json_2_struct(router_rule_node,temp_router_rule,router_rule_template);
+    if(ret<0)
+        return -EINVAL;
+    policy->main_router_rule=temp_router_rule;
+
+    // second,read the dup rule
+
+    temp_node = find_json_elem("dup_policy",router_policy_node);
+    if(temp_node==NULL)
+    {
+        *message_policy=policy;
+        return 0;
+    }
+    router_rule_node=get_first_json_child(temp_node);
+    while(router_rule_node!=NULL)
+    {
+        temp_router_rule=malloc(sizeof(ROUTER_RULE));
+        ret=json_2_struct(router_rule_node,temp_router_rule,router_rule_template);
+        if(ret<0)
+            return -EINVAL;
+        __router_policy_add(policy->dup_router_rule,temp_router_rule);
+
+}
+
+/*
 int __is_policy_aspectpolicy(void * policy)
 {
 	MESSAGE_POLICY * test_policy=policy;
@@ -311,9 +441,9 @@ int __message_policy_init(void * policy)
     __router_policy_init(message_policy->dup_router_rule);
     return 0;
 }
-
+*/
 #define MAX_LINE_LEN 1024
-int read_cfg_buffer(FILE * stream, char * buf, int size)
+//int read_cfg_buffer(FILE * stream, char * buf, int size)
     /*  Read text data from config file,
      *  ignore the ^# line and remove the \n character
      *  stream: the config file stream
@@ -323,6 +453,7 @@ int read_cfg_buffer(FILE * stream, char * buf, int size)
      *  return value: read data size,
      *  negative value if it has special error
      *  */
+/*
 {
     long offset=0;
     long curr_offset;
@@ -530,7 +661,8 @@ int match_message_head(void * match_rule,void * message)
     ret=message_comp_head_elem_text(message,rule->seg,rule->value);
 	return ret;
 }
-
+*/
+/*
 int match_message_record(void * match_rule,void * message)
 {
     int ret;
@@ -544,15 +676,6 @@ int match_message_record(void * match_rule,void * message)
     char buffer[1024];
     void * record;
     ret=message_comp_elem_text(message,rule->seg,0,rule->value);
-	    /*
-    ret=message_get_record(message,&record,0);
-    if(record==NULL)
-        return -EINVAL;
-    ret=struct_read_elem(rule->seg,record,buffer,record_template);
-    buffer[ret]=0;
-
-    ret=strncmp(buffer,rule->value,ret);
-    */
 	
     return ret;
 }
@@ -1433,4 +1556,4 @@ int router_pop_aspect_site(void * message, char * proc)
 		message_remove_expand(message,"APRE",&aspect_point);
 	}
 	return 1;
-}
+}*/

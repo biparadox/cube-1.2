@@ -5,9 +5,9 @@
 
 enum match_op_type
 {
-    DISPATCH_MATCH_PARALLEL=0x01,
-    DISPATCH_PATCH_SERIAL,
-    DISPATCH_MATCH_BLOCK,	
+    DISPATCH_MATCH_AND=0x01,
+    DISPATCH_MATCH_OR,
+    DISPATCH_MATCH_NOT,	
     DISPATCH_MATCH_ERROR,
 };
 
@@ -27,12 +27,15 @@ enum router_target_type
     ROUTER_TARGET_RECORD=0x08,
     ROUTER_TARGET_EXPAND=0x10,
     ROUTER_TARGET_CHANNEL=0x40,
-    ROUTER_TARGET_MIXUUID=0x80,
+    ROUTER_TARGET_PORT=0x80,
+    ROUTER_TARGET_MIXUUID=0x100,
     ROUTER_TARGET_ERROR=0xFFFF,
 };
 
 int dispatch_policy_init(void * object);
 void * dispatch_create_rule(void * object);
+
+
 void * dispatch_create_match_list(void);
 void * dispatch_create_route_list(void);
 
