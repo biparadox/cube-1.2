@@ -13,9 +13,10 @@ enum match_op_type
 
 enum message_area_type
 {
-    MATCH_AREA_HEAD=0x01,
-    MATCH_AREA_RECORD=0x02,
-    MATCH_AREA_EXPAND=0x04,
+    MATCH_AREA_NULL=0x01,	
+    MATCH_AREA_HEAD=0x02,
+    MATCH_AREA_RECORD=0x04,
+    MATCH_AREA_EXPAND=0x08,
     MATCH_AREA_ERR=0xFF,
 };
 
@@ -46,8 +47,8 @@ int dispatch_add_match_policy(void * list,void * policy);
 void * dispatch_read_route_policy(void * policy_node);
 int dispatch_add_route_policy(void * list,void * policy);
 
-void * dispatch_read_rule_policy(void * policy_node);
-int dispatch_add_rule_policy(void * list,void * policy);
+void * dispatch_read_policy(void * policy_node);
+int dispatch_add_policy(void * list,void * policy);
 
 void * match_policy_getfirst(void * list);
 void * match_policy_getnext(void * list);
