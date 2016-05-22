@@ -111,6 +111,7 @@ int struct_deal_init(void );
 int get_fixed_elemsize(int type);
 int iselemneeddef(int type);
 void * create_struct_template(struct struct_elem_attr * struct_desc);
+void * clone_struct_template(void * struct_template);
 void free_struct_template(void * struct_template);
 void * struct_get_ref(void * struct_template, char * name);
 

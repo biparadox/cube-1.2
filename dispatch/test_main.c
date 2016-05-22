@@ -37,8 +37,6 @@
 #include "../include/message.h"
 #include "../include/routine.h"
 
-struct routine_ops sub1_ops;
-struct routine_ops sub2_ops;
 
 int read_json_file(char * file_name)
 {
@@ -88,6 +86,56 @@ int read_json_file(char * file_name)
 	return struct_no;
 }
 
+int read_dispatch_file(char * file_name)
+{
+	int ret;
+
+	int fd;
+	int readlen;
+	int json_offset;
+
+	int count=0;
+	void * root_node;
+	void * findlist;
+	void * memdb_template ;
+	BYTE uuid[DIGEST_SIZE];
+	char json_buffer[4096];
+	void * policy;
+
+	fd=open(file_name,O_RDONLY);
+	if(fd<0)
+		return fd;
+
+	readlen=read(fd,json_buffer,1024);
+	if(readlen<0)
+		return -EIO;
+	json_buffer[readlen]=0;
+	printf("%s\n",json_buffer);
+	close(fd);
+
+	json_offset=0;
+	while(json_offset<readlen)
+	{
+		ret=json_solve_str(&root_node,json_buffer+json_offset);
+		if(ret<0)
+		{
+			printf("solve json str error!\n");
+			break;
+		}
+		json_offset+=ret;
+		if(ret<32)
+			continue;
+
+		policy=dispatch_read_policy(root_node);
+		if(policy==NULL)
+		{
+			printf("read %d file error!\n",count);
+			break;
+		}
+		count++;
+	}
+	return count;
+}
 
 int main() {
 
@@ -135,6 +183,17 @@ int main() {
 	msgfunc_init();
 	
 	void * message;
+	void * policy;
+	
+	dispatch_init(NULL);
+	policy=dispatch_policy_create();
+	if(policy==NULL)
+	{
+		printf("create policy failed!\n");
+		return -EINVAL;
+	}
+	
+	ret=read_dispatch_file("dispatch_policy.json");
 
 //	routine_start();
 //	sleep(100000);

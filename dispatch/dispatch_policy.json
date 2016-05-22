@@ -1,14 +1,9 @@
 {
+	"sender":"test_channel",
 	"MATCH_RULE":
 	[
-		{
-			"sender":"test_channel",
-			"rules":
-			[
-				{"op":"AND","area":"RECORD","type":"LOGIN","subtype":"LOGINFO",
-					"value":{"user":"hujun"}}
-			]
-		}	
+		{"op":"AND","area":"RECORD","type":"LOGIN","subtype":"LOGINFO",
+			"value":{"user":"hujun"}}
 	],
 	"ROUTE_RULE":
 	[
@@ -16,16 +11,11 @@
 	]
 }
 {
+	"sender":"echo",
 	"MATCH_RULE":
 	[
-		{
-			"sender":"echo",
-			"rules":
-			[
-				{"op":"AND","area":"RECORD","type":"LOGIN","subtype":"LOGINFO",
-					"value":{"user":"hujun"}}
-			]
-		}	
+		{"op":"AND","area":"RECORD","type":"LOGIN","subtype":"LOGINFO",
+			"value":{"user":"hujun"}}
 	],
 	"ROUTE_RULE":
 	[

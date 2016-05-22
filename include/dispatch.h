@@ -1,5 +1,5 @@
-#ifndef ROUTER_H
-#define ROUTER_H
+#ifndef ROUTE_H
+#define ROUTE_H
 
 #define DIGEST_SIZE 32
 
@@ -20,21 +20,21 @@ enum message_area_type
     MATCH_AREA_ERR=0xFF,
 };
 
-enum router_target_type
+enum route_target_type
 {
-    ROUTER_TARGET_LOCAL=0x01,
-    ROUTER_TARGET_NAME=0x02,
-    ROUTER_TARGET_UUID=0x04,
-    ROUTER_TARGET_RECORD=0x08,
-    ROUTER_TARGET_EXPAND=0x10,
-    ROUTER_TARGET_CHANNEL=0x40,
-    ROUTER_TARGET_PORT=0x80,
-    ROUTER_TARGET_MIXUUID=0x100,
-    ROUTER_TARGET_ERROR=0xFFFF,
+    ROUTE_TARGET_LOCAL=0x01,
+    ROUTE_TARGET_NAME=0x02,
+    ROUTE_TARGET_UUID=0x04,
+    ROUTE_TARGET_RECORD=0x08,
+    ROUTE_TARGET_EXPAND=0x10,
+    ROUTE_TARGET_CHANNEL=0x40,
+    ROUTE_TARGET_PORT=0x80,
+    ROUTE_TARGET_MIXUUID=0x100,
+    ROUTE_TARGET_ERROR=0xFFFF,
 };
 
-int dispatch_policy_init(void * object);
-void * dispatch_create_rule(void * object);
+int dispatch_init(void * object);
+void * dispatch_policy_create();
 
 
 void * dispatch_create_match_list(void);
@@ -54,8 +54,8 @@ void * match_policy_getfirst(void * list);
 void * match_policy_getnext(void * list);
 
 
-void * router_policy_getfirst(void * list);
-void * router_policy_getnext(void * list);
+void * route_policy_getfirst(void * list);
+void * route_policy_getnext(void * list);
 
 void * dispatch_policy_getfirst();
 void * dispatch_policy_getnext();
@@ -67,16 +67,16 @@ void * dispatch_route_rule_getnext(void * policy);
 int  	aspect_policy_getfirst(void ** policy);
 int aspect_policy_getnext(void ** policy);
 
-int router_find_local_policy(void * message,void **msg_policy,char * sender_proc);
-int router_find_aspect_policy(void * message,void **msg_policy,char * sender_proc);
-int router_find_aspect_local_policy(void * message,void **msg_policy,char * sender_proc);
+int route_find_local_policy(void * message,void **msg_policy,char * sender_proc);
+int route_find_aspect_policy(void * message,void **msg_policy,char * sender_proc);
+int route_find_aspect_local_policy(void * message,void **msg_policy,char * sender_proc);
 
-int router_push_site(void * message,char * name,char * type);
-int router_push_aspect_site(void * message,char * proc,char * point);
-int router_check_sitestack(void * message,char * type);
-int router_pop_site(void * message, char * type);
-int router_pop_aspect_site(void * message, char * proc);
-int router_dup_activemsg_info (void * message);
+int route_push_site(void * message,char * name,char * type);
+int route_push_aspect_site(void * message,char * proc,char * point);
+int route_check_sitestack(void * message,char * type);
+int route_pop_site(void * message, char * type);
+int route_pop_aspect_site(void * message, char * proc);
+int route_dup_activemsg_info (void * message);
 
 
 #endif // DISPATCH_H

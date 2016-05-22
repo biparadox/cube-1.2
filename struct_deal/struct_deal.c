@@ -40,7 +40,6 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 			return ret;
 	}
 
-//	curr_desc=root_node->struct_desc;
 
 	do{
 		// throughout the node tree: back
@@ -73,7 +72,6 @@ int  _convert_frame_func (void *addr, void * data, void * struct_template,
 		}
 
 		curr_elem=&curr_node->elem_list[curr_node->temp_var];
-//		curr_elem->index=0;
 		if(funcs->testelem!=NULL)
 		{
 			if(!funcs->testelem(addr,data,curr_elem,para))
@@ -326,6 +324,184 @@ void * create_struct_template(struct struct_elem_attr * struct_desc)
 	return root_node;
 }
 
+struct clone_template_para
+{
+	int offset;
+	int curr_offset;
+	STRUCT_NODE * clone_node;
+	STRUCT_NODE * source_node;
+	struct elem_template * parent_elem;
+};
+
+int _clone_template_start(void * addr,void * data,void * elem, void * para)
+{
+	int ret;
+	int i;
+	struct clone_template_para * my_para = para;
+	my_para->offset=0;
+	my_para->curr_offset=0;
+	my_para->parent_elem=NULL;
+	STRUCT_NODE * root_node=elem;
+	STRUCT_NODE * clone_node=my_para->clone_node;
+	STRUCT_NODE * temp_node;
+	my_para->source_node=root_node;
+	// prepare the root node's elem_list
+	clone_node->elem_no=root_node->elem_no;
+	clone_node->struct_desc=root_node->struct_desc;
+
+	ret=Palloc0(&(clone_node->elem_list),
+		sizeof(struct elem_template)*clone_node->elem_no);
+	if(ret<0)
+		return ret;
+
+	// prepare the struct node for SUBSTRUCT elem and ARRAY elem
+
+	for( i=0;i<clone_node->elem_no;i++)
+	{
+		clone_node->elem_list[i].elem_desc=&(clone_node->struct_desc[i]);
+		if(_issubsetelem(clone_node->struct_desc[i].type))
+		{
+			
+			ret = Palloc0(&temp_node,sizeof(STRUCT_NODE)); 
+			if(ret<0)
+				return ret;
+			clone_node->elem_list[i].ref=temp_node;
+			temp_node->struct_desc=clone_node->struct_desc[i].ref;
+			temp_node->parent=clone_node;
+		}
+	} 
+	clone_node->offset=my_para->source_node->offset;
+	clone_node->size=my_para->source_node->size;
+	clone_node->flag=my_para->source_node->flag;
+	return 0;
+}
+
+int _clone_template_enterstruct(void * addr,void * data,void * elem, void * para)
+{
+	int ret;
+	int i;
+	struct clone_template_para * my_para = para;
+	struct elem_template * curr_elem=elem;
+	int index;
+	STRUCT_NODE * clone_node;
+	STRUCT_NODE * temp_node;
+
+	index=my_para->source_node->temp_var;
+	
+	my_para->parent_elem=&my_para->clone_node->elem_list[index];
+	clone_node=my_para->parent_elem->ref;
+	clone_node->parent=my_para->clone_node;
+	my_para->clone_node=clone_node;
+
+	my_para->source_node=curr_elem->ref;
+
+	clone_node->temp_var=0;	
+
+	// prepare the root node's elem_list
+	clone_node->elem_no=my_para->source_node->elem_no;
+	
+	ret=Palloc0(&(clone_node->elem_list),
+		sizeof(struct elem_template)*clone_node->elem_no);
+	if(ret<0)
+		return ret;
+
+	// prepare the struct node for SUBSTRUCT elem and ARRAY elem
+
+	for( i=0;i<clone_node->elem_no;i++)
+	{
+		clone_node->elem_list[i].elem_desc=&(clone_node->struct_desc[i]);
+		clone_node->elem_list[i].father=my_para->parent_elem;
+		if(_issubsetelem(clone_node->struct_desc[i].type))
+		{
+			
+			ret = Palloc0(&temp_node,sizeof(STRUCT_NODE)); 
+			if(ret<0)
+				return ret;
+			clone_node->elem_list[i].ref=temp_node;
+			temp_node->struct_desc=clone_node->struct_desc[i].ref;
+			temp_node->parent=clone_node;
+		}
+	} 
+	clone_node->offset=my_para->source_node->offset;
+	clone_node->size=my_para->source_node->size;
+	clone_node->flag=my_para->source_node->flag;
+	return 0;
+}
+
+int _clone_template_exitstruct(void * addr,void * data,void * elem, void * para)
+{
+	int ret;
+	int i;
+	struct clone_template_para * my_para = para;
+	
+	my_para->clone_node=my_para->clone_node->parent;
+	my_para->source_node=my_para->source_node->parent;
+	my_para->parent_elem=my_para->parent_elem->father;
+
+	return 0;
+}
+
+int _clone_template_proc_func(void * addr,void * data,void * elem, void * para)
+{
+	struct clone_template_para * my_para = para;
+	struct elem_template * curr_elem = elem;
+	int   index = my_para->source_node->temp_var;
+	struct elem_template * clone_elem=&my_para->clone_node->elem_list[index];
+	STRUCT_NODE * clone_node=my_para->clone_node; 
+ 
+	clone_elem->offset=curr_elem->offset;	
+	clone_elem->size=curr_elem->size;	
+	clone_elem->flag=curr_elem->flag;	
+	clone_elem->index=curr_elem->index;	
+	clone_elem->limit=curr_elem->index;	
+	clone_elem->ref=curr_elem->ref;
+
+//	clone_elem->father=my_para->parent_elem;
+
+	if(_isdefineelem(clone_elem->elem_desc->type))
+	{
+		struct elem_template * temp_elem;
+		temp_elem= _get_elem_by_name(clone_node,clone_elem->elem_desc->def);
+		if(temp_elem==NULL)
+			return -EINVAL;
+		if(!_isvalidvalue(temp_elem->elem_desc->type))
+			return -EINVAL;
+		clone_elem->def=temp_elem;
+	}
+	return 0;
+}
+
+int _clone_template_finish(void * addr,void * data,void * elem, void * para)
+{
+	struct clone_template_para * my_para = para;
+	return 0;
+}
+
+void * clone_struct_template(void * struct_template)
+{
+	int ret;
+	struct struct_deal_ops clone_template_ops =
+	{
+		.start=_clone_template_start,
+		.enterstruct=_clone_template_enterstruct,
+		.exitstruct=_clone_template_exitstruct,
+		.proc_func=_clone_template_proc_func,
+		.finish=_clone_template_finish,
+	};
+
+	static struct clone_template_para my_para;
+	
+	STRUCT_NODE * root_node = Calloc0(sizeof(STRUCT_NODE));
+	if(root_node==NULL)
+		return NULL;
+	my_para.source_node=(STRUCT_NODE *)struct_template;
+	root_node->struct_desc=my_para.source_node->struct_desc;
+	ret = _convert_frame_func(NULL,NULL,root_node,&clone_template_ops,
+		&my_para);
+	if(ret<0)
+		return NULL;
+	return root_node;
+}
 void free_struct_template(void * struct_template)
 {
 	STRUCT_NODE * root_node=struct_template;
