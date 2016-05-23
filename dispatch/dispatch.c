@@ -20,6 +20,8 @@ static POLICY_LIST aspect_policy;
 static void * match_rule_template;
 static void * route_rule_template;
 
+static int match_flag = 0x10000000;
+
 static inline int _init_policy_list(void * list)
 {
     	POLICY_LIST * policy_list=(POLICY_LIST *)list;
@@ -152,25 +154,27 @@ void * dispatch_read_policy(void * policy_node)
 		record_template=memdb_get_template(temp_match_rule->type,temp_match_rule->subtype);
 		if(record_template==NULL)
 			return NULL;
-		record_desc=get_desc_from_template(record_template);
-		if(record_desc==NULL)
+		record_template=clone_struct_template(record_template);
+		if(record_template==NULL)
 			return NULL;
-		temp_match_rule->match_template=create_struct_template(record_desc);
-		if(temp_match_rule->match_template==NULL)
+		temp_match_rule->match_template=record_template;
+		ret=json_marked_struct(temp_node,record_template,match_flag);
+		if(ret<0)
 			return NULL;
-		ret=Galloc0(&value_struct,struct_size(temp_match_rule->match_template));
+		ret=Galloc0(&value_struct,struct_size(record_template));
 		if(ret<0)
 		{
-			free_struct_template(temp_match_rule->match_template);
+			free_struct_template(record_template);
 			return NULL;
 		}
-		ret=json_2_struct(temp_node,value_struct,temp_match_rule->match_template);
+		ret=json_2_part_struct(temp_node,value_struct,temp_match_rule->match_template,match_flag);
 		if(ret<0)
 			return NULL;	
+		temp_match_rule->value=value_struct;
 	}
 	
 //        __route_policy_add(policy->match_list,temp_match_rule);
-        match_rule_node=json_get_next_child(match_policy_node);
+         match_rule_node=json_get_next_child(match_policy_node);
     }
 
     // read the route policy
@@ -189,124 +193,78 @@ void * dispatch_read_policy(void * policy_node)
 
 }
 
-/*
-int __is_policy_aspectpolicy(void * policy)
-{
-	MESSAGE_POLICY * test_policy=policy;
-	if(policy==NULL)
-		return -EINVAL;
-	if(test_policy->main_route_rule->state & MSG_FLOW_ASPECT)
-		return 1;
-	return 0;
-}
-
-int route_policy_init()
-{
-    	int retval;
-   	retval=  register_record_type("FTRE",expand_flow_trace_desc,get_entity_lib_ops("FTRE"));
-    	if(retval<0)
-    	{
-	    printf("register FTRE struct error!\n");
-	    return -EINVAL;
-    	}
-    	retval=  register_record_type("APRE",expand_aspect_point_desc,get_entity_lib_ops("APRE"));
-    	if(retval<0)
-    	{
-	    printf("register APRE struct error!\n");
-	    return -EINVAL;
-    	}	
-	retval= __route_policy_init(&main_route_policy);
-	if(retval<0)
-		return retval;	
-
-	retval= __route_policy_init(&local_route_policy);
-	if(retval<0)
-		return retval;	
-
-	retval= __route_policy_init(&aspect_route_policy);
-	if(retval<0)
-		return retval;	
-
-   	return __route_policy_init(&aspect_local_policy);
-}
-
-int route_policy_gettype(void * policy)
-{
-    MESSAGE_POLICY * route_policy;
-    ROUTE_RULE  * main_rule;
-    if(policy==NULL)
-	    return -EINVAL;
-    main_rule=((MESSAGE_POLICY *)policy)->main_route_rule;
-    if(main_rule==NULL)
-	    return -EINVAL;
-
-    return main_rule->type;
-}
-
-int __route_policy_getfirst(void * policy_list,void ** policy)
+int _dispatch_policy_getfirst(void * policy_list,void ** policy)
 {
 	Record_List * recordhead;
 	Record_List * newrecord;
-    ROUTE_POLICY_LIST * route_policy=(ROUTE_POLICY_LIST *)policy_list;
+        POLICY_LIST * dispatch_policy=(POLICY_LIST *)policy_list;
 
-    if(route_policy->state<0)
-		return -EINVAL;
-
-    recordhead = &(route_policy->head);
-	if(recordhead==NULL)
-		return -ENOMEM;
-
-	newrecord = (Record_List *)(recordhead->list.next);
-	*policy=newrecord->record;
-    route_policy->curr=newrecord;
-	return 0;
-}
-
-int route_policy_getfirst(void ** policy)
-{
-    return __route_policy_getfirst(&main_route_policy,policy);
-}
-
-int local_policy_getfirst(void ** policy)
-{
-    return __route_policy_getfirst(&local_route_policy,policy);
-}
-
-int aspect_local_getfirst(void ** policy)
-{
-    return __route_policy_getfirst(&aspect_local_policy,policy);
-}
-
-int aspect_policy_getfirst(void ** policy)
-{
-    return __route_policy_getfirst(&aspect_route_policy,policy);
-}
-
-int __route_policy_getnext(void * policy_list,void ** policy)
-{
-	Record_List * recordhead;
-	Record_List * newrecord;
-    ROUTE_POLICY_LIST * route_policy=(ROUTE_POLICY_LIST *)policy_list;
-
-    if(route_policy->state<0)
-		return -EINVAL;
-
-    if(route_policy->curr==NULL)
-		return -EINVAL;
-    if(route_policy->curr==&(route_policy->head.list))
-   {
-	 *policy=NULL;
-	 return 0;
-   }
-
-    recordhead = route_policy->curr;
+        recordhead = &(dispatch_policy->head);
 	if(recordhead==NULL)
 		return -EINVAL;
 
 	newrecord = (Record_List *)(recordhead->list.next);
 	*policy=newrecord->record;
-    route_policy->curr=newrecord;
+        dispatch_policy->curr=newrecord;
 	return 0;
+}
+
+int dispatch_policy_getfirst(void ** policy)
+{
+    return _dispatch_policy_getfirst(&process_policy,policy);
+}
+
+int dispatch_policy_getfirstmatchrule(void * policy,void ** rule)
+{
+    DISPATCH_POLICY * dispatch_policy=(DISPATCH_POLICY *)policy;
+    return _dispatch_policy_getfirst(&dispatch_policy->match_list,policy);
+}
+
+int dispatch_policy_getfirstrouterule(void * policy,void ** rule)
+{
+    DISPATCH_POLICY * dispatch_policy=(DISPATCH_POLICY *)policy;
+    return _dispatch_policy_getfirst(&dispatch_policy->route_list,policy);
+}
+
+int _dispatch_policy_getnext(void * policy_list,void ** policy)
+{
+	Record_List * recordhead;
+	Record_List * newrecord;
+        POLICY_LIST * dispatch_policy=(POLICY_LIST *)policy_list;
+
+        if(dispatch_policy->curr==NULL)
+		return -EINVAL;
+       if(dispatch_policy->curr==&(dispatch_policy->head.list))
+      { 
+              *policy=NULL;
+	      return 0;
+      }
+	
+       recordhead = dispatch_policy->curr;
+	if(recordhead==NULL)
+		return -EINVAL;
+
+	newrecord = (Record_List *)(recordhead->list.next);
+	*policy=newrecord->record;
+        dispatch_policy->curr=newrecord;
+	return 0;
+}
+
+int dispatch_policy_getnext(void ** policy)
+{
+    return _dispatch_policy_getnext(&process_policy,policy);
+}
+
+int dispatch_policy_getnextmatchrule(void * policy,void ** rule)
+{
+    DISPATCH_POLICY * dispatch_policy=(DISPATCH_POLICY *)policy;
+    return _dispatch_policy_getnext(&dispatch_policy->match_list,policy);
+}
+
+int dispatch_policy_getnextrouterule(void * policy,void ** rule)
+{
+    DISPATCH_POLICY * dispatch_policy=(DISPATCH_POLICY *)policy;
+    return _dispatch_policy_getnext(&dispatch_policy->route_list,policy);
 }
 
 int route_policy_getnext(void ** policy)
@@ -314,118 +272,61 @@ int route_policy_getnext(void ** policy)
     return __route_policy_getnext(&main_route_policy,policy);
 }
 
-int local_policy_getnext(void ** policy)
+int _dispatch_rule_add(void * list,void * rule)
 {
-    return __route_policy_getnext(&local_route_policy,policy);
-}
-
-int aspect_policy_getnext(void ** policy)
-{
-    return __route_policy_getnext(&aspect_route_policy,policy);
-}
-
-int aspect_local_getnext(void ** policy)
-{
-    return __route_policy_getnext(&aspect_local_policy,policy);
-}
-
-int __route_policy_add(void * policy_list,void * policy)
-{
+	int ret;
 	Record_List * recordhead;
 	Record_List * newrecord;
-    	ROUTE_POLICY_LIST * route_policy=(ROUTE_POLICY_LIST *)policy_list;
+    	POLICY_LIST * rule_list=(POLICY_LIST *)list;
 
-    	if(route_policy->state<0)
-		return -EINVAL;
-   	recordhead = &(route_policy->head);
+   	recordhead = &(rule_list->head);
 	if(recordhead==NULL)
 		return -ENOMEM;
 
-	newrecord = kmalloc(sizeof(Record_List),GFP_KERNEL);
+	ret=Galloc0(&newrecord,sizeof(Record_List));
 	if(newrecord==NULL)
 		return -ENOMEM;
 	INIT_LIST_HEAD(&(newrecord->list));
-	newrecord->record=policy;
+	newrecord->record=rule;
 	list_add_tail(&(newrecord->list),recordhead);
-    	route_policy->policy_num++;
-	return 0;
+	rule_list->policy_num++;
+	return 1;
 }
 
-int route_policy_add(void * policy)
+int dispatch_policy_addmatchrule(void * policy,void * rule)
 {
-   int ret;
-   int type;
-   type=route_policy_gettype(policy); 
-   switch(type)
-   {
-	   case  MSG_FLOW_LOCAL:
-    		   ret = __route_policy_add(&local_route_policy,policy);
-		   break;
-	   case  MSG_FLOW_DELIVER:
-	   case  MSG_FLOW_QUERY:
-    		   ret= __route_policy_add(&main_route_policy,policy);
-		   break;
-	   case  MSG_FLOW_ASPECT_LOCAL:
-    		   ret= __route_policy_add(&aspect_local_policy,policy);
-		   break;
-	   case  MSG_FLOW_ASPECT:
-    		   ret= __route_policy_add(&aspect_route_policy,policy);
-		   break;
-	   default:
-		   return -EINVAL;
-   }
-   return ret;
+    DISPATCH_POLICY * dispatch_policy=(DISPATCH_POLICY *)policy;
+   	
+    return _dispatch_rule_add(&dispatch_policy->match_list,rule);
 }
 
-int __route_policy_del(void * policy_list,void * policy)
+int dispatch_policy_addrouterule(void * policy,void * rule)
 {
-	Record_List * recordhead;
-	Record_List * newrecord;
-    ROUTE_POLICY_LIST * route_policy=(ROUTE_POLICY_LIST *)policy_list;
-
-    if(route_policy->state<0)
-		return -EINVAL;
-    recordhead = &(route_policy->head);
-	if(recordhead==NULL)
-		return -ENOMEM;
-
-    if(route_policy->policy_num==0)
-	{
-		return 0;
-	}
-	newrecord = (Record_List *)(recordhead->list.prev);
-	list_del(&(newrecord->list));
-    	route_policy->policy_num--;
-	kfree(newrecord);
-	return 0;
+    DISPATCH_POLICY * dispatch_policy=(DISPATCH_POLICY *)policy;
+   	
+    return _dispatch_rule_add(&dispatch_policy->route_list,rule);
 }
-int route_policy_del(void * policy)
+
+int _dispatch_policy_add(void * list,void * policy)
 {
-    return __route_policy_del(&main_route_policy,policy);
+	return _dispatch_rule_add(list,policy);	
 }
 
-int __route_policy_reset( void * policy_list )
+int dispatch_policy_add(void * object,void * policy)
 {
-	int ret;
-	void * policy;
-    ROUTE_POLICY_LIST * route_policy=(ROUTE_POLICY_LIST *)policy_list;
-    if(route_policy->state<0)
-		return -EINVAL;
-
-    route_policy->state = -1;
-
-    while(route_policy->policy_num>0)
-	{
-		if(ret<=0)
-			break;
-	}
-	return 0;
-}
-int route_policy_reset()
-{
-    return __route_policy_reset(&main_route_policy);
+      void * general_policy_list;
+      void * aspect_policy_list;
+      DISPATCH_POLICY * dispatch_policy=(DISPATCH_POLICY *)policy;
+     if(object!=NULL)
+	  return -EINVAL;
+      else
+      {
+	    _dispatch_policy_add(&process_policy,policy);
+      }
+      return 1;
 }
 
+/*
 int __message_policy_init(void * policy)
 {
     MESSAGE_POLICY * message_policy=(MESSAGE_POLICY *)policy;

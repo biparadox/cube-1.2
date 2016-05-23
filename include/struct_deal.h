@@ -157,5 +157,6 @@ int struct_2_json(void * addr, char * json_str, void * template);
 int struct_2_part_json(void * addr, char * json_str, void * struct_template, int flag);
 int json_2_struct(void * root, void * addr, void * struct_template);
 int json_2_part_struct(void * root, void * addr, void * struct_template,int flag);
+int json_marked_struct(void * root, void * struct_template,int flag);
 
 #endif

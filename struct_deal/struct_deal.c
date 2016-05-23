@@ -1536,6 +1536,105 @@ int json_2_part_struct(void * root, void * addr, void * struct_template,int flag
 	return 0;
 }
 
+struct json_marked_para
+{
+	void * father_node;
+	int flag;
+};
+
+int _json_marked_start(void * addr, void * data,void *elem,void * para)
+{
+	struct json_marked_para * my_para=para;
+	// json node init
+	if(json_get_type(data) != JSON_ELEM_MAP)
+		return -EINVAL;
+	if(data==NULL)
+		return -EINVAL;	
+	my_para->father_node=data;
+	return 1;	
+}
+
+int _json_marked_test(void * addr,void * data,void * elem,void *para)
+{
+	struct json_marked_para * my_para=para;
+	struct elem_template * curr_elem=elem;
+	void * temp_node=json_find_elem(curr_elem->elem_desc->name,my_para->father_node);
+	if(temp_node==NULL)
+		return 0;		
+	return my_para->flag;	
+}
+
+
+int _json_marked_enterstruct(void * addr,void * data, void * elem,void * para)
+{
+	struct json_marked_para * my_para=para;
+	struct elem_template	* curr_elem=elem;
+	int ret;
+	void * temp_json_node;
+	
+	temp_json_node=json_find_elem(curr_elem->elem_desc->name,my_para->father_node);
+	if(temp_json_node!=NULL)
+	{
+		my_para->father_node=temp_json_node;
+	}
+	return 1;
+}
+int _json_marked_exitstruct(void * addr,void * data, void * elem,void * para)
+{
+	struct json_marked_para * my_para=para;
+	struct elem_template	* curr_elem=elem;
+	int ret;
+	
+	if(my_para->father_node==NULL)
+		return -EINVAL;
+	my_para->father_node=json_get_father(my_para->father_node);
+	return 1;
+}
+
+int _json_marked_procfunc(void * addr,void * data, void * elem,void * para)
+{
+	struct json_marked_para * my_para=para;
+	struct elem_template	* curr_elem=elem;
+	int ret;
+	
+	if(my_para->father_node==NULL)
+		return -EINVAL;
+	curr_elem->flag |= my_para->flag;
+	if(_issubsetelem(curr_elem->elem_desc->type))
+	{
+		ret=struct_set_allflag(curr_elem->ref,my_para->flag);
+	}
+	if(curr_elem->father!=NULL)
+	{
+		struct elem_template * father_elem=curr_elem->father;
+		while(father_elem!=NULL)
+		{
+			father_elem->flag |= my_para->flag;
+			father_elem=father_elem->father;
+		};
+	}
+	return 1;
+}
+
+int json_marked_struct(void * root, void * struct_template,int flag)
+{
+	int ret;
+	struct struct_deal_ops json_marked_struct_ops =
+	{
+		.start=&_json_marked_start,
+		.testelem=_json_marked_test,
+		.enterstruct=&_json_marked_enterstruct,
+		.exitstruct=&_json_marked_exitstruct,
+		.proc_func=&_json_marked_procfunc,
+	};	
+	static struct json_marked_para my_para;
+	my_para.father_node=struct_template;
+	my_para.flag=flag;
+	ret = _convert_frame_func(NULL,root,struct_template,&json_marked_struct_ops,&my_para);
+	if(ret<0)
+		return ret;
+	return 0;
+}
 int struct_set_allflag(void * struct_template,int flag)
 {
 	STRUCT_NODE * root_node=struct_template;

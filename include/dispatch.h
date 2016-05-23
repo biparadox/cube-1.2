@@ -50,15 +50,12 @@ int dispatch_add_route_policy(void * list,void * policy);
 void * dispatch_read_policy(void * policy_node);
 int dispatch_add_policy(void * list,void * policy);
 
-void * match_policy_getfirst(void * list);
-void * match_policy_getnext(void * list);
 
 
-void * route_policy_getfirst(void * list);
-void * route_policy_getnext(void * list);
-
-void * dispatch_policy_getfirst();
-void * dispatch_policy_getnext();
+int dispatch_policy_getfirst(void ** policy);
+int dispatch_policy_getnext(void ** policy);
+int dispatch_policy_getfirstmatchrule(void * policy,void ** rule);
+int dispatch_policy_getfirstrouterule(void * policy,void ** rule);
 
 int match_message(void * match_rule,void * message);
 
