@@ -495,8 +495,9 @@ void * clone_struct_template(void * struct_template)
 	if(root_node==NULL)
 		return NULL;
 	my_para.source_node=(STRUCT_NODE *)struct_template;
+	my_para.clone_node=root_node;
 	root_node->struct_desc=my_para.source_node->struct_desc;
-	ret = _convert_frame_func(NULL,NULL,root_node,&clone_template_ops,
+	ret = _convert_frame_func(NULL,NULL,struct_template,&clone_template_ops,
 		&my_para);
 	if(ret<0)
 		return NULL;

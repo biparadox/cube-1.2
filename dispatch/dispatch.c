@@ -125,12 +125,12 @@ void * dispatch_read_policy(void * policy_node)
     }
 
     // get the match policy json node
-    match_policy_node=json_find_elem("MATCH_POLICY",policy_node);
+    match_policy_node=json_find_elem("MATCH_RULES",policy_node);
     if(match_policy_node==NULL)
         return -EINVAL;
 
     // get the match policy json node
-    route_policy_node=json_find_elem("ROUTE_POLICY",policy_node);
+    route_policy_node=json_find_elem("ROUTE_RULES",policy_node);
     if(route_policy_node==NULL)
         return -EINVAL;
 
@@ -171,6 +171,7 @@ void * dispatch_read_policy(void * policy_node)
 		if(ret<0)
 			return NULL;	
 		temp_match_rule->value=value_struct;
+		ret=dispatch_policy_addmatchrule(policy,temp_match_rule);
 	}
 	
 //        __route_policy_add(policy->match_list,temp_match_rule);
@@ -267,11 +268,6 @@ int dispatch_policy_getnextrouterule(void * policy,void ** rule)
     return _dispatch_policy_getnext(&dispatch_policy->route_list,policy);
 }
 
-int route_policy_getnext(void ** policy)
-{
-    return __route_policy_getnext(&main_route_policy,policy);
-}
-
 int _dispatch_rule_add(void * list,void * rule)
 {
 	int ret;
@@ -288,7 +284,7 @@ int _dispatch_rule_add(void * list,void * rule)
 		return -ENOMEM;
 	INIT_LIST_HEAD(&(newrecord->list));
 	newrecord->record=rule;
-	list_add_tail(&(newrecord->list),recordhead);
+	List_add_tail(&(newrecord->list),recordhead);
 	rule_list->policy_num++;
 	return 1;
 }

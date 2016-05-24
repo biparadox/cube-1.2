@@ -1,23 +1,23 @@
 {
 	"sender":"test_channel",
-	"MATCH_RULE":
+	"MATCH_RULES":
 	[
-		{"op":"AND","area":"RECORD","type":"LOGIN","subtype":"LOGINFO",
+		{"op":"AND","area":"RECORD","type":"LOGIN","subtype":"LOGIN_INFO",
 			"value":{"user":"hujun"}}
 	],
-	"ROUTE_RULE":
+	"ROUTE_RULES":
 	[
 		{"type":"LOCAL","target_type":"LOCAL","target_name":"echo"}
 	]
 }
 {
 	"sender":"echo",
-	"MATCH_RULE":
+	"MATCH_RULES":
 	[
-		{"op":"AND","area":"RECORD","type":"LOGIN","subtype":"LOGINFO",
+		{"op":"AND","area":"RECORD","type":"LOGIN","subtype":"LOGIN_INFO",
 			"value":{"user":"hujun"}}
 	],
-	"ROUTE_RULE":
+	"ROUTE_RULES":
 	[
 		{"type":"LOCAL","target_type":"CHANNEL","target_name":"test_channel"}
 	]

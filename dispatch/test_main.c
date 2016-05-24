@@ -158,6 +158,7 @@ int main() {
 		"typelist.json",
 		"subtypelist.json",
 		"msghead.json",
+		"login_struct.json",
 		"headrecord.json",
 		NULL
 	};

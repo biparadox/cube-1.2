@@ -32,7 +32,6 @@ static struct InitElemInfo_struct InitElemInfo [] =
 	{CUBE_TYPE_ENUM,&enum_convert_ops,ELEM_ATTR_NAMELIST,sizeof(int)},
 	{CUBE_TYPE_SENUM,&enum_convert_ops,ELEM_ATTR_NAMELIST,sizeof(UINT16)},
 	{CUBE_TYPE_BENUM,&enum_convert_ops,ELEM_ATTR_NAMELIST,sizeof(BYTE)},
-	{CUBE_TYPE_FLAG,&flag_convert_ops,ELEM_ATTR_NAMELIST,sizeof(UINT16)},
 	{CUBE_TYPE_FLAG,&flag_convert_ops,ELEM_ATTR_NAMELIST,sizeof(int)},
 	{CUBE_TYPE_SFLAG,&flag_convert_ops,ELEM_ATTR_NAMELIST,sizeof(UINT16)},
 	{CUBE_TYPE_BFLAG,&flag_convert_ops,ELEM_ATTR_NAMELIST,sizeof(BYTE)},
