@@ -361,7 +361,7 @@ void * init_pointer_queue(int size)
 	if(buffer==NULL)
 		return -ENOMEM;
 	queue=(POINTER_QUEUE *)buffer;
-	memset(queue,0,sizeof(POINTER_QUEUE)+sizeof(void *)*size);
+	Memset(queue,0,sizeof(POINTER_QUEUE)+sizeof(void *)*size);
 	queue->buffer=(void **)(buffer+sizeof(POINTER_QUEUE));
 	queue->size=size;
 	queue->head=-1;

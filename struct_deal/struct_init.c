@@ -1,8 +1,4 @@
-#include<stdlib.h>
-#include<stdio.h>
-#include<string.h>
-#include<errno.h>
-
+#include "../include/errno.h"
 #include "../include/data_type.h"
 #include "../include/alloc.h"
 #include "../include/struct_deal.h"
@@ -144,7 +140,7 @@ void * _elem_get_addr(void * elem,void * addr)
 	int offset_array[10];
 	int limit=0;
 	int i;
-	memset(offset_array,0,sizeof(offset_array));
+	Memset(offset_array,0,sizeof(offset_array));
 
 	struct elem_template * curr_elem=elem;
 
@@ -271,7 +267,7 @@ int _elem_set_defvalue(void * elem,void * addr,int value)
 			return -EINVAL;
 		if(elem_ops->set_text_value==NULL)
 		{
-			int str_len=strlen(buffer);
+			int str_len=Strlen(buffer);
 			if(_ispointerelem(temp_elem->elem_desc->type))
 			{
 				int tempret=Palloc0(def_addr,str_len+1);
@@ -382,7 +378,7 @@ static inline struct elem_template * _get_elem_from_struct (STRUCT_NODE * node, 
 	struct struct_elem_attr * curr_desc=node->struct_desc;
 	for(i=0;i<node->elem_no;i++)
 	{
-		if(strcmp(curr_desc[i].name,name)==0)
+		if(Strcmp(curr_desc[i].name,name)==0)
 			return &(node->elem_list[i]);
 	}	
 	return NULL;
@@ -455,7 +451,7 @@ int _elem_get_bin_length(void * value,void * elem,void * addr)
 			}
 			else
 			{
-				ret=strnlen(value,DIGEST_SIZE*32);
+				ret=Strnlen(value,DIGEST_SIZE*32);
 				if(ret<DIGEST_SIZE*32)
 						ret+=1;
 			}
@@ -809,7 +805,7 @@ int _elem_set_text_deffunc(void * addr,void * data,void * elem)
 	}
 	else
 	{
-		int str_len=strlen(text);
+		int str_len=Strlen(text);
 		if(str_len>=ret)
 		{
 			Memcpy(elem_addr,text,ret);

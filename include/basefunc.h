@@ -31,7 +31,7 @@ void * hashlist_get_first(void * hashlist);
 void * hashlist_get_next(void * hashlist);
 
 
-void * init_list_queue();
+void * init_list_queue(void );
 void free_list_queue(void * queue);
 int list_queue_put(void * list_queue,void * record);
 int list_queue_get(void * list_queue,void ** record);

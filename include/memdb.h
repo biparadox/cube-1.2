@@ -54,6 +54,7 @@ void * memdb_get_dblist(int type,int subtype);
 void * memdb_get_recordtype(int type,int subtype);
 
 void * memdb_store(void * data,int type,int subtype,char * name);
+int  memdb_store_record(void * record);
 void * memdb_get_first(int type,int subtype);
 void * memdb_get_next(int type,int subtype);
 void * memdb_remove(void * uuid,int type,int subtype);
@@ -82,6 +83,7 @@ void  * memdb_get_recordtype(int type,int subtype);
 int memdb_print(void * data,char * json_str);
 
 int memdb_read_desc(void * root,BYTE * uuid);
+int memdb_comp_uuid(void * record);
 
 #endif
 

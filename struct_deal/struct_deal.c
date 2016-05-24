@@ -992,14 +992,14 @@ int _getjsonstr(char * json_str,char * text,int text_len,int json_type)
 	switch(json_type)
 	{
 		case JSON_ELEM_NUM:
-			str_len=strnlen(text,text_len);
-			memcpy(json_str,text,str_len);
+			str_len=Strnlen(text,text_len);
+			Memcpy(json_str,text,str_len);
 			str_offset=str_len;
 			break;
 		case JSON_ELEM_STRING:
-			str_len=strnlen(text,text_len);
+			str_len=Strnlen(text,text_len);
 			*json_str='\"';
-			memcpy(json_str+1,text,str_len);
+			Memcpy(json_str+1,text,str_len);
 			*(json_str+str_len+1)='\"';
 			str_offset=str_len+2;
 			break;
@@ -1223,7 +1223,7 @@ int _print_elem_name(void * data,void * elem,void * para)
 	struct elem_template	* curr_elem=elem;
 	int ret,text_len;
 	// print this elem's name
-	text_len=strnlen(curr_elem->elem_desc->name,64);
+	text_len=Strnlen(curr_elem->elem_desc->name,64);
 	*(json_str+my_para->offset)='\"';
 	Memcpy(json_str+my_para->offset+1,curr_elem->elem_desc->name,text_len);
 	ret=text_len+1;	

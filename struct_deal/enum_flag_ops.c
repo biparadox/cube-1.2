@@ -1,8 +1,7 @@
-#include <string.h>
 #include "../include/errno.h"
 #include "../include/data_type.h"
 #include "../include/alloc.h"
-//#include "../include/string.h"
+#include "../include/string.h"
 #include "../include/struct_deal.h"
 #include "struct_ops.h"
 #include "struct_attr.h"
@@ -80,7 +79,7 @@ int enum_set_text_value(void * addr,void * text,void * elem_template){
 	if(enum_list==NULL)
 		enum_list=elem_desc->ref;
 	
-	if(!strcmp(nulstring,text))
+	if(!Strcmp(nulstring,text))
 	{
 		enum_value=0;
 		*(int *)addr=enum_value;
@@ -98,7 +97,7 @@ int enum_set_text_value(void * addr,void * text,void * elem_template){
 	{
 		for(i=0;enum_list[i].name!=NULL;i++)
 		{
-			if(!strcmp(enum_list[i].name,text))
+			if(!Strcmp(enum_list[i].name,text))
 			{
 				enum_value=enum_list[i].value;
 			}
@@ -201,7 +200,7 @@ int flag_set_text_value(void * addr, char * text, void * elem_template){
 		return -EINVAL;
 	
 	flag_value=0;
-	if(!strcmp(nulstring,text))
+	if(!Strcmp(nulstring,text))
 	{
 		*(int *)addr=flag_value;
 		return 0;
@@ -218,7 +217,7 @@ int flag_set_text_value(void * addr, char * text, void * elem_template){
 		offset=0;
 		for(j=0;flag_list[j].name!=NULL;j++)
 		{
-			if(strcmp(flag_list[j].name,temp_string))
+			if(Strcmp(flag_list[j].name,temp_string))
 				continue;
 			flag_value |= flag_list[j].value;
 			break;

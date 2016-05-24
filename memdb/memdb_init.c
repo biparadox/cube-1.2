@@ -10,6 +10,7 @@
 #include "../include/basefunc.h"
 #include "../include/memdb.h"
 #include "../struct_deal/struct_ops.h"
+#include "../include/crypto_func.h"
 
 #include "valuelist.h"
 #include "type_desc.h"
@@ -68,7 +69,7 @@ static inline int _get_value_namelist(char * name,void * list)
 	int i;
 	for(i=0;i<namelist->elem_no;i++)
 	{
-		if(!strcmp(namelist->elemlist[i].name,name))
+		if(!Strcmp(namelist->elemlist[i].name,name))
 		{
 			return namelist->elemlist[i].value;
 		}

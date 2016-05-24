@@ -102,4 +102,5 @@ int memdb_get_elem_subtype(void * elem);
 
 int memdb_is_dynamic(int type);
 
+void * _merge_namelist(void * list1, void * list2);
 #endif
