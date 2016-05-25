@@ -197,6 +197,7 @@ int main() {
 	ret=Galloc0(&recover_struct1,size);
 	if(ret<0)
 		return ret;
+
 	ret=struct_2_blob(&init_struct,buffer,struct_template);	
 	printf("get %d size blob!\n",ret);
 
@@ -227,6 +228,15 @@ int main() {
 		printf("clone struct failed!\n");
 		return -1;
 	}
+
+	ret=struct_compare(recover_struct1,recover_struct2,struct_template);
+	if(ret!=0)
+	{
+		printf("compare struct different!\n");
+		return -1;
+	}
+	else
+		printf("compare struct is the same!\n");
 
 	ret=struct_2_json(recover_struct2,text1,struct_template);
 	printf("recover struct %d size to json %s!\n",ret,text1);

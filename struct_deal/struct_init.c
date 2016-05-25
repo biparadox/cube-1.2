@@ -486,7 +486,6 @@ int  _elem_process_func(void * addr,void * data,void * elem,
 
 	elem_addr=_elem_get_addr(elem,addr);
 	struct elem_template * curr_elem=elem;
-//	ELEM_OPS * elem_ops=_elem_get_ops(curr_elem);
 	
 	// judge if this func is empty
 
@@ -752,6 +751,64 @@ int  _elem_clone_value(void * addr,void * clone,void * elem)
 	return _elem_process_func(addr,clone,elem,&myfuncs);
 }
 	
+int _elem_compare_deffunc(void * addr, void * dest,void * elem)
+{
+	int ret;
+	void * elem_dest;
+	void * elem_src;
+	struct elem_template * curr_elem=elem;
+	
+	// get this elem's addr
+
+	elem_src=_elem_get_addr(elem,addr);
+	elem_dest=_elem_get_addr(elem,dest);
+	// if this func is empty, we use default func
+	if((ret=_elem_get_bin_length(elem_src,elem,addr))<0)
+		return ret;
+	if(_ispointerelem(curr_elem->elem_desc->type))
+	{
+		ret=Strncmp(*(char **)elem_src,*(char **)elem_dest,DIGEST_SIZE*32);
+	}
+	else
+		ret=Memcmp(elem_dest,elem_src,ret);
+	if(ret!=0)
+		return -EINVAL;
+	return ret;
+}
+
+int _elem_compare_defarray(void * addr,void * clone, void * elem,void * ops,int def_value)
+{
+	int (*elem_ops)(void * addr,void * data,void * elem)=ops;		
+	int offset=0;
+	int i;
+	int ret;
+	struct elem_template * curr_elem=elem;
+	int addroffset=get_fixed_elemsize(curr_elem->elem_desc->type);
+	if(addroffset<0)
+		return addroffset;
+	void * clone_addr= _elem_get_addr(elem,clone);
+	
+	for(i=0;i<def_value;i++)
+	{
+		ret=elem_ops(*(void **)addr+addroffset*i,*(void **)clone_addr+addroffset*i,curr_elem);
+		if(ret<0)
+			return ret;
+	}
+	return ret;
+}
+
+
+int  _elem_compare_value(void * addr,void * clone,void * elem)
+{
+	struct elem_deal_ops myfuncs;
+	ELEM_OPS * elem_ops=_elem_get_ops(elem);
+	myfuncs.default_func=&_elem_compare_deffunc;
+	myfuncs.elem_ops=elem_ops->comp_elem;
+	myfuncs.def_array_init=NULL;
+	myfuncs.def_array=_elem_compare_defarray;
+
+	return _elem_process_func(addr,clone,elem,&myfuncs);
+}
 int _elem_get_text_deffunc(void * addr,void * data,void * elem)
 {
 	int ret;

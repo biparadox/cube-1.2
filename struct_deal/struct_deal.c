@@ -915,6 +915,76 @@ int struct_part_clone(void * src,void *destr, void * struct_template,int flag)
 	return my_para.offset;
 }
 
+// compare struct area
+int compare_struct_enterstruct(void * src, void * destr, void * elem,void * para)
+{
+	int ret;
+	struct default_para  * my_para = para;
+	struct elem_template	* curr_elem=elem;
+	void * elem_addr;
+	int defvalue;
+        void * comp_addr;
+	if(curr_elem->limit==0)
+	{
+		curr_elem->index=0;
+		if(_isarrayelem(curr_elem->elem_desc->type))
+		{
+			curr_elem->limit=_elem_get_defvalue(curr_elem,destr);
+			defvalue=_elem_get_defvalue(curr_elem,src);
+			if(defvalue!=curr_elem->limit)
+				return -EINVAL;		
+		}
+		else 
+		{
+			curr_elem->limit=curr_elem->elem_desc->size;
+			if(curr_elem->limit==0)
+				curr_elem->limit=1;
+		}
+	}
+	return 0;		
+}
+
+int proc_compare_struct(void * src,void * destr,void * elem,void * para)
+{
+	struct default_para  * my_para = para;
+	struct elem_template	* curr_elem=elem;
+	int ret;
+	ret = _elem_compare_value(src,destr,elem);
+	return ret;
+} 
+
+int struct_compare(void * src, void * destr, void * struct_template)
+{
+	int ret;
+	void * dest;
+	struct struct_deal_ops clone_struct_ops =
+	{
+		.enterstruct=&compare_struct_enterstruct,
+		.proc_func=&proc_compare_struct,
+	};	
+	static struct default_para my_para;
+	my_para.offset=0;
+
+	ret = _convert_frame_func(src,destr,struct_template,&clone_struct_ops,		&my_para);
+	return ret;
+}
+
+
+int struct_part_compare(void * src,void *destr, void * struct_template,int flag)
+{
+	int ret;
+	struct struct_deal_ops clone_struct_ops =
+	{
+		.testelem=part_deal_test,
+		.enterstruct=&clone_struct_enterstruct,
+		.proc_func=&proc_clone_struct,
+	};	
+	static struct default_para my_para;
+	my_para.offset=0;
+
+	ret = _convert_frame_func(src,destr,struct_template,&clone_struct_ops,		&my_para);
+	return ret;
+}
 int struct_read_elem(char * name,void * addr, void * elem_data,void * struct_template)
 {
 	STRUCT_NODE * curr_node=struct_template;

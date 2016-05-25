@@ -172,6 +172,8 @@ void * dispatch_read_policy(void * policy_node)
 			return NULL;	
 		temp_match_rule->value=value_struct;
 		ret=dispatch_policy_addmatchrule(policy,temp_match_rule);
+		if(ret<0)
+			return NULL;	
 	}
 	
 //        __route_policy_add(policy->match_list,temp_match_rule);
@@ -182,16 +184,22 @@ void * dispatch_read_policy(void * policy_node)
     // first,read the main route policy
 
     route_rule_node=json_get_first_child(route_policy_node);
-    if(route_rule_node==NULL)
-        return -EINVAL;
-    ret=Galloc0(&temp_route_rule,sizeof(ROUTE_RULE));
-    if(ret<0)
-	return NULL;
-    temp_route_rule=malloc(sizeof(ROUTE_RULE));
-    ret=json_2_struct(route_rule_node,temp_route_rule,route_rule_template);
-    if(ret<0)
-        return -EINVAL;
+    while(route_rule_node!=NULL)
+    {
+    	ret=Galloc0(&temp_route_rule,sizeof(ROUTE_RULE));
+    	if(ret<0)
+		return NULL;
+   	 temp_route_rule=malloc(sizeof(ROUTE_RULE));
+    	ret=json_2_struct(route_rule_node,temp_route_rule,route_rule_template);
+    	if(ret<0)
+        	return -EINVAL;
+	ret=dispatch_policy_addrouterule(policy,temp_route_rule);
+	if(ret<0)
+		return NULL;	
+        route_rule_node=json_get_next_child(route_policy_node);
+    } 
 
+    return policy;
 }
 
 int _dispatch_policy_getfirst(void * policy_list,void ** policy)
