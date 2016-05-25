@@ -17,9 +17,9 @@
 #include "memdb_internal.h"
 
 
-ELEM_OPS enumtype_convert_ops;
-ELEM_OPS recordtype_convert_ops;
-ELEM_OPS subtype_convert_ops;
+extern ELEM_OPS enumtype_convert_ops;
+extern ELEM_OPS recordtype_convert_ops;
+extern ELEM_OPS subtype_convert_ops;
 
 static struct InitElemInfo_struct MemdbElemInfo[] =
 {

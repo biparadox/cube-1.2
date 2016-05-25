@@ -32,13 +32,13 @@ struct memdb_desc
 };
 
 
-struct memdb_desc ** static_db_list;
-struct memdb_desc * dynamic_db_list;
+static struct memdb_desc ** static_db_list;
+static struct memdb_desc * dynamic_db_list;
 
 
-void * elem_template;
+static void * elem_template;
 extern void * head_template;
-void * index_template;
+static void * index_template;
 
 // static type define
 
@@ -86,8 +86,8 @@ struct struct_recordtype
 
 // the 2 init namelist
 
-struct struct_namelist *elemenumlist;
-struct struct_namelist *typeenumlist;
+static struct struct_namelist *elemenumlist;
+static struct struct_namelist *typeenumlist;
 
 
 typedef struct memdb_desc_record
@@ -103,4 +103,5 @@ int memdb_get_elem_subtype(void * elem);
 int memdb_is_dynamic(int type);
 
 void * _merge_namelist(void * list1, void * list2);
+int memdb_register_dynamicdb(int type,int subtype);
 #endif

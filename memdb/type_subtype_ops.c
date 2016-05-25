@@ -1,6 +1,6 @@
-#include <string.h>
 #include "../include/errno.h"
 #include "../include/data_type.h"
+#include "../include/string.h"
 #include "../include/alloc.h"
 #include "../include/struct_deal.h"
 #include "../include/basefunc.h"
