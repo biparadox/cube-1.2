@@ -13,6 +13,7 @@
 #include "../include/memdb.h"
 #include "../include/message.h"
 #include "../include/routine.h"
+#include "../include/dispatch.h"
 
 #include "routine_internal.h"
 
@@ -36,6 +37,33 @@ int _routine_dispatch_start()
 {
 	int ret;
 	int count=0;
+	void * policy;
+	void * match_rule;
+	void * route_rule;
+	void * msg;
+	void * message_list=_get_message_list(NULL);
+
+	do
+	{
+		ret=list_queue_get(message_list,&msg);
+		if(ret<0)
+			return ret;
+		if(msg==NULL)
+			break;
+		ret=dispatch_policy_getfirst(&policy);
+		if(ret<0)
+			return -EINVAL;
+		while(policy!=NULL)
+		{
+			ret=dispatch_match_message(policy,msg);
+			if(ret>0)
+			{
+				ret=dispatch_policy_getfirstrouterule(policy,&route_rule);
+			}
+			ret=dispatch_policy_getnext(&policy);
+		}
+		
+	}while(1);
 
 	return count;
 }

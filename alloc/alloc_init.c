@@ -28,11 +28,11 @@
 //static unsigned char alloc_buffer[4096*(1+1+4+1+16+1+256)];
 static unsigned char * start_addr ;
 static unsigned char * empty_addr ;
-static int empty_pages=1+4+1+16+1+256;
+static int empty_pages=1+4+1+32+1+256;
 
 const int g_order=20;
 const int t_order=14;
-const int c_order=16;
+const int c_order=17;
 
 void * T_mem_struct;
 void * G_mem_struct;

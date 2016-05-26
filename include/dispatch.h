@@ -48,7 +48,7 @@ void * dispatch_read_route_policy(void * policy_node);
 int dispatch_add_route_policy(void * list,void * policy);
 
 void * dispatch_read_policy(void * policy_node);
-int dispatch_add_policy(void * list,void * policy);
+int dispatch_policy_add(void * object,void * policy);
 
 
 
@@ -57,10 +57,8 @@ int dispatch_policy_getnext(void ** policy);
 int dispatch_policy_getfirstmatchrule(void * policy,void ** rule);
 int dispatch_policy_getfirstrouterule(void * policy,void ** rule);
 
-int match_message(void * match_rule,void * message);
+int dispatch_match_message(void * policy,void * message);
 
-void * dispatch_route_rule_getfirst(void * rule);
-void * dispatch_route_rule_getnext(void * policy);
 int  	aspect_policy_getfirst(void ** policy);
 int aspect_policy_getnext(void ** policy);
 

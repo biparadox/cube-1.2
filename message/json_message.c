@@ -169,5 +169,5 @@ int json_2_message(char * json_str,void ** message)
 
     *message=msg_box;
     msg_box->box_state = MSG_BOX_RECOVER;
-    return 0;
+    return offset;
 }

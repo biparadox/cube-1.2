@@ -58,7 +58,7 @@ void test003() {
 
 int main() {
 
-  static unsigned char alloc_buffer[4096*(1+1+4+1+16+1+256)];	
+  static unsigned char alloc_buffer[4096*(1+1+4+1+32+1+256)];	
 
   alloc_init(alloc_buffer);
   test001();

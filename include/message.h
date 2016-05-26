@@ -171,7 +171,7 @@ int message_comp_head_elem_text(void * message,char * item_name, char * text);
 int message_comp_elem_text(void * message,char * item_name, int index, char * text);
 int message_comp_expand_elem_text(void * message,char * item_name, int index, char * text);
 
-MSG_HEAD * get_message_head(void * message);
+void * message_get_head(void * message);
 int message_output_blob(void * message, BYTE ** blob);
 int message_output_json(void * message, char * text);
 

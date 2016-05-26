@@ -1529,7 +1529,7 @@ int message_output_record_blob(void * message, BYTE ** blob)
 	memcpy(*blob,buffer,offset);
 	return offset;
 }
-
+*/
 int message_get_record(void * message,void ** msg_record, int record_no)
 {
 	struct message_box * msg_box;
@@ -1543,7 +1543,7 @@ int message_get_record(void * message,void ** msg_record, int record_no)
 		return -EINVAL;
 	*msg_record=NULL;
 	
-	msg_head=get_message_head(message);
+	msg_head=message_get_head(message);
 	if((msg_head==NULL) || IS_ERR(msg_head))
 		return -EINVAL;
 	if(record_no<0)
@@ -1551,11 +1551,12 @@ int message_get_record(void * message,void ** msg_record, int record_no)
 	if(record_no>=msg_head->record_num)
 		return 0;
 	if(msg_box->record_template==NULL)
-		msg_box->record_template=load_record_template(msg_head->record_type);
+        	msg_box->record_template=memdb_get_template(msg_head->record_type,
+			msg_head->record_subtype);
 	if(msg_box->precord[record_no]==NULL)
 	{
 
-		ret=alloc_struct(&(msg_box->precord[record_no]),msg_box->record_template);
+		ret=Galloc0(&(msg_box->precord[record_no]),msg_box->record_template);
 		if(ret<0)
 			return ret;
 		if(msg_box->precord[record_no]==NULL)
@@ -1563,7 +1564,7 @@ int message_get_record(void * message,void ** msg_record, int record_no)
 		ret=blob_2_struct(msg_box->record[record_no],msg_box->precord[record_no],msg_box->record_template);
 		if(ret<0)
 		{
-			free_struct(msg_box->precord[record_no],msg_box->record_template);
+			struct_free(msg_box->precord[record_no],msg_box->record_template);
 			return ret;
 		}
 		msg_box->record_size[record_no]=ret;
@@ -1573,73 +1574,3 @@ int message_get_record(void * message,void ** msg_record, int record_no)
 		return -EINVAL;
 	return 0;
 }
-int message_output_text(void * message, char * text)
-{
-	struct message_box * msg_box;
-	int ret;
-	MSG_HEAD * msg_head;
-	BYTE * data;
-	BYTE * buffer;
-	int i,j;
-	int record_size,expand_size;
-	int head_size;
-	int text_size,offset;
-	
-
-	msg_box=(struct message_box *)message;
-
-	if(message==NULL)
-		return -EINVAL;
-	if(text==NULL)
-		return -EINVAL;
-	msg_head=get_message_head(message);
-	
-	ret=message_record_struct2blob(message);
-	if(ret<0)
-		return ret;
-	ret=message_expand_struct2blob(message);
-	if(ret<0)
-		return ret;
-	
-	buffer=malloc(4096);
-	if(buffer==NULL)
-		return -EINVAL;
-	// output head text
-	strcpy(text,"Head:");
-	offset=strlen(text);
-	ret=struct_2_blob(msg_head,buffer,msg_box->head_template);
-	if(ret<0)
-		return ret;
-	ret=blob_2_text(buffer,text,msg_box->head_template,&offset);
-	if(ret<0)
-		return ret;
-	// output record text
-	for(i=0;i<msg_head->record_num;i++)
-	{
-		sprintf(buffer,"\nRecord %d :",i);
-		strcpy(text+offset,buffer);
-		offset+=strlen(buffer);
-		ret=blob_2_text(msg_box->record[i],text,msg_box->record_template,&offset);
-		if(ret<0)
-			return ret;
-	}
-	for(i=0;i<msg_head->expand_num;i++)
-	{
-		MSG_EXPAND * expand;
-		ret=message_get_expand(message,&expand,i);
-		void * expand_template=load_record_template(expand->tag);
-		if(expand_template==NULL)
-			return -EINVAL;
-		sprintf(buffer,"\nExpand %d :",i);
-		strcpy(text+offset,buffer);
-		offset+=strlen(buffer);
-		ret=blob_2_text(msg_box->expand[i],text,expand_template,&offset);
-		free_struct_template(expand_template);
-		if(ret<0)
-			return ret;
-	}
-	free(buffer);
-	return offset;
-}
-*/
-

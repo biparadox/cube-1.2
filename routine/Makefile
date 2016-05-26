@@ -7,7 +7,7 @@ STRUCTOBJ= routine.o routine_init.o routine_switch.o routine_manage.o routine_di
 
 main: ../lib/libroutine.a  test_main
 test_main: test_main.c ../lib/libroutine.a  test_subroutine.o
-	$(CC) $(FLAGS) test_main test_main.c test_subroutine.o -L../lib -lroutine -lmessage -lmemdb -lchannel -lbasefunc -lcrypto_func -lstruct -ljson -lalloc -lstring -lpthread
+	$(CC) $(FLAGS) test_main test_main.c test_subroutine.o -L../lib -lroutine -ldispatch -lchannel -lmessage -lmemdb -lchannel -lbasefunc -lcrypto_func -lstruct -ljson -lalloc -lstring -lpthread
 ../lib/libroutine.a: $(STRUCTOBJ)
 	ar rs libroutine.a $(STRUCTOBJ)
 	mv    libroutine.a ../lib

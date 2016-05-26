@@ -132,6 +132,7 @@ int read_dispatch_file(char * file_name)
 			printf("read %d file error!\n",count);
 			break;
 		}
+		dispatch_policy_add(policy);
 		count++;
 	}
 	return count;
@@ -139,7 +140,7 @@ int read_dispatch_file(char * file_name)
 
 int main() {
 
-  	static unsigned char alloc_buffer[4096*(1+1+4+1+16+1+256)];	
+  	static unsigned char alloc_buffer[4096*(1+1+4+1+32+1+256)];	
 	char json_buffer[4096];
 	char print_buffer[4096];
 	int ret;

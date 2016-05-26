@@ -226,13 +226,13 @@ int dispatch_policy_getfirst(void ** policy)
 int dispatch_policy_getfirstmatchrule(void * policy,void ** rule)
 {
     DISPATCH_POLICY * dispatch_policy=(DISPATCH_POLICY *)policy;
-    return _dispatch_policy_getfirst(&dispatch_policy->match_list,policy);
+    return _dispatch_policy_getfirst(&dispatch_policy->match_list,rule);
 }
 
 int dispatch_policy_getfirstrouterule(void * policy,void ** rule)
 {
     DISPATCH_POLICY * dispatch_policy=(DISPATCH_POLICY *)policy;
-    return _dispatch_policy_getfirst(&dispatch_policy->route_list,policy);
+    return _dispatch_policy_getfirst(&dispatch_policy->route_list,rule);
 }
 
 int _dispatch_policy_getnext(void * policy_list,void ** policy)
@@ -267,13 +267,13 @@ int dispatch_policy_getnext(void ** policy)
 int dispatch_policy_getnextmatchrule(void * policy,void ** rule)
 {
     DISPATCH_POLICY * dispatch_policy=(DISPATCH_POLICY *)policy;
-    return _dispatch_policy_getnext(&dispatch_policy->match_list,policy);
+    return _dispatch_policy_getnext(&dispatch_policy->match_list,rule);
 }
 
 int dispatch_policy_getnextrouterule(void * policy,void ** rule)
 {
     DISPATCH_POLICY * dispatch_policy=(DISPATCH_POLICY *)policy;
-    return _dispatch_policy_getnext(&dispatch_policy->route_list,policy);
+    return _dispatch_policy_getnext(&dispatch_policy->route_list,rule);
 }
 
 int _dispatch_rule_add(void * list,void * rule)
@@ -329,6 +329,51 @@ int dispatch_policy_add(void * object,void * policy)
       }
       return 1;
 }
+
+int dispatch_match_message(void * policy,void * message)
+{
+	int ret;
+	DISPATCH_POLICY * dispatch_policy=(DISPATCH_POLICY *)policy;
+	MATCH_RULE * match_rule;
+	MSG_HEAD * msg_head;
+	void * msg_record;
+	void * record_template;
+	
+	msg_head=message_get_head(message);
+	if(msg_head==NULL)
+		return -EINVAL;
+	ret=dispatch_policy_getfirstmatchrule(policy,&match_rule);
+	if(ret<0)
+		return ret;
+	while(match_rule!=NULL)
+	{
+		if(match_rule->area==MATCH_AREA_RECORD)
+		{	
+			if(match_rule->type==0)
+				return 1;
+			if((match_rule->type!=msg_head->record_type)||
+				(match_rule->subtype!=msg_head->record_subtype))
+				return 0;
+			if(match_rule->match_template==NULL)
+				return 1;
+			ret=message_get_record(message,&msg_record,0);
+			if(ret<0)
+				return ret;
+			if(msg_record==NULL)
+				return 0;
+	
+			return struct_part_compare(match_rule->value,msg_record,match_rule->match_template,match_flag);
+		}
+		else
+		{
+			return 0;
+		}
+		
+	}	
+	
+	
+}
+
 
 /*
 int __message_policy_init(void * policy)
