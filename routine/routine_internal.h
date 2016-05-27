@@ -40,7 +40,8 @@ typedef struct routine_struct
 	void * protect_data;
 	void * context;
 	void * context_template;
-	void * message_list;
+	void * recv_message_list;
+	void * send_message_list;
 }__attribute__((packed))  ROUTINE;
 
 void * _subroutine_getfirst();
@@ -111,6 +112,7 @@ int _routine_dispatch_start();
 int _routine_channel_init();
 int _routine_channel_start();
 
-void * _get_message_list();
+void * _get_recv_message_list();
+void * _get_send_message_list();
 
 #endif

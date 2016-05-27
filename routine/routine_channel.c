@@ -46,7 +46,7 @@ int _routine_channel_start()
 	void * message_list;
 	void * new_msg;
 
-	message_list=_get_message_list(NULL);
+	message_list=_get_recv_message_list(NULL);
 	if(message_list==NULL)
 		return -EINVAL;
 

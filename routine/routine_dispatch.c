@@ -41,7 +41,7 @@ int _routine_dispatch_start()
 	void * match_rule;
 	void * route_rule;
 	void * msg;
-	void * message_list=_get_message_list(NULL);
+	void * message_list=_get_recv_message_list(NULL);
 
 	do
 	{
@@ -59,6 +59,10 @@ int _routine_dispatch_start()
 			if(ret>0)
 			{
 				ret=dispatch_policy_getfirstrouterule(policy,&route_rule);
+//				if(route_rule!=NULL)
+//				{
+//					
+//				}
 			}
 			ret=dispatch_policy_getnext(&policy);
 		}

@@ -976,10 +976,11 @@ int struct_part_compare(void * src,void *destr, void * struct_template,int flag)
 	struct struct_deal_ops clone_struct_ops =
 	{
 		.testelem=part_deal_test,
-		.enterstruct=&clone_struct_enterstruct,
-		.proc_func=&proc_clone_struct,
+		.enterstruct=&compare_struct_enterstruct,
+		.proc_func=&proc_compare_struct,
 	};	
-	static struct default_para my_para;
+	static struct part_deal_para my_para;
+	my_para.flag=flag;
 	my_para.offset=0;
 
 	ret = _convert_frame_func(src,destr,struct_template,&clone_struct_ops,		&my_para);

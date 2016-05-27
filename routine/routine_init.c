@@ -19,7 +19,8 @@
 
 static void * subroutine_list;
 static void * channel_list;
-static void * message_list;
+static void * recv_message_list;
+static void * send_message_list;
 static void (*sleep_func)(int);
 static int sleep_para;
 
@@ -123,8 +124,11 @@ int routine_init(void * para)
 
 	subroutine_list=init_hash_list(10,0,0);	
 	channel_list=init_hash_list(8,0,0);	
-	message_list=init_list_queue();	
-	if(message_list==NULL)
+	recv_message_list=init_list_queue();	
+	if(recv_message_list==NULL)
+		return -EINVAL;
+	send_message_list=init_list_queue();	
+	if(send_message_list==NULL)
 		return -EINVAL;
 	ret=Galloc0(&myproc_context,sizeof(struct proc_context));
 	if(ret<0)
@@ -159,9 +163,15 @@ void * routine_start(void * pointer)
 
 }
 
-void * _get_message_list(void * routine)
+void * _get_recv_message_list(void * routine)
 {
 	if(routine==NULL)
-		return message_list;
-	return 	((ROUTINE *)routine)->message_list;
+		return recv_message_list;
+	return 	((ROUTINE *)routine)->recv_message_list;
+}
+void * _get_send_message_list(void * routine)
+{
+	if(routine==NULL)
+		return send_message_list;
+	return 	((ROUTINE *)routine)->send_message_list;
 }
