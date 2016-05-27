@@ -33,7 +33,7 @@ int _routine_dispatch_init()
 	return 0;
 }
 
-int _routine_dispatch_start()
+int _routine_dispatch_recv_start()
 {
 	int ret;
 	int count=0;
@@ -43,6 +43,44 @@ int _routine_dispatch_start()
 	void * msg;
 	void * message_list=_get_recv_message_list(NULL);
 
+	do
+	{
+		ret=list_queue_get(message_list,&msg);
+		if(ret<0)
+			return ret;
+		if(msg==NULL)
+			break;
+		ret=dispatch_policy_getfirst(&policy);
+		if(ret<0)
+			return -EINVAL;
+		while(policy!=NULL)
+		{
+			ret=dispatch_match_message(policy,msg);
+			if(ret>0)
+			{
+				ret=dispatch_policy_getfirstrouterule(policy,&route_rule);
+//				if(route_rule!=NULL)
+//				{
+//					
+//				}
+			}
+			ret=dispatch_policy_getnext(&policy);
+		}
+		
+	}while(1);
+
+	return count;
+}
+
+int _routine_dispatch_send_start()
+{
+	int ret;
+	int count=0;
+	void * policy;
+	void * match_rule;
+	void * route_rule;
+	void * msg;
+	void * message_list=_get_send_message_list(NULL);
 	do
 	{
 		ret=list_queue_get(message_list,&msg);

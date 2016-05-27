@@ -107,7 +107,8 @@ int _routine_manage_init();
 int _routine_manage_start();
 	
 int _routine_dispatch_init();
-int _routine_dispatch_start();
+int _routine_dispatch_recv_start();
+int _routine_dispatch_send_start();
 
 int _routine_channel_init();
 int _routine_channel_start();
