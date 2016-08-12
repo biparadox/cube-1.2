@@ -116,9 +116,7 @@ struct temp_mem_sys
 }__attribute__((packed));
 
 
-void * get_cube_pointer(UINT32 addr);
 
-int alloc_init(void * start_addr,int page_num);
 void * salloc(int size);
 int Free(void * addr);
 int _salloc_mem_size( );

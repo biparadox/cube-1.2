@@ -23,6 +23,7 @@
 #include "../include/data_type.h"
 #include "../include/alloc.h"
 #include "../include/string.h"
+#include "alloc_init.h"
 #include "cube_buddy.h"
 
 static UINT32 * listarray;
@@ -36,19 +37,28 @@ UINT32  buddy_struct_init (int order, UINT32 addr)
 	if((order<PAGE_ORDER) || (order >=MAX_ORDER))
 	if(addr%PAGE_SIZE!=0)
 		return -EINVAL;
-		
+	// get buddy_struct's site	
 	buddy_struct_offset= sizeof(buddy_struct)+order*sizeof(UINT32)+sizeof(UINT32);
-
 	buddy_struct=(buddy_t *)get_cube_pointer(addr-buddy_struct_offset);
+
+	// empty the buddy_struct
+	Memset(get_cube_pointer(addr-buddy_struct_offset),0,buddy_struct_offset);
+
+	// fill the buddy_struct
 	buddy_struct->order=order;
 	buddy_struct->poolsize=PAGE_SIZE<<(order-PAGE_ORDER);
 	buddy_struct->freelist=addr-buddy_struct_offset+sizeof(buddy_struct);
+	buddy_struct->free_size=buddy_struct->poolsize;
 	buddy_struct->pool=addr;
-	Memset(get_cube_pointer(buddy_struct->freelist),0,sizeof(UINT32)*(order+1));
+
+	// empty the buddy's pool
 	Memset(get_cube_pointer(buddy_struct->pool),0,buddy_struct->poolsize);
-        
+ 
+	// init the buddy_struct's freelist       
 	listarray = (UINT32 *)get_cube_pointer(buddy_struct->freelist);
 	listarray[order]=buddy_struct->pool;
+
+	// return buddy_struct's site
 	return addr-buddy_struct_offset;
 }
 
@@ -57,14 +67,16 @@ void buddy_clear()
 
 	Memset(listarray,0,sizeof(UINT32)*(buddy_struct->order+1));
 	listarray[buddy_struct->order]=buddy_struct->pool;
+	buddy_struct->free_size=buddy_struct->poolsize;
 	return;
 }
-/*
+
 UINT32 bmalloc(int size) {
 
 	int i, order;
 	UINT32 block;
 	UINT32 buddymem;
+	int alloc_size;
 
   // calculate minimal order for this size
 	i = MIN_ORDER;
@@ -72,72 +84,79 @@ UINT32 bmalloc(int size) {
 		i++;
 
 	order = i;
+	alloc_size=BLOCKSIZE(order);
 
   // level up until non-null list found
 	for (;; i++) {
   		if (i > buddy_struct->order)
 			return NULL;
-    		if (listarray[i])
+    		if (listarray[i]!=0)
       			break;
   	}
 
   // remove the block out of list
  	block = listarray[i];
- 	listarray[i] = *(void * *) buddy->freelist[i];
+ 	listarray[i] = get_cube_data(listarray[i]);
 
   // split until i == order
  	while (i-- > order) {
-		buddymem = buddyof(block, i,buddy);
-    		buddy->freelist[i] = buddymem;
+		buddymem = buddyof(block, i,buddy_struct);
+    		listarray[i] = buddymem;
 	}
 
   // store order in previous byte
- 	*((BYTE*) (block - 1)) = order;
+ 	*((BYTE*) (get_cube_pointer(block - 1))) = order;
+	buddy_struct->free_size-=alloc_size;
 	return block;
 }
-void * bmalloc0(int size,buddy_t * buddy) 
+
+UINT32 bmalloc0(int size) 
 {
-	void * pointer=bmalloc(size,buddy);
-	if(pointer!=NULL)
+	UINT32 addr=bmalloc(size);
+	if(addr!=0)
 	{
-		Memset(pointer,0,size);
+		Memset(get_cube_pointer(addr),0,size);
 	}
-	return pointer;
-	
+	return addr;
 }
 
-void bfree(void * block,buddy_t * buddy) {
+void bfree(UINT32 block) {
 
 	int i;
-	void * buddymem;
-	void * * p;
+	UINT32 buddymem;
+	UINT32 p;
+	int alloc_size;
 
   // fetch order in previous byte
-	i = *((BYTE*) (block - 1));
+	i = *((BYTE*) (get_cube_pointer(block) - 1));
+	alloc_size=BLOCKSIZE(i);
 
 	for (;; i++) {
     // calculate buddy
-		buddymem = buddyof(block, i,buddy);
-		p = &(buddy->freelist[i]);
+		buddymem = buddyof(block, i,buddy_struct);
+		p = listarray[i];
 
     // find buddy in list
-		while ((*p != NULL) && (*p != buddymem))
-			p = (void * *) *p;
+		while ((get_cube_data(p) != NULL) && (get_cube_data(p) != buddymem))
+			p = get_cube_data(p);
 
     // not found, insert into list
-  		if (*p != buddymem) {
-  			*(void **) block = buddy->freelist[i];
-      			buddy->freelist[i] = block;
+  		if (get_cube_data(p) != buddymem) {
+  			*((UINT32 *)get_cube_pointer(block)) = listarray[i];
+      			listarray[i] = block;
+			buddy_struct->free_size+=alloc_size;
       			return;
 		}
     // found, merged block starts from the lower one
     		block = (block < buddymem) ? block : buddymem;
     // remove buddy out of list
-    		*p = *(void * *) *p;
+    		*((UINT32 *)get_cube_pointer(p)) = get_cube_data(get_cube_data(p));
   	}
+	buddy_struct->free_size+=alloc_size;
 	return;
 }
 
+/*
 void bfree0(void * pointer,buddy_t * buddy) 
 {
 	int i;

@@ -37,6 +37,7 @@ typedef struct buddy_struct {
   UINT32 order;
   UINT32 poolsize;
   UINT32 freelist;
+  UINT32 free_size;
   UINT32 reserved;
   UINT32 pool;
 } __attribute__((packed))buddy_t;
@@ -64,9 +65,9 @@ static inline void * buddyof(void * b, int i,buddy_t * buddy)
  *
  ******************************************************************************/
 
-void * bmalloc(int size, buddy_t * buddy);
-void * bmalloc0(int size, buddy_t * buddy);
-void bfree(void * block,buddy_t * buddy);
+UINT32 bmalloc(int size);
+UINT32 bmalloc0(int size);
+void bfree(UINT32 block);
 void bfree0(void * block,buddy_t * buddy);
 
 

@@ -64,7 +64,14 @@ int main() {
   	alloc_init(alloc_buffer,256);
   else
 	alloc_init(alloc_buffer+4096-(int)alloc_buffer%4096,256);
-  
+  UINT32 addr1;
+  UINT32 addr2;
+
+  addr1=bmalloc(23);	
+  addr2=bmalloc0(15);	
+  bfree(addr1);
+  bfree(addr2);  
+
   free(alloc_buffer);
 	
 /*

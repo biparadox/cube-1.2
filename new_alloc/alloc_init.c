@@ -32,15 +32,32 @@ static struct alloc_total_struct * root_struct;
 static struct alloc_segment_address * root_address;
 static struct page_index * pages;
 //static struct page_head * root_head;
-const UINT32 temp_page_order = 2;
+const UINT32 temp_page_order = 4;
 
 void * get_cube_pointer(UINT32 addr)
 {
 	if(addr<0)
+		return NULL;
+	if(addr>root_struct->total_size)
+		return NULL;
+	return 	(void *)first_page+addr;
+}
+
+UINT32 get_cube_addr(void * pointer)
+{
+	UINT32 addr;
+	addr=pointer-(void *)first_page;
+	if(addr<0)
 		return -EINVAL;
 	if(addr>root_struct->total_size)
 		return -EINVAL;
-	return 	first_page+addr;
+	return 	addr;
+}
+
+UINT32 get_cube_data(UINT32 addr)
+{
+	UINT32 * pointer =get_cube_pointer(addr);
+	return *pointer;
 }
 
 int alloc_init(void * start_addr,int page_num)
@@ -63,7 +80,7 @@ int alloc_init(void * start_addr,int page_num)
 	// let three root_object  get their address
 	root_struct=(struct alloc_total_struct *)first_page;
 	offset=sizeof(*root_struct);
-	root_address=(struct alloc_segment_address *)(first_page+sizeof(root_struct));
+	root_address=(struct alloc_segment_address *)(first_page+sizeof(*root_struct));
 //	root_head=(struct page_head *)(root_address+sizeof(root_address));
 
 	offset+=sizeof(*root_address);
@@ -112,6 +129,8 @@ int alloc_init(void * start_addr,int page_num)
 	for(i=0;i<root_struct->pagetable_size;i++)
 		pages[page_offset+i].type=PAGE_TABLE;
 	page_offset+=root_struct->pagetable_size;
+
+	buddy_struct_init(temp_page_order+PAGE_ORDER,PAGE_SIZE);
 
 //	page_table		
 
