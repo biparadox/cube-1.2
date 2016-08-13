@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../include/data_type.h"
+#include "../include/alloc.h"
 #include "alloc_init.h"
 /*
 void test001() {
@@ -67,11 +68,16 @@ int main() {
   UINT32 addr1;
   UINT32 addr2;
 
-  addr1=bmalloc(23);	
-  addr2=bmalloc0(15);	
+  addr1=bmalloc(123);	
+
+  Memset(get_cube_pointer(addr1),'A',123);
+
+  addr2=bmalloc(15);	
+  Memset(get_cube_pointer(addr1),'B',15);
   bfree(addr1);
   bfree(addr2);  
 
+  addr1=bmalloc(23);	
   free(alloc_buffer);
 	
 /*

@@ -38,7 +38,7 @@ UINT32  buddy_struct_init (int order, UINT32 addr)
 	if(addr%PAGE_SIZE!=0)
 		return -EINVAL;
 	// get buddy_struct's site	
-	buddy_struct_offset= sizeof(buddy_struct)+order*sizeof(UINT32)+sizeof(UINT32);
+	buddy_struct_offset= sizeof(buddy_struct)+order*sizeof(UINT32)+sizeof(UINT32)*2;
 	buddy_struct=(buddy_t *)get_cube_pointer(addr-buddy_struct_offset);
 
 	// empty the buddy_struct
@@ -102,6 +102,7 @@ UINT32 bmalloc(int size) {
  	while (i-- > order) {
 		buddymem = buddyof(block, i,buddy_struct);
     		listarray[i] = buddymem;
+		*(UINT32 *)get_cube_pointer(buddymem)=0;
 	}
 
   // store order in previous byte
@@ -131,10 +132,10 @@ void bfree(UINT32 block) {
 	i = *((BYTE*) (get_cube_pointer(block) - 1));
 	alloc_size=BLOCKSIZE(i);
 
-	for (;; i++) {
+	for (;i<=buddy_struct->order; i++) {
     // calculate buddy
 		buddymem = buddyof(block, i,buddy_struct);
-		p = listarray[i];
+		p = get_cube_addr(&listarray[i]);
 
     // find buddy in list
 		while ((get_cube_data(p) != NULL) && (get_cube_data(p) != buddymem))
