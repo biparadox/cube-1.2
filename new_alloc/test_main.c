@@ -78,12 +78,21 @@ int main() {
   bfree(addr2);  
 
   addr1=bmalloc(23);	
-  free(alloc_buffer);
+
+  addr1=get_page();
+  addr2=get_page();
+  free_page(addr2);
+  UINT32 addr3;
+  addr2=get_page();
+  addr3=get_page();	
+  free_page(addr1);
+  free_page(addr3);
 	
 /*
   test001();
   test003();
   Tclear();
 */
+  free(alloc_buffer);
   return 0;
 }

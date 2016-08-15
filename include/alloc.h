@@ -5,6 +5,11 @@ int alloc_init(void * start_addr,int page_num);
 void * get_cube_pointer(UINT32 addr);
 UINT32 get_cube_addr(void * pointer);
 UINT32 get_cube_data(UINT32 addr); 
+UINT16 get_page();
+UINT32 page_get_addr(UINT16 page);
+UINT16 addr_get_page(UINT32 addr);
+UINT32 free_page(UINT16 page);
+
 void * Calloc(int size);
 void * Calloc0(int size);
 int Cgetfreecount(void);

@@ -103,6 +103,7 @@ int alloc_init(void * start_addr,int page_num)
 
 	// compute the page index
 	root_struct->total_size=PAGE_SIZE*256;
+	root_struct->page_num=page_num;
 	temp_size=sizeof(struct page_index)*page_num;
 	
 	root_struct->pagetable_size=(temp_size-1)/PAGE_SIZE+1;
@@ -124,14 +125,33 @@ int alloc_init(void * start_addr,int page_num)
 	
 	pages[0].type=FIRST_PAGE;
 	
-	
-
 	for(i=0;i<root_struct->pagetable_size;i++)
 		pages[page_offset+i].type=PAGE_TABLE;
 	page_offset+=root_struct->pagetable_size;
 
 	buddy_struct_init(temp_page_order+PAGE_ORDER,PAGE_SIZE);
 
+
+
+	// build the free pages list
+	struct free_mem_sys * free_struct = (struct free_mem_sys *)(first_page+offset);
+	root_address->free_area=offset;
+	offset+=sizeof(*free_struct);
+
+	free_struct->first_page=page_offset;
+	pages[page_offset].priv_page=0;
+	
+	for(i=page_offset;i<page_num;i++)
+	{
+		pages[i].next_page=i+1;
+		pages[i+1].priv_page=i;
+	}
+	pages[i].next_page=0;
+	free_struct->pages_num=page_num-page_offset;
+
+	// alloc static mem struct 
+	struct  static_mem_sys * static_mem_struct = (struct static_mem_sys *)(first_page+offset);
+	offset+=sizeof(*static_mem_struct);
 //	page_table		
 
 /*
@@ -143,6 +163,52 @@ int alloc_init(void * start_addr,int page_num)
 */
 	return 0;
 }
+UINT32 page_get_addr(UINT16 page)
+{
+	return (UINT32)page*PAGE_SIZE;	
+}
+UINT16 addr_get_page(UINT32 addr)
+{
+	return addr/PAGE_SIZE;	
+}
+
+UINT16 get_page()
+{
+	struct free_mem_sys * free_pages =get_cube_pointer((UINT32)root_address->free_area);
+	UINT16 page;
+	if(free_pages->pages_num==0)
+		return 0;
+	free_pages->pages_num--;
+	page=free_pages->first_page;
+	
+	if(pages[page].next_page==0)
+	{
+		free_pages->first_page=0;
+		pages[page].next_page=0;
+	}
+	else
+	{
+		free_pages->first_page=pages[page].next_page;
+		pages[page].next_page=0;
+		pages[free_pages->first_page].priv_page=0;	
+	}
+	return page;		
+}
+
+UINT32 free_page(UINT16 page)
+{
+	struct free_mem_sys * free_pages =get_cube_pointer((UINT32)root_address->free_area);
+	pages[page].priv_page=0;
+	pages[page].next_page=free_pages->first_page;
+	pages[free_pages->first_page].priv_page=page;
+	free_pages->first_page=page;
+	free_pages->pages_num++;
+		
+	return 0;
+}
+
+
+
 /*
 void * buddy_init(int order) {
 

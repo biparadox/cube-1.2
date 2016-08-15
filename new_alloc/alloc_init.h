@@ -26,14 +26,15 @@ enum page_type
 	EMPTY_PAGE=0x00,
 	FIRST_PAGE=0x01,
 	PAGE_TABLE,
-	STATIC_PAGE,
-	SLAB_POINTER,
-	SLAB_PAGE,
-	DYNAMIC_POINTER,
-	DYNAMIC_PAGE,
 	TEMPALLOC_PAGE,
-	WHOLE_PAGE,
-	
+	STATIC_PAGE_INDEX,
+	STATIC_PAGE,
+	SLAB_PAGE_INDEX,
+	SLAB_PAGE,
+	DYNAMIC_PAGE_INDEX,
+	DYNAMIC_PAGE,
+	WHOLE_PAGE_INDEX,
+	WHOLE_PAGE
 };
 
 struct page_index
@@ -70,6 +71,7 @@ struct alloc_total_struct
 	UINT32 pagetable_size;
 	UINT32 static_size;
 	UINT32 occupy_size;
+	UINT16 page_num;
 	UINT16 empty_pages;
 	UINT16 temp_pages;
 }__attribute__((packed));
@@ -78,12 +80,19 @@ struct alloc_segment_address
 {
 	UINT16 temp_area;
 	UINT16 page_table;
+	UINT16 free_area;
 	UINT16 static_area;
 	UINT16 slab_area;
 	UINT16 dynamic_area;
 	UINT16 page_lists; 
 }__attribute__((packed));
 
+
+struct free_mem_sys
+{
+	UINT16 pages_num;
+	UINT16 first_page;
+}__attribute__((packed));
 
 struct page_head
 {
@@ -115,7 +124,14 @@ struct temp_mem_sys
 	UINT32 pool;
 }__attribute__((packed));
 
-
+struct static_mem_sys
+{
+	UINT16 pages;
+	UINT16 page_index_start;
+	UINT16 curr_page_index;
+	UINT16 RESERVED;
+	UINT32 size;
+}__attribute__((packed));
 
 void * salloc(int size);
 int Free(void * addr);
