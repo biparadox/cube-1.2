@@ -30,7 +30,7 @@
 static BYTE * first_page;
 static struct alloc_total_struct * root_struct;
 static struct alloc_segment_address * root_address;
-static struct page_index * pages;
+struct page_index * pages;
 //static struct page_head * root_head;
 const UINT32 temp_page_order = 4;
 
@@ -150,8 +150,7 @@ int alloc_init(void * start_addr,int page_num)
 	free_struct->pages_num=page_num-page_offset;
 
 	// alloc static mem struct 
-	struct  static_mem_sys * static_mem_struct = (struct static_mem_sys *)(first_page+offset);
-	offset+=sizeof(*static_mem_struct);
+	offset+=static_init(offset);
 //	page_table		
 
 /*

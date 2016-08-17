@@ -111,9 +111,11 @@ struct pagetable_sys
 
 struct static_sys
 {
-	UINT32 size;
-	UINT32 page_table_start;
-	UINT32 page_table_end;
+	UINT32 total_size;
+	UINT16 pages_num;
+	UINT16 first_page;
+	UINT16 curr_page;
+	UINT16 curr_offset;
 }__attribute__((packed));
 
 struct temp_mem_sys
@@ -133,9 +135,7 @@ struct static_mem_sys
 	UINT32 size;
 }__attribute__((packed));
 
-void * salloc(int size);
 int Free(void * addr);
-int _salloc_mem_size( );
 
 /*
 typedef struct buddy {

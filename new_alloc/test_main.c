@@ -59,6 +59,7 @@ void test003() {
 */
 int main() {
 
+  int i;
   unsigned char * alloc_buffer;
   alloc_buffer=malloc(4096*(256+1));
   if((int)alloc_buffer%4096==0)
@@ -87,6 +88,12 @@ int main() {
   addr3=get_page();	
   free_page(addr1);
   free_page(addr3);
+
+  for(i=0;i<100;i++)
+  {
+     addr1=salloc(78+i);
+  }
+
 	
 /*
   test001();
