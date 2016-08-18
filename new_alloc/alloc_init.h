@@ -29,8 +29,8 @@ enum page_type
 	TEMPALLOC_PAGE,
 	STATIC_PAGE_INDEX,
 	STATIC_PAGE,
-	SLAB_PAGE_INDEX,
-	SLAB_PAGE,
+	CACHE_PAGE_INDEX,
+	CACHE_PAGE,
 	DYNAMIC_PAGE_INDEX,
 	DYNAMIC_PAGE,
 	WHOLE_PAGE_INDEX,
@@ -45,25 +45,6 @@ struct page_index
 	UINT16 priv_page;
 	UINT16 next_page;
 }__attribute__((packed));
-/*
-struct free_page_index
-{
-	BYTE  type;
-	BYTE  index;
-	UINT16 state;
-	UINT16 priv_page;
-	UINT16 next_page;
-}__attribute__((packed));
-
-struct static_page_index
-{
-	BYTE  type;
-	BYTE  index;
-	UINT16 state;
-	UINT16 priv_page;
-	UINT16 next_page;
-}__attribute__((packed));
-*/
 
 struct alloc_total_struct
 {
@@ -126,13 +107,12 @@ struct temp_mem_sys
 	UINT32 pool;
 }__attribute__((packed));
 
-struct static_mem_sys
+struct cache_sys
 {
-	UINT16 pages;
-	UINT16 page_index_start;
-	UINT16 curr_page_index;
-	UINT16 RESERVED;
-	UINT32 size;
+	UINT16 pages_num;
+	BYTE   index_num;
+	UINT16 index_offset;
+	UINT32 total_size;
 }__attribute__((packed));
 
 int Free(void * addr);

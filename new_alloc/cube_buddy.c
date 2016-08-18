@@ -29,6 +29,8 @@
 static UINT32 * listarray;
 static buddy_t * buddy_struct;
 
+extern struct page_index *pages;
+
 UINT32  buddy_struct_init (int order, UINT32 addr)
 {
 	int buddy_struct_offset;
