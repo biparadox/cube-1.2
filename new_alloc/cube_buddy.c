@@ -64,6 +64,9 @@ UINT32  buddy_struct_init (int order, UINT32 addr)
 	// empty the buddy_struct
 	Memset(buddy_struct,0,buddy_manager_offset);
 
+	int buddy_page_num=1<<(order-PAGE_ORDER);
+
+	get_fixed_pages(buddy_page_num);
 	// fill the buddy_struct
 	buddy_struct->order=order;
 	buddy_struct->poolsize=PAGE_SIZE<<(order-PAGE_ORDER);

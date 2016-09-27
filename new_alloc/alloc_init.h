@@ -100,6 +100,7 @@ struct cache_sys
 }__attribute__((packed));
 
 int Free(void * addr);
+UINT16 get_fixed_pages(UINT16 page_num);
 UINT16 get_page();
 UINT32 free_page(UINT16 page);
 

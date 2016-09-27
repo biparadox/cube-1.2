@@ -32,7 +32,7 @@ static struct alloc_total_struct * root_struct;
 struct alloc_segment_address * root_address;
 struct page_index * pages;
 //static struct page_head * root_head;
-const UINT32 temp_page_order = 4;
+const UINT32 temp_page_order = 2;
 
 UINT32 root_struct_init(void * addr,UINT32 page_num)
 {
@@ -106,6 +106,13 @@ UINT32 get_cube_data(UINT32 addr)
 	return *pointer;
 }
 
+UINT16 get_fixed_pages(UINT16 page_num)
+{
+	UINT16 page_offset=root_struct->fixed_pages;
+	root_struct->fixed_pages+=page_num;
+	return page_offset;
+}
+
 int alloc_init(void * start_addr,int page_num)
 {
 	UINT32 ret;
@@ -130,37 +137,21 @@ int alloc_init(void * start_addr,int page_num)
 
 	// add temp mem struct	
 	ret=temp_memory_init(temp_page_order+PAGE_ORDER);	
-/*
-	struct  temp_mem_sys * temp_mem_struct = (struct temp_mem_sys *)(get_cube_pointer(first_page+offset);
-	temp_mem_struct->order=temp_page_order+PAGE_ORDER;
-	j=temp_page_order;
-	i=1;
-	while(j>0)
-	{
-		i*=2;
-		j--;
-	}
-	
-	temp_mem_struct->size=PAGE_SIZE*i;
 
-	page_offset+=i;
-*/
 	// compute the page index
-/*
+
 	root_struct->total_size=PAGE_SIZE*256;
 	root_struct->page_num=page_num;
 	temp_size=sizeof(struct page_index)*page_num;
 	
 	root_struct->pagetable_size=(temp_size-1)/PAGE_SIZE+1;
 
-	root_address->page_table=offset;
+	root_address->page_table=get_firstpagemem_bottom(sizeof(struct pagetable_sys));
 
-	struct pagetable_sys * page_table = (struct pagetable_sys *)(first_page+offset);
-
-	offset+=sizeof(*page_table);
+	struct pagetable_sys * page_table = (struct pagetable_sys *)get_cube_pointer(root_address->page_table);
 
 	page_table->size=temp_size;
-	page_table->start=(UINT32)(page_offset*PAGE_SIZE);
+	page_table->start=(UINT32)(root_struct->fixed_pages*PAGE_SIZE);
 	page_table->end=page_table->start+temp_size;
 
 
@@ -169,14 +160,18 @@ int alloc_init(void * start_addr,int page_num)
 	Memset(pages,0,page_table->size);
 	
 	pages[0].type=FIRST_PAGE;
+
+	for(i=1;i<root_struct->fixed_pages;i++)
+	{
+		pages[i].type=TEMP_PAGE;
+	}
 	
 	for(i=0;i<root_struct->pagetable_size;i++)
-		pages[page_offset+i].type=PAGE_TABLE;
-	page_offset+=root_struct->pagetable_size;
-
-	buddy_struct_init(temp_page_order+PAGE_ORDER,PAGE_SIZE);
+		pages[root_struct->fixed_pages+i].type=PAGE_TABLE;
+	root_struct->fixed_pages+=root_struct->pagetable_size;
 
 	// build the free pages list
+/*
 	struct free_mem_sys * free_struct = (struct free_mem_sys *)(first_page+offset);
 	root_address->free_area=offset;
 	offset+=sizeof(*free_struct);
