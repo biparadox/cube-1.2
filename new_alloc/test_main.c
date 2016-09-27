@@ -80,19 +80,19 @@ int main() {
 
   addr1=bmalloc(23);	
 
-  addr1=get_page();
-  addr2=get_page();
-  free_page(addr2);
-  UINT32 addr3;
-  addr2=get_page();
-  addr3=get_page();	
-  free_page(addr1);
-  free_page(addr3);
+//  addr1=get_page();
+//  addr2=get_page();
+//  free_page(addr2);
+//  UINT32 addr3;
+//  addr2=get_page();
+//  addr3=get_page();	
+//  free_page(addr1);
+//  free_page(addr3);
 
-  for(i=0;i<100;i++)
-  {
-     addr1=salloc(78+i);
-  }
+//  for(i=0;i<100;i++)
+//  {
+//     addr1=salloc(78+i);
+//  }
 
 	
 /*

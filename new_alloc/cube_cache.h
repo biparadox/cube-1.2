@@ -22,7 +22,7 @@ struct cache_index
 	UINT16 cache_size;
 	UINT16 index_size;
 	UINT16 page_num;
-	UINT16 free_size;
+	UINT16 index_slot;
 	UINT16 index_page;
 	UINT16 first_page;
 	UINT16 curr_page;

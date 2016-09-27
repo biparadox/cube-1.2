@@ -25,34 +25,27 @@ enum page_type
 {
 	EMPTY_PAGE=0x00,
 	FIRST_PAGE=0x01,
+	TEMP_PAGE,
 	PAGE_TABLE,
-	TEMPALLOC_PAGE,
-	STATIC_PAGE_INDEX,
+	FREE_PAGE,
 	STATIC_PAGE,
 	CACHE_PAGE_INDEX,
 	CACHE_PAGE,
 	DYNAMIC_PAGE_INDEX,
 	DYNAMIC_PAGE,
-	WHOLE_PAGE_INDEX,
-	WHOLE_PAGE
+	ERROR_PAGE=0xffff
 };
-
-struct page_index
-{
-	BYTE  type;
-	BYTE  index;
-	UINT16 state;
-	UINT16 priv_page;
-	UINT16 next_page;
-}__attribute__((packed));
 
 struct alloc_total_struct
 {
+	UINT16 bottom;
+	UINT16 upper;
 	UINT32 total_size;
 	UINT32 pagetable_size;
 	UINT32 static_size;
 	UINT32 occupy_size;
 	UINT16 page_num;
+	UINT16 fixed_pages;
 	UINT16 empty_pages;
 	UINT16 temp_pages;
 }__attribute__((packed));
@@ -63,9 +56,8 @@ struct alloc_segment_address
 	UINT16 page_table;
 	UINT16 free_area;
 	UINT16 static_area;
-	UINT16 slab_area;
+	UINT16 cache_area;
 	UINT16 dynamic_area;
-	UINT16 page_lists; 
 }__attribute__((packed));
 
 
@@ -99,14 +91,6 @@ struct static_sys
 	UINT16 curr_offset;
 }__attribute__((packed));
 
-struct temp_mem_sys
-{
-	UINT32 order;
-	UINT32 size;
-	UINT32 freelist;
-	UINT32 pool;
-}__attribute__((packed));
-
 struct cache_sys
 {
 	UINT16 pages_num;
@@ -116,6 +100,17 @@ struct cache_sys
 }__attribute__((packed));
 
 int Free(void * addr);
+UINT16 get_page();
+UINT32 free_page(UINT16 page);
+
+struct page_index
+{
+	BYTE  type;
+	BYTE  index;
+	UINT16 state;
+	UINT16 priv_page;
+	UINT16 next_page;
+}__attribute__((packed));
 
 /*
 typedef struct buddy {

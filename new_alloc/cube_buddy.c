@@ -28,28 +28,46 @@
 
 static UINT32 * listarray;
 static buddy_t * buddy_struct;
-
+static struct temp_mem_sys * temp_mem_struct;
 extern struct page_index *pages;
+extern struct alloc_segment_address * root_address;
+
+UINT32  buddy_struct_init (int order, UINT32 addr);
+
+UINT32 temp_memory_init(int order)
+{
+	UINT32 ret;
+	ret=get_firstpagemem_bottom(sizeof(struct temp_mem_sys));
+	if(ret>0x80000000)
+		return ret;
+	root_address->temp_area=(UINT16)ret;
+	temp_mem_struct=get_cube_pointer(ret);
+	ret=buddy_struct_init(order,PAGE_SIZE);
+	return ret;
+}
 
 UINT32  buddy_struct_init (int order, UINT32 addr)
 {
-	int buddy_struct_offset;
+	int buddy_manager_size;
+	int buddy_manager_offset;
 	int i;
 
 	if((order<PAGE_ORDER) || (order >=MAX_ORDER))
 	if(addr%PAGE_SIZE!=0)
 		return -EINVAL;
-	// get buddy_struct's site	
-	buddy_struct_offset= sizeof(buddy_struct)+order*sizeof(UINT32)+sizeof(UINT32)*2;
-	buddy_struct=(buddy_t *)get_cube_pointer(addr-buddy_struct_offset);
+	// get buddy_manager's site	
+	buddy_manager_size= sizeof(buddy_struct)+order*sizeof(UINT32)+sizeof(UINT32)*2;
+	
+	buddy_manager_offset=get_firstpagemem_upper(buddy_manager_size);
+	buddy_struct=(buddy_t *)get_cube_pointer(buddy_manager_offset);
 
 	// empty the buddy_struct
-	Memset(get_cube_pointer(addr-buddy_struct_offset),0,buddy_struct_offset);
+	Memset(buddy_struct,0,buddy_manager_offset);
 
 	// fill the buddy_struct
 	buddy_struct->order=order;
 	buddy_struct->poolsize=PAGE_SIZE<<(order-PAGE_ORDER);
-	buddy_struct->freelist=addr-buddy_struct_offset+sizeof(buddy_struct);
+	buddy_struct->freelist=buddy_manager_offset+sizeof(buddy_struct);
 	buddy_struct->free_size=buddy_struct->poolsize;
 	buddy_struct->pool=addr;
 
@@ -61,7 +79,7 @@ UINT32  buddy_struct_init (int order, UINT32 addr)
 	listarray[order]=buddy_struct->pool;
 
 	// return buddy_struct's site
-	return addr-buddy_struct_offset;
+	return buddy_manager_offset;
 }
 
 void buddy_clear() 

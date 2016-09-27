@@ -33,6 +33,14 @@
 #define PAGE_SIZE       4096
 #define PAGE_ORDER      12
 
+struct temp_mem_sys
+{
+	UINT32 order;
+	UINT32 size;
+	UINT32 freelist;
+	UINT32 pool;
+}__attribute__((packed));
+
 typedef struct buddy_struct {
   UINT32 order;
   UINT32 poolsize;

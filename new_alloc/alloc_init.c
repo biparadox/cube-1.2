@@ -29,10 +29,56 @@
 //static unsigned char alloc_buffer[4096*(1+1+4+1+16+1+256)];
 static BYTE * first_page;
 static struct alloc_total_struct * root_struct;
-static struct alloc_segment_address * root_address;
+struct alloc_segment_address * root_address;
 struct page_index * pages;
 //static struct page_head * root_head;
 const UINT32 temp_page_order = 4;
+
+UINT32 root_struct_init(void * addr,UINT32 page_num)
+{
+	if((int)addr % PAGE_SIZE!=0)
+		return -EINVAL;
+	if(page_num>=32768)
+		return -E2BIG;
+	if(page_num<8)
+		return -ENOMEM;
+	first_page=addr;
+
+	root_struct=(struct alloc_total_struct *)first_page;
+	Memset(root_struct,0,sizeof(*root_struct));
+	
+	root_struct->bottom=sizeof(*root_struct);
+	root_struct->upper=PAGE_SIZE;
+	root_struct->total_size=PAGE_SIZE*page_num;
+	root_struct->page_num=page_num;
+	root_struct->fixed_pages=1;
+	root_struct->empty_pages=page_num-1;
+	return 0;
+}
+
+UINT32 get_firstpagemem_bottom(UINT32 size)
+{
+	UINT32 addr;
+	if(size>PAGE_SIZE)
+		return -E2BIG;
+	if(root_struct->bottom+size>root_struct->upper)
+		return -ENOMEM;
+	addr=root_struct->bottom;
+	root_struct->bottom+=size;
+	return addr;
+}
+
+UINT32 get_firstpagemem_upper(UINT32 size)
+{
+	UINT32 addr;
+	if(size>PAGE_SIZE)
+		return -E2BIG;
+	if(root_struct->upper-size<root_struct->bottom)
+		return -ENOMEM;
+	addr=root_struct->upper-size;
+	root_struct->upper=addr;
+	return addr;
+}
 
 void * get_cube_pointer(UINT32 addr)
 {
@@ -62,32 +108,30 @@ UINT32 get_cube_data(UINT32 addr)
 
 int alloc_init(void * start_addr,int page_num)
 {
-	int ret;
+	UINT32 ret;
 	int temp_size;
-	int offset=0;
-	int page_offset=0;
 	int i,j;
-	if((int)start_addr % PAGE_SIZE!=0)
-		return -EINVAL;
-	if(page_num>=32768)
-		return -E2BIG;
-	if(page_num<8)
-		return -ENOMEM;
 
-	first_page=start_addr;
-	page_offset=1;	
+	// init the root_struct
+	ret=root_struct_init(start_addr,page_num);
+	if(ret>0x80000000)
+		return 	ret;
 
-	// let three root_object  get their address
-	root_struct=(struct alloc_total_struct *)first_page;
-	offset=sizeof(*root_struct);
-	root_address=(struct alloc_segment_address *)(first_page+sizeof(*root_struct));
-//	root_head=(struct page_head *)(root_address+sizeof(root_address));
+	// alloc first_page's mem for root_address struct
+	ret=get_firstpagemem_bottom(sizeof(*root_address));	
 
-	offset+=sizeof(*root_address);
+	if(ret>0x80000000)
+		return 	ret;
+
+	root_address=get_cube_pointer(ret);
+
+	Memset(root_address,0,sizeof(*root_address));
+
 
 	// add temp mem struct	
-
-	struct  temp_mem_sys * temp_mem_struct = (struct temp_mem_sys *)(first_page+offset);
+	ret=temp_memory_init(temp_page_order+PAGE_ORDER);	
+/*
+	struct  temp_mem_sys * temp_mem_struct = (struct temp_mem_sys *)(get_cube_pointer(first_page+offset);
 	temp_mem_struct->order=temp_page_order+PAGE_ORDER;
 	j=temp_page_order;
 	i=1;
@@ -100,8 +144,9 @@ int alloc_init(void * start_addr,int page_num)
 	temp_mem_struct->size=PAGE_SIZE*i;
 
 	page_offset+=i;
-
+*/
 	// compute the page index
+/*
 	root_struct->total_size=PAGE_SIZE*256;
 	root_struct->page_num=page_num;
 	temp_size=sizeof(struct page_index)*page_num;
@@ -131,8 +176,6 @@ int alloc_init(void * start_addr,int page_num)
 
 	buddy_struct_init(temp_page_order+PAGE_ORDER,PAGE_SIZE);
 
-
-
 	// build the free pages list
 	struct free_mem_sys * free_struct = (struct free_mem_sys *)(first_page+offset);
 	root_address->free_area=offset;
@@ -151,7 +194,10 @@ int alloc_init(void * start_addr,int page_num)
 
 	// alloc static mem struct 
 	offset+=static_init(offset);
-//	page_table		
+
+	// alloc cache mem struct
+	offset+=cache_init(offset); 
+*/
 
 /*
 	start_addr = alloc_buffer + PAGE_SIZE-(((int)alloc_buffer)&0x0fff);
