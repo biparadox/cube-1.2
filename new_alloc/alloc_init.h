@@ -61,12 +61,6 @@ struct alloc_segment_address
 }__attribute__((packed));
 
 
-struct free_mem_sys
-{
-	UINT16 pages_num;
-	UINT16 first_page;
-}__attribute__((packed));
-
 struct page_head
 {
 	UINT16 occupy_space;
@@ -82,14 +76,6 @@ struct pagetable_sys
 	UINT32 end;
 }__attribute__((packed));
 
-struct static_sys
-{
-	UINT32 total_size;
-	UINT16 pages_num;
-	UINT16 first_page;
-	UINT16 curr_page;
-	UINT16 curr_offset;
-}__attribute__((packed));
 
 struct cache_sys
 {
@@ -100,9 +86,13 @@ struct cache_sys
 }__attribute__((packed));
 
 int Free(void * addr);
+
+UINT16 freepage_init();
 UINT16 get_fixed_pages(UINT16 page_num);
 UINT16 get_page();
 UINT32 free_page(UINT16 page);
+
+UINT16 static_init();
 
 struct page_index
 {

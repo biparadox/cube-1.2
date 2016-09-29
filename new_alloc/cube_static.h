@@ -33,8 +33,14 @@
 #define PAGE_SIZE       4096
 #define PAGE_ORDER      12
 
-UINT32 static_init(UINT32 addr);
+struct static_sys
+{
+	UINT32 total_size;
+	UINT16 pages_num;
+	UINT16 first_page;
+	UINT16 curr_page;
+	UINT16 curr_offset;
+}__attribute__((packed));
 
-UINT32 salloc(int size);
 
 #endif /* BUDDY_H_ */

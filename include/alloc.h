@@ -10,6 +10,7 @@ UINT32 page_get_addr(UINT16 page);
 UINT16 addr_get_page(UINT32 addr);
 UINT32 free_page(UINT16 page);
 
+UINT32 salloc(int size);
 void * Calloc(int size);
 void * Calloc0(int size);
 int Cgetfreecount(void);

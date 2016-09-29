@@ -21,10 +21,9 @@
 
 #include "../include/errno.h"
 #include "../include/data_type.h"
-//#include "../include/alloc.h"
+#include "../include/alloc.h"
 #include "../include/string.h"
 #include "alloc_init.h"
-#include "buddy.h"
 
 //static unsigned char alloc_buffer[4096*(1+1+4+1+16+1+256)];
 static BYTE * first_page;
@@ -86,7 +85,7 @@ void * get_cube_pointer(UINT32 addr)
 		return NULL;
 	if(addr>root_struct->total_size)
 		return NULL;
-	return 	(void *)first_page+addr;
+	return 	(void *)(first_page+addr);
 }
 
 UINT32 get_cube_addr(void * pointer)
@@ -109,7 +108,8 @@ UINT32 get_cube_data(UINT32 addr)
 UINT16 get_fixed_pages(UINT16 page_num)
 {
 	UINT16 page_offset=root_struct->fixed_pages;
-	root_struct->fixed_pages+=page_num;
+	if(page_num>0)
+		root_struct->fixed_pages+=page_num;
 	return page_offset;
 }
 
@@ -171,28 +171,23 @@ int alloc_init(void * start_addr,int page_num)
 	root_struct->fixed_pages+=root_struct->pagetable_size;
 
 	// build the free pages list
-/*
-	struct free_mem_sys * free_struct = (struct free_mem_sys *)(first_page+offset);
-	root_address->free_area=offset;
-	offset+=sizeof(*free_struct);
 
-	free_struct->first_page=page_offset;
-	pages[page_offset].priv_page=0;
-	
-	for(i=page_offset;i<page_num;i++)
-	{
-		pages[i].next_page=i+1;
-		pages[i+1].priv_page=i;
-	}
-	pages[i].next_page=0;
-	free_struct->pages_num=page_num-page_offset;
+	ret=freepage_init();
+	if(ret>0x80000000)
+		return 	ret;
+	root_address->free_area=ret;
 
+	// build the static mem struct 
+	ret=static_init();
+	if(ret>0x80000000)
+		return 	ret;
+	root_address->static_area=ret;
 	// alloc static mem struct 
-	offset+=static_init(offset);
+//	offset+=static_init(offset);
 
 	// alloc cache mem struct
-	offset+=cache_init(offset); 
-*/
+//	offset+=cache_init(offset); 
+
 
 /*
 	start_addr = alloc_buffer + PAGE_SIZE-(((int)alloc_buffer)&0x0fff);
@@ -212,141 +207,7 @@ UINT16 addr_get_page(UINT32 addr)
 	return addr/PAGE_SIZE;	
 }
 
-UINT16 get_page()
+UINT16 get_pages_num()
 {
-	struct free_mem_sys * free_pages =get_cube_pointer((UINT32)root_address->free_area);
-	UINT16 page;
-	if(free_pages->pages_num==0)
-		return 0;
-	free_pages->pages_num--;
-	page=free_pages->first_page;
-	
-	if(pages[page].next_page==0)
-	{
-		free_pages->first_page=0;
-		pages[page].next_page=0;
-	}
-	else
-	{
-		free_pages->first_page=pages[page].next_page;
-		pages[page].next_page=0;
-		pages[free_pages->first_page].priv_page=0;	
-	}
-	return page;		
+	return root_struct->page_num;
 }
-
-UINT32 free_page(UINT16 page)
-{
-	struct free_mem_sys * free_pages =get_cube_pointer((UINT32)root_address->free_area);
-	pages[page].priv_page=0;
-	pages[page].next_page=free_pages->first_page;
-	pages[free_pages->first_page].priv_page=page;
-	free_pages->first_page=page;
-	free_pages->pages_num++;
-		
-	return 0;
-}
-
-
-
-/*
-void * buddy_init(int order) {
-
-	buddy_t * buddy;
-	int pagenum;
-	if(order>MAX_ORDER)
-		return NULL;
-  	if(order<MIN_ORDER)
-		return NULL;
-	buddy=(buddy_t *)empty_addr;
-	buddy->order=order;
-	buddy->poolsize=BLOCKSIZE(order);
-	pagenum=buddy->poolsize/PAGE_SIZE;	
-	if(pagenum>=empty_pages)
-		return NULL;
-	empty_pages-=pagenum+1;
-
-	buddy->pool=empty_addr+PAGE_SIZE;
-	buddy->freelist= buddy->pool-sizeof(void *)*(order+2); 
-	if(buddy->freelist==NULL)
-		return NULL;
-  	Memset(buddy->freelist,0,sizeof(void *)*(order+2)+buddy->poolsize);
-	empty_addr+=(pagenum+1)*PAGE_SIZE;
-  	buddy->freelist[order] = buddy->pool;
-	return buddy;
-}
-
-void buddy_destroy(buddy_t * buddy) {
-	int pagenum;
-	buddy_clear(buddy);
-	if(buddy->pool+buddy->poolsize!=empty_addr)
-		return;
-	pagenum=buddy->poolsize/PAGE_SIZE;	
-	empty_addr=buddy->pool-PAGE_SIZE;
-	empty_pages+=pagenum+1;
-	return;
-}
-
-int Palloc(void ** pointer,int size)
-{
-	if(Tisinmem(pointer))
-	{
-		*pointer=Talloc(size);
-		if(pointer==NULL)
-			return -ENOMEM;
-		return 0;
-	}
-	return Galloc(pointer,size);
-}
-
-int Palloc0(void ** pointer,int size)
-{
-	if(Tisinmem(pointer))
-	{
-		*pointer=Talloc(size);
-		if(pointer==NULL)
-			return -ENOMEM;
-		return 0;
-	}
-	return Galloc0(pointer,size);
-}
-
-int Free(void * pointer)
-{
-	if(ispointerinbuddy(pointer,T_mem_struct))
-	{
-		bfree(pointer,T_mem_struct);
-		return 0;
-	}
-	if(ispointerinbuddy(pointer,C_mem_struct))
-	{
-		bfree(pointer,C_mem_struct);
-		return 0;
-	}
-	if(ispointerinbuddy(pointer,G_mem_struct))
-	{
-		bfree(pointer,G_mem_struct);
-		return 0;
-	}
-	return -EINVAL;
-}
-int Free0(void * pointer)
-{
-	if(ispointerinbuddy(pointer,T_mem_struct))
-	{
-		bfree0(pointer,T_mem_struct);
-		return 0;
-	}
-	if(ispointerinbuddy(pointer,C_mem_struct))
-	{
-		bfree0(pointer,C_mem_struct);
-		return 0;
-	}
-	if(ispointerinbuddy(pointer,G_mem_struct))
-	{
-		bfree0(pointer,G_mem_struct);
-		return 0;
-	}
-	return -EINVAL;
-}
-*/

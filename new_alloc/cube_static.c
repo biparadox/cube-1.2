@@ -30,10 +30,16 @@ static struct static_sys * static_struct;
 extern struct page_index *pages;
 
 
-UINT32  static_init (UINT32 addr)
+UINT16  static_init ()
 {
+	UINT32 ret;
 	UINT16 first_page;
-	static_struct = get_cube_pointer(addr);
+
+	ret=get_firstpagemem_bottom(sizeof(struct static_sys));
+	if(ret>0x80000000)
+		return 	ret;
+	static_struct = (struct static_sys *)get_cube_pointer(ret);
+
 	Memset(static_struct,0,sizeof(*static_struct));
 	first_page=get_page();
 	if(first_page==0)
@@ -43,7 +49,7 @@ UINT32  static_init (UINT32 addr)
 	static_struct->first_page=first_page;
 	static_struct->curr_page=first_page;
 
-	return sizeof(*static_struct);
+	return ret;
 }
 
 UINT32 salloc(int size)
