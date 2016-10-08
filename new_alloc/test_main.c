@@ -94,12 +94,13 @@ int main() {
        addr1=salloc(78+i);
    }
 
+
+   for(i=0;i<41;i++)
+  {
+    addr1=Calloc(100);
+  }
+
 	
-/*
-  test001();
-  test003();
-  Tclear();
-*/
   free(alloc_buffer);
   return 0;
 }

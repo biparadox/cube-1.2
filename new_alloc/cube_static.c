@@ -49,7 +49,7 @@ UINT16  static_init ()
 	static_struct->first_page=first_page;
 	static_struct->curr_page=first_page;
 
-	return ret;
+	return (UINT16)ret;
 }
 
 UINT32 salloc(int size)

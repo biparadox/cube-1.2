@@ -17,6 +17,14 @@
 #define PAGE_ORDER      12
 #define INDEX_OFFSET    256
 
+struct cache_sys
+{
+	UINT16 pages_num;
+	BYTE   index_num;
+	UINT16 index_offset;
+	UINT32 total_size;
+}__attribute__((packed));
+
 struct cache_index
 {
 	UINT16 cache_size;
@@ -35,9 +43,5 @@ struct cache_page_index
 	BYTE index_size;	
 	BYTE index[0];
 } __attribute__((packed));
-
-UINT32 cache_init(UINT32 addr);
-
-UINT32 calloc(int size);
 
 #endif /* CACHE_H_ */

@@ -77,13 +77,6 @@ struct pagetable_sys
 }__attribute__((packed));
 
 
-struct cache_sys
-{
-	UINT16 pages_num;
-	BYTE   index_num;
-	UINT16 index_offset;
-	UINT32 total_size;
-}__attribute__((packed));
 
 int Free(void * addr);
 
@@ -93,6 +86,8 @@ UINT16 get_page();
 UINT32 free_page(UINT16 page);
 
 UINT16 static_init();
+
+UINT16 cache_init();
 
 struct page_index
 {

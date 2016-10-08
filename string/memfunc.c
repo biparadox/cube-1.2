@@ -293,7 +293,7 @@ static inline int _get_lowest_bit(long long value)
 		0x00FF00FF00FF00FF,
 		0x0F0F0F0F0F0F0F0F,
 		0x3333333333333333,
-		0x7777777777777777,
+		0x5555555555555555,
 	};
 //	long long mask=-1;
 	if(value==0)
@@ -367,4 +367,44 @@ int Isvaliduuid(char * uuid)
 		return 0;
 	}	
 	return 1;
+}
+int bitmap_set(char * bitmap, int site)
+{
+	unsigned char c=1;
+	c<<=site%8;
+        bitmap[site/8] |=c;
+	return 0;
+}
+int bitmap_clear(char * bitmap, int site)
+{
+	unsigned char c=1;
+	c<<=site%8;
+        bitmap[site/8] &=~c;
+	return 0;
+}
+
+int bitmap_get(char * bitmap,int site)
+{
+	unsigned char c=1;
+	c<<=site%8;
+        return bitmap[site/8+1] &c;
+}
+
+int bitmap_is_allset(char * bitmap,int size)
+{
+	unsigned char c=0x7f;
+
+	int i;
+	for(i=0;i<size/8;i++)
+	{
+		if(bitmap[i] !=0xff)
+			return 0;
+	}
+	if(size%8==0)
+		return 1;
+	c>>=7-size%8;
+	if(bitmap[i]!=c)
+		return 0;
+	return 1;
+
 }

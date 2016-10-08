@@ -29,18 +29,24 @@
 static struct cache_sys * cache_struct;
 extern struct page_index *pages;
 
-UINT32  cache_init (UINT32 addr)
+UINT16  cache_init ()
 {
+	UINT32 ret;
 	UINT16 first_page;
-	cache_struct = get_cube_pointer(addr);
+
+	ret=get_firstpagemem_bottom(sizeof(struct cache_sys));
+	if(ret>0x80000000)
+		return 	ret;
+	cache_struct = (struct cache_sys *)get_cube_pointer(ret);
+
 	Memset(cache_struct,0,sizeof(*cache_struct));
 
 	cache_struct->pages_num=0;
 	cache_struct->index_num=0;
-//	cache_struct->index_offset=PAGE_SIZE-index_offset;
 	cache_struct->total_size=0;
+	cache_struct->index_offset=get_firstpagemem_upper(0);
 
-	return sizeof(*cache_struct);
+	return (UINT16)ret;
 }
 
 UINT32 cache_find_index(int size)
@@ -51,12 +57,45 @@ UINT32 cache_find_index(int size)
 	int i;
 	for(i=1;i<=cache_struct->index_num;i++)
 	{
-//		index_offset-=sizeof(*cache_index);
-//		cache_index=(struct cache_index *)get_cube_pointer(index_offset);
+		index_addr-=sizeof(*cache_index);
+		cache_index=(struct cache_index *)get_cube_pointer(index_addr);
 		if(cache_index->cache_size==size)
 			return index_addr;		
 	}
 	return 0;
+}
+
+UINT32 cache_add_page(UINT32 index_addr,UINT32 page_index_addr)
+{
+	struct cache_index * cache_index;
+	struct cache_page_index * page_index;
+	cache_index=(struct cache_index *)(get_cube_pointer(index_addr));
+
+	if(cache_index->first_page==0)
+	{
+		cache_index->first_page=get_page();
+		if(cache_index->first_page==0)
+			return 0;
+		cache_index->curr_page=cache_index->first_page;
+	}
+	else
+	{
+		cache_index->curr_page=get_page();
+		if(cache_index->curr_page==0)
+			return 0;
+	}
+
+	pages[cache_index->curr_page].type=CACHE_PAGE;
+	// page index's offset
+	pages[cache_index->curr_page].state=0;
+	pages[cache_index->first_page].index=PAGE_SIZE/cache_index->cache_size;
+
+	page_index=(struct cache_page_index *)(get_cube_pointer(page_index_addr));
+	page_index->empty_slot=PAGE_SIZE/cache_index->cache_size;
+	page_index->index_size=cache_index->index_size;
+	Memset(page_index->index,0,page_index->index_size);
+	
+	return cache_index->curr_page;
 }
 
 UINT32 cache_add_index(int size)
@@ -67,42 +106,33 @@ UINT32 cache_add_index(int size)
 	if((size<12) || (size>512))
 		return 0;
 	
-
 	cache_struct->index_num++;
-	UINT32 index_addr=cache_struct->index_offset-sizeof(*cache_index)*cache_struct->index_num;
+	UINT32 index_addr=get_firstpagemem_upper(sizeof(*cache_index));
 	int cache_size=((size-1)/4+1)*4;
 
-	Memset(get_cube_pointer(index_addr),0,sizeof(*cache_index));
+	cache_index=get_cube_pointer(index_addr);
+
+	Memset(cache_index,0,sizeof(*cache_index));
 	cache_index->cache_size=cache_size;
-//	cache_index->index_size=sizeof(cache_page_index)+(PAGE_SIZE/cache_size-1)/8+1;
+	cache_index->index_size=sizeof(page_index)+(PAGE_SIZE/cache_size-1)/8+1;
 	cache_index->page_num=1;
 //	cache_index->free_size=PAGE_SIZE;
-//	cache_index->index_page=get_page();
+	cache_index->index_page=get_page();
 	if(cache_index->index_page==0)
 		return 0;
 	pages[cache_index->index_page].type=CACHE_PAGE_INDEX;
-	cache_index->first_page=get_page();
-	if(cache_index->first_page==0)
-		return 0;
-	cache_index->curr_page=cache_index->first_page;
-	pages[cache_index->first_page].type=CACHE_PAGE;
-	// page index's offset
-	pages[cache_index->first_page].state=0;
-	pages[cache_index->first_page].index=PAGE_SIZE/cache_size;
 
-	page_index=get_cube_pointer(PAGE_SIZE*cache_index->index_page);
-	page_index->empty_slot=PAGE_SIZE/cache_size;
-	page_index->index_size=cache_index->index_size;
-	Memset(page_index->index,0,page_index->index_size);
-	
+	cache_add_page(index_addr,PAGE_SIZE*cache_index->index_page);	
 	return index_addr;
 }
 
 
-UINT32 calloc(int size)
+
+UINT32 Calloc(int size)
 {
 
 	UINT32 index_addr;
+	UINT32 page_index_addr;
 	struct cache_index * cache_index;	
 	struct cache_page_index * cache_page_index;	
 	UINT32 curr_page;
@@ -122,26 +152,24 @@ UINT32 calloc(int size)
 	cache_index=(struct cache_index *)get_cube_pointer(index_addr);
 
 	curr_page=cache_index->curr_page;
-	cache_page_index=(struct cache_page_index *)get_cube_pointer(PAGE_SIZE*cache_index->index_page+pages[curr_page].state);
+	page_index_addr=PAGE_SIZE*cache_index->index_page+pages[curr_page].state;
+	cache_page_index=(struct cache_page_index *)get_cube_pointer(page_index_addr);
 
-	if(cache_page_index->empty_slot>0)
+	if(cache_page_index->empty_slot==0)
 	{
-		cache_page_index->empty_slot--;
-//		cache_index->free_size-=cache_index->cache_size;
-		slot_site=Getlowestbit(cache_page_index->index,cache_page_index->index_size,0);			
-		Setbit(cache_page_index->index,slot_site,1);
+		curr_page=cache_add_page(index_addr,page_index_addr);
+		if(curr_page==0)
+			return 0;
+		page_index_addr=PAGE_SIZE*cache_index->index_page+pages[curr_page].state;
+		cache_page_index=(struct cache_page_index *)get_cube_pointer(page_index_addr);
 	}
 
-//	if(curr_page_index->empty_
-	
-	page=get_page();
-	if(page==0)
-		return 0;
-//	pages[page].priv_page=static_struct->curr_page;
-//	pages[static_struct->curr_page].next_page=page;
-//	static_struct->curr_page=page;
-//	static_struct->pages_num++;
-	addr=page*PAGE_SIZE;
-//	static_struct->curr_offset=size;
+
+	cache_page_index->empty_slot--;
+//		cache_index->free_size-=cache_index->cache_size;
+	slot_site=Getlowestbit(cache_page_index->index,cache_page_index->index_size,0);			
+	bitmap_set(cache_page_index->index,slot_site-1);
+	addr=curr_page*PAGE_SIZE+(slot_site-1)*cache_index->cache_size;		
+
 	return addr;
 }

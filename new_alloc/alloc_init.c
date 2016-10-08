@@ -182,10 +182,12 @@ int alloc_init(void * start_addr,int page_num)
 	if(ret>0x80000000)
 		return 	ret;
 	root_address->static_area=ret;
-	// alloc static mem struct 
-//	offset+=static_init(offset);
 
-	// alloc cache mem struct
+	// build the cache mem struct
+	ret=cache_init();
+	if(ret>0x80000000)
+		return 	ret;
+	root_address->cache_area=ret;
 //	offset+=cache_init(offset); 
 
 
