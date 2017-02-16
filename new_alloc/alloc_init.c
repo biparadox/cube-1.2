@@ -200,6 +200,7 @@ int alloc_init(void * start_addr,int page_num)
 */
 	return 0;
 }
+
 UINT32 page_get_addr(UINT16 page)
 {
 	return (UINT32)page*PAGE_SIZE;	
