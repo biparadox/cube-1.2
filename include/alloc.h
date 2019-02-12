@@ -14,8 +14,9 @@ UINT32 salloc(int size);
 UINT32 Calloc(int size);
 int Cgetfreecount(void);
 
-int Galloc(void ** pointer,int size);
-int Galloc0(void ** pointer,int size);
+UINT32 Dalloc(int size,UINT32 parent);
+UINT32 Dalloc0(int size,UINT32 parent);
+UINT32 Dfree(UINT32 addr);
 int Ggetfreecount(void);
 
 void * Talloc(int size);

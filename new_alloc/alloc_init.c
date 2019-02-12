@@ -189,6 +189,11 @@ int alloc_init(void * start_addr,int page_num)
 		return 	ret;
 	root_address->cache_area=ret;
 //	offset+=cache_init(offset); 
+	// build the dynamic mem struct
+	ret=dynamic_init();
+	if(ret>0x80000000)
+		return 	ret;
+	root_address->dynamic_area=ret;
 
 
 /*

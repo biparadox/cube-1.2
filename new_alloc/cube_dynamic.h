@@ -8,7 +8,9 @@
 #define CUBE_DYNAMIC_H_
 
 #define CUBE_DMEM_EMPTY 0x00
-#define CUBE_DMEM_ARRAY 0x01
+#define CUBE_DMEM_ELEM 0x01
+#define CUBE_DMEM_OBJECT 0x02
+#define CUBE_DMEM_ZOMBIE 0x03
 
 /******************************************************************************
  *
@@ -30,8 +32,9 @@ struct dmem_sys
 struct dmem_object_head
 {
 	BYTE object_type;
-	int ref_no;
-	UINT32 ref_addr[];
+	BYTE ref_no;
+	UINT32 pointer_addr;
+	UINT16 dmem_attr;
 }__attribute__((packed));
 
 struct dmem_head
@@ -54,4 +57,6 @@ struct dmem_page_index
 #define DMEM_GET_SIZE(pointer)    (((struct dmem_head *)((BYTE *)pointer - sizeof(struct dmem_head)))->dmem_attr & DMEM_SIZE_MASK) 
 #define DMEM_GET_FLAG(pointer)    ((((struct dmem_head *)((BYTE *)pointer - sizeof(struct dmem_head)))->dmem_attr & DMEM_FLAG_MASK)>>12) 
 
+#define DMEM_SET_SIZE(pointer,size)    (((struct dmem_head *)((BYTE *)pointer - sizeof(struct dmem_head)))->dmem_attr &= ~DMEM_SIZE_MASK | size) 
+#define DMEM_SET_FLAG(pointer,flag)    (((struct dmem_head *)((BYTE *)pointer - sizeof(struct dmem_head)))->dmem_attr &= ~DMEM_FLAG_MASK|(flag<<12)) 
 #endif /* CUBE_DYNAMIC_H_ */

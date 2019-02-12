@@ -95,16 +95,13 @@ int main() {
    }
 
 
-   for(i=0;i<41;i++)
-  {
-    addr1=Calloc(100);
-  }
+   addr1=Dalloc(100,addr1);
 
    for(i=0;i<41;i++)
   {
-    addr2=Calloc(200);
+    addr1=Dalloc(100,addr1);
   }
-	
+
   free(alloc_buffer);
   return 0;
 }
